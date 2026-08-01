@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireMobileRole } from "@/lib/api-auth";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
+import { computeAdaptationDirectives, defaultAdaptationDirectives, type CategoryCode } from "@/lib/adaptation";
 
 /**
  * GET /api/student/profile
@@ -9,13 +10,15 @@ import { getTenantScopedPrisma } from "@/lib/tenant-db";
  * shows a student their own classification/category or support level, by
  * design — students should not self-diagnose or fixate on a label, and the
  * level is meant to be reduced over time by the specialist based on need.
- * We apply that SAME rule to this API: it returns only basic profile fields
- * and the list of enabled tool codes, never category or supportLevel, even
- * though the mobile app could plausibly want that to render richer UI. If
- * the app team decides they genuinely need it to build correct UI, that's a
- * product decision that should be made explicitly (and probably still not
- * exposed as "your diagnosis is X"), not something this endpoint should
- * silently unlock.
+ * We apply that SAME rule to this API: it returns only basic profile fields,
+ * the list of enabled tool codes, and — as of Phase 3 — a set of ready-made
+ * "adaptation directives" computed server-side from the student's category
+ * and support level (see src/lib/adaptation.ts). It NEVER returns the raw
+ * category/condition/supportLevel themselves, even though the mobile app
+ * could plausibly want that to render richer UI: the directives ARE the
+ * richer UI info, already translated into opaque, non-diagnostic values
+ * (font sizes, alert thresholds, text styles) so the app never has to see —
+ * or reconstruct — the underlying classification.
  */
 export async function GET(request: Request) {
   const auth = await requireMobileRole(request, "student");
@@ -33,8 +36,23 @@ export async function GET(request: Request) {
   const approvedPlan = await db.supportPlan.findFirst({
     where: { studentProfileId: studentProfile.id, status: "approved" },
     orderBy: { approvedAt: "desc" },
-    include: { toolActivations: { where: { enabled: true } } },
+    include: {
+      toolActivations: { where: { enabled: true } },
+      assessment: {
+        include: {
+          condition: { include: { category: true } },
+          supportLevel: true,
+        },
+      },
+    },
   });
+
+  const adaptationDirectives = approvedPlan
+    ? computeAdaptationDirectives(
+        approvedPlan.assessment.condition.category.code as CategoryCode,
+        approvedPlan.assessment.supportLevel.order as 1 | 2 | 3
+      )
+    : defaultAdaptationDirectives();
 
   return NextResponse.json({
     studentNumber: studentProfile.studentNumber,
@@ -44,5 +62,6 @@ export async function GET(request: Request) {
     requestStatus: studentProfile.requestStatus,
     verified: studentProfile.verified,
     enabledTools: approvedPlan?.toolActivations.map((t) => t.toolCode) ?? [],
+    adaptationDirectives,
   });
 }

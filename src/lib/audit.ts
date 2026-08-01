@@ -21,7 +21,8 @@ export type AuditAction =
   | "acknowledge_alert"
   | "resolve_alert"
   | "view_audit_log"
-  | "export_report";
+  | "export_report"
+  | "view_document_denied";
 
 export interface AuditLogInput {
   tenantId: string;

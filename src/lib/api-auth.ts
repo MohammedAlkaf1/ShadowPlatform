@@ -40,14 +40,20 @@ export function forbiddenResponse(message = "لا تملك صلاحية الوص
 }
 
 export async function requireMobileRole(request: Request, ...roles: UserRole[]): Promise<
-  { ok: true; ctx: RequestContext } | { ok: false; response: NextResponse }
+  | { ok: true; ctx: RequestContext }
+  // `ctx` is included on the role-forbidden branch (but not the
+  // unauthenticated one, where there's no known actor) so callers can still
+  // write an AuditLog row for a denied access attempt — AuditLog.actorUserId
+  // is a required field, so there's nothing to log against when there's no
+  // authenticated user at all.
+  | { ok: false; response: NextResponse; ctx?: RequestContext }
 > {
   const ctx = await getMobileRequestContext(request);
   if (!ctx) {
     return { ok: false, response: unauthorizedResponse() };
   }
   if (roles.length > 0 && !roles.includes(ctx.role)) {
-    return { ok: false, response: forbiddenResponse() };
+    return { ok: false, response: forbiddenResponse(), ctx };
   }
   return { ok: true, ctx };
 }

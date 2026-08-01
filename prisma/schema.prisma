@@ -62,6 +62,13 @@ enum ToolCode {
   SPEECH_TO_TEXT // dictation input instead of typing
   VISUAL_SCHEDULE // visual/step-by-step schedule support
   CALM_MODE // grounding/anxiety-reduction tools inside the app
+  // Phase 3, pre-approved: top-level mode switches. These gate whether the
+  // app's 4 top-level mode cards (deaf/visual/learning/physical) appear at
+  // all, a coarser layer than the 8 granular tools above.
+  DEAF_MODE
+  VISUAL_MODE
+  LEARNING_MODE
+  PHYSICAL_MODE
 }
 
 // ───────────────────────────── Tenant ─────────────────────────────

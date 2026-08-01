@@ -22,6 +22,15 @@ export const TOOL_CODES = [
   "SPEECH_TO_TEXT",
   "VISUAL_SCHEDULE",
   "CALM_MODE",
+  // Top-level mode switches (Phase 3): gate whether the app's 4 top-level
+  // mode cards (deaf/visual/learning/physical) appear at all, separate from
+  // the 8 granular tools above which gate individual in-mode features. Added
+  // with explicit user approval — see docs/API.md and the Phase 3 report for
+  // the "why a 4th, coarser layer of gating" rationale.
+  "DEAF_MODE",
+  "VISUAL_MODE",
+  "LEARNING_MODE",
+  "PHYSICAL_MODE",
 ] as const;
 
 export type ToolCodeValue = (typeof TOOL_CODES)[number];
@@ -66,5 +75,25 @@ export const TOOL_CODE_LABELS: Record<ToolCodeValue, { ar: string; en: string; d
     ar: "وضع الهدوء",
     en: "Calm Mode",
     description: "أدوات لتقليل القلق داخل التطبيق",
+  },
+  DEAF_MODE: {
+    ar: "وضع الصم وضعاف السمع",
+    en: "Deaf / Hard-of-Hearing Mode",
+    description: "تفعيل واجهة ترجمة المحاضرات الفورية بالكامل",
+  },
+  VISUAL_MODE: {
+    ar: "وضع الإعاقة البصرية",
+    en: "Visual Assistance Mode",
+    description: "تفعيل واجهة وصف الصور والمحيط بالكامل",
+  },
+  LEARNING_MODE: {
+    ar: "وضع صعوبات التعلم",
+    en: "Learning Support Mode",
+    description: "تفعيل واجهة تبسيط المستندات الدراسية بالكامل",
+  },
+  PHYSICAL_MODE: {
+    ar: "وضع الإعاقة الحركية",
+    en: "Physical Assistance Mode",
+    description: "تفعيل واجهة الأوامر الصوتية والتواصل السريع بالكامل",
   },
 };

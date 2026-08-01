@@ -238,10 +238,17 @@ async function main() {
     },
   });
 
-  const enabledTools: { toolCode: "REMINDER_MODE" | "FOCUS_MODE" | "EXTRA_TIME_TRACKER" }[] = [
+  const enabledTools: { toolCode: import("@prisma/client").ToolCode }[] = [
     { toolCode: "REMINDER_MODE" },
     { toolCode: "FOCUS_MODE" },
     { toolCode: "EXTRA_TIME_TRACKER" },
+    // Top-level mode switches — all 4 enabled for the primary demo student
+    // so the manual Phase 3 test scenario (mobile app home screen) has
+    // something to show.
+    { toolCode: "DEAF_MODE" },
+    { toolCode: "VISUAL_MODE" },
+    { toolCode: "LEARNING_MODE" },
+    { toolCode: "PHYSICAL_MODE" },
   ];
   for (const tool of enabledTools) {
     await prisma.toolActivation.upsert({

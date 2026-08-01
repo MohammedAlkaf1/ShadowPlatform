@@ -1,7 +1,7 @@
 import "./setup";
 import { describe, it, expect, beforeAll } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { tokenFor, authedRequest } from "./helpers";
+import { tokenFor, authedRequest, assertNoRawClassificationLeak } from "./helpers";
 import { GET as getDocument } from "@/app/api/documents/[id]/route";
 import { POST as uploadDocument } from "@/app/api/documents/upload/route";
 import { GET as getStudentProfile } from "@/app/api/student/profile/route";
@@ -110,21 +110,24 @@ describe("permission and tenant/role isolation (Phase 2 required suite)", () => 
     const res = await getStudentProfile(authedRequest(`${BASE}/student/profile`, student1.token));
     expect(res.status).toBe(200);
     const body = await res.json();
-    const serialized = JSON.stringify(body).toLowerCase();
-    expect(serialized).not.toMatch(/categor|supportlevel|condition/);
-    expect(body).not.toHaveProperty("category");
-    expect(body).not.toHaveProperty("supportLevel");
-    expect(body).not.toHaveProperty("conditionId");
+    assertNoRawClassificationLeak(body);
     // enabledTools must still be present — the endpoint isn't just empty.
     expect(Array.isArray(body.enabledTools)).toBe(true);
+    // adaptationDirectives must be present and be OPAQUE directives, not the
+    // raw classification that produced them (checked above).
+    expect(body.adaptationDirectives).toBeTruthy();
+    expect(body.adaptationDirectives.mode.deafMode.defaultFontSize).toEqual(expect.any(Number));
+    expect(body.adaptationDirectives.mode.visualMode.imageDescriptionStyle).toEqual(expect.any(String));
+    expect(body.adaptationDirectives.mode.learningMode.defaultFontSize).toEqual(expect.any(Number));
+    expect(body.adaptationDirectives.mode.physicalMode.listeningDurationSeconds).toEqual(expect.any(Number));
+    expect(typeof body.adaptationDirectives.categoryLayer.reducesNotifications).toBe("boolean");
   });
 
   it("a student can never reach category or supportLevel via /api/student/support-plan", async () => {
     const res = await getSupportPlan(authedRequest(`${BASE}/student/support-plan`, student1.token));
     expect(res.status).toBe(200);
     const body = await res.json();
-    const serialized = JSON.stringify(body).toLowerCase();
-    expect(serialized).not.toMatch(/categor|supportlevel|condition/);
+    assertNoRawClassificationLeak(body);
   });
 
   it("AuditLog records every document access attempt — successful AND denied", async () => {

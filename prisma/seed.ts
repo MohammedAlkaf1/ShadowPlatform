@@ -172,6 +172,23 @@ async function main() {
     },
   });
 
+  // ── Specialist assignment (manual, by admin) ────────────────────────
+  await prisma.specialistAssignment.upsert({
+    where: {
+      specialistUserId_studentProfileId: {
+        specialistUserId: specialistUser.id,
+        studentProfileId: studentProfile.id,
+      },
+    },
+    update: {},
+    create: {
+      tenantId: tenant.id,
+      specialistUserId: specialistUser.id,
+      studentProfileId: studentProfile.id,
+      assignedByUserId: adminUser.id,
+    },
+  });
+
   // ── Demo document (metadata only — no binary in DB) ─────────────────
   await prisma.document.upsert({
     where: { id: "00000000-0000-0000-0000-0000000d0c01" },

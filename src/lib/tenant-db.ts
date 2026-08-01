@@ -35,6 +35,7 @@ const TENANT_SCOPED_MODELS = new Set<string>([
   "MentorAlert",
   "FacultyCourseLink",
   "AuditLog",
+  "SpecialistAssignment",
 ]);
 
 const WHERE_SCOPED_OPERATIONS = new Set([

@@ -88,6 +88,7 @@ model Tenant {
   mentorAlerts       MentorAlert[]
   facultyCourseLinks FacultyCourseLink[]
   auditLogs          AuditLog[]
+  specialistAssignments SpecialistAssignment[]
 
   @@map("tenants")
 }
@@ -115,6 +116,8 @@ model User {
   assignedMentorAlerts    MentorAlert[]       @relation("MentorAlertAssignedSpecialist")
   facultyCourseLinks      FacultyCourseLink[] @relation("FacultyCourseLinkFaculty")
   auditLogsAsActor        AuditLog[]          @relation("AuditLogActor")
+  specialistAssignments   SpecialistAssignment[] @relation("SpecialistAssignmentSpecialist")
+  assignmentsMade         SpecialistAssignment[] @relation("SpecialistAssignmentAssignedBy")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -137,17 +140,43 @@ model StudentProfile {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  documents          Document[]
-  assessments        Assessment[]
-  supportPlans       SupportPlan[]
-  usageEvents        UsageEvent[]
-  mentorAlerts       MentorAlert[]
-  facultyCourseLinks FacultyCourseLink[]
-  auditLogTargets    AuditLog[]          @relation("AuditLogTargetStudent")
+  documents             Document[]
+  assessments           Assessment[]
+  supportPlans          SupportPlan[]
+  usageEvents           UsageEvent[]
+  mentorAlerts          MentorAlert[]
+  facultyCourseLinks    FacultyCourseLink[]
+  auditLogTargets       AuditLog[]             @relation("AuditLogTargetStudent")
+  specialistAssignments SpecialistAssignment[]
 
   @@index([tenantId])
   @@index([tenantId, requestStatus])
   @@map("student_profiles")
+}
+
+// Specialist ↔ student assignment. NOT part of the original ERD supplied for
+// this build, but added because the spec's central rule — "a specialist
+// sees only students assigned/referred to them, and this assignment is
+// MANUAL by admin, not automatic" — has no way to be implemented without an
+// explicit assignment record. Managed from /admin/users.
+model SpecialistAssignment {
+  id               String   @id @default(uuid())
+  tenantId         String
+  specialistUserId String
+  studentProfileId String
+  assignedByUserId String
+  createdAt        DateTime @default(now())
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  specialist     User           @relation("SpecialistAssignmentSpecialist", fields: [specialistUserId], references: [id], onDelete: Cascade)
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  assignedBy     User           @relation("SpecialistAssignmentAssignedBy", fields: [assignedByUserId], references: [id])
+
+  @@unique([specialistUserId, studentProfileId])
+  @@index([tenantId])
+  @@index([specialistUserId])
+  @@index([studentProfileId])
+  @@map("specialist_assignments")
 }
 
 // ─────────────────────── Classification taxonomy ───────────────────────

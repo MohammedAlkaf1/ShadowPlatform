@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Production build output dir (see next.config.ts distDir) — kept
+    // separate from .next so `next build` can never collide with a live
+    // `next dev` server's chunk manifest.
+    ".next-prod/**",
   ]),
 ]);
 

@@ -206,6 +206,29 @@ not just hidden in the UI.
    defaulted to, for stability/familiarity with the classic
    `prisma-client-js` generator rather than v7's newer client generator.
 
+## Troubleshooting: `ChunkLoadError: Loading chunk app/<route>/layout failed`
+
+If you ever see this in the browser, it's almost never a bug in the route
+itself. `next dev` and `next build`/`next start` both defaulted to the same
+`.next` output directory — if a production build (or `next start`) ever runs
+while a `next dev` server is still alive, the dev server's in-memory
+compiler state gets orphaned from the on-disk chunk manifest it's serving,
+and any route it has to freshly (re)compile after that fails to load its
+chunk in the browser. Routes that were already warm in memory can keep
+working, which is what makes it look route/role-specific rather than what it
+actually is.
+
+This repo now prevents it structurally: `next.config.ts` sends production
+builds to `.next-prod` instead of `.next`, so the two can no longer collide.
+If you still hit it (e.g. from a build against an even older checkout):
+
+```bash
+# Stop every next dev/build/start process for this project first — not just
+# rm -rf .next — a stale second process is the usual actual cause.
+npm run clean       # removes .next and .next-prod
+npm run dev          # start exactly one fresh dev server
+```
+
 ## Verification performed
 
 - `npx tsc --noEmit` — passes clean.

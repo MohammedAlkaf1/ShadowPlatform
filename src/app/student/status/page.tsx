@@ -33,6 +33,23 @@ export default async function StudentStatusPage() {
       })
     : null;
 
+  // "Date the plan was last updated" — SupportPlan has no updatedAt column
+  // in the schema, so this is computed (not stored) as the most recent of:
+  // when the plan was created/approved, or its latest level revision. No
+  // reason/detail from that revision is ever read here, only the timestamp.
+  let planLastUpdated: Date | null = null;
+  if (approvedPlan) {
+    const latestRevision = await db.planRevision.findFirst({
+      where: { supportPlanId: approvedPlan.id },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
+    const candidates = [approvedPlan.createdAt, approvedPlan.approvedAt, latestRevision?.createdAt].filter(
+      (d): d is Date => d !== null && d !== undefined
+    );
+    planLastUpdated = candidates.length > 0 ? new Date(Math.max(...candidates.map((d) => d.getTime()))) : null;
+  }
+
   const status = studentProfile
     ? STATUS_LABELS[studentProfile.requestStatus] ?? STATUS_LABELS.pending
     : STATUS_LABELS.pending;
@@ -65,6 +82,11 @@ export default async function StudentStatusPage() {
           <CardTitle className="text-base">الأدوات المفعّلة في التطبيق</CardTitle>
         </CardHeader>
         <CardContent>
+          {approvedPlan && planLastUpdated && (
+            <p className="mb-4 text-xs text-muted-foreground" dir="ltr">
+              آخر تحديث لخطتك: {planLastUpdated.toLocaleDateString("ar-SA")}
+            </p>
+          )}
           {!approvedPlan || approvedPlan.toolActivations.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
               لا توجد أدوات مفعّلة حالياً. سيتم تفعيلها بعد اعتماد خطة الدعم الخاصة بك.

@@ -18,7 +18,10 @@ export type AuditAction =
   | "update_user"
   | "assign_specialist"
   | "view_usage_events"
-  | "acknowledge_alert";
+  | "acknowledge_alert"
+  | "resolve_alert"
+  | "view_audit_log"
+  | "export_report";
 
 export interface AuditLogInput {
   tenantId: string;

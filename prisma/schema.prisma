@@ -1,0 +1,395 @@
+// Shadow Platform (منصة شادو) — Prisma schema
+// Multi-tenant disability-support services platform for Saudi universities.
+// Every domain model is tenant-scoped so adding tenant #2 later is a seed, not a schema change.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────── Enums ─────────────────────────────
+
+enum UserRole {
+  student
+  faculty
+  specialist
+  admin
+}
+
+enum RequestStatus {
+  pending
+  under_review
+  approved
+  rejected
+}
+
+enum DocumentStatus {
+  pending
+  reviewed
+}
+
+enum SupportPlanStatus {
+  draft
+  approved
+  expired
+}
+
+enum AlertSeverity {
+  low
+  medium
+  high
+}
+
+enum AlertStatus {
+  open
+  acknowledged
+  resolved
+}
+
+// Fixed, hardcoded set of tool codes shared between this platform and the
+// Flutter mobile app. NOT admin-editable free text — any new tool requires a
+// migration + coordinated app release, on purpose.
+enum ToolCode {
+  REMINDER_MODE // reminders for tasks/deadlines
+  FOCUS_MODE // reduces distractions/notifications in the app
+  EXTRA_TIME_TRACKER // tracks/communicates extended-time accommodation for exams/assignments
+  SIMPLIFIED_UI // simplified navigation & reduced visual complexity
+  TEXT_TO_SPEECH // reads on-screen text aloud
+  SPEECH_TO_TEXT // dictation input instead of typing
+  VISUAL_SCHEDULE // visual/step-by-step schedule support
+  CALM_MODE // grounding/anxiety-reduction tools inside the app
+}
+
+// ───────────────────────────── Tenant ─────────────────────────────
+
+model Tenant {
+  id                    String   @id @default(uuid())
+  name                  String
+  nameEn                String
+  active                Boolean  @default(true)
+  selfSignupEnabled     Boolean  @default(false)
+  emailDomain           String?
+  documentRetentionDays Int      @default(90)
+  createdAt             DateTime @default(now())
+
+  users              User[]
+  studentProfiles    StudentProfile[]
+  categories         Category[]
+  conditions         Condition[]
+  supportLevels      SupportLevel[]
+  documents          Document[]
+  assessments        Assessment[]
+  supportPlans       SupportPlan[]
+  usageEvents        UsageEvent[]
+  mentorAlerts       MentorAlert[]
+  facultyCourseLinks FacultyCourseLink[]
+  auditLogs          AuditLog[]
+
+  @@map("tenants")
+}
+
+// ───────────────────────────── Users ─────────────────────────────
+
+model User {
+  id           String    @id @default(uuid())
+  tenantId     String
+  email        String
+  passwordHash String
+  role         UserRole
+  active       Boolean   @default(true)
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  studentProfile StudentProfile?
+
+  uploadedDocuments       Document[]          @relation("DocumentUploadedBy")
+  assessmentsAsSpecialist Assessment[]        @relation("AssessmentSpecialist")
+  approvedSupportPlans    SupportPlan[]       @relation("SupportPlanApprovedBy")
+  planRevisions           PlanRevision[]      @relation("PlanRevisionBy")
+  assignedMentorAlerts    MentorAlert[]       @relation("MentorAlertAssignedSpecialist")
+  facultyCourseLinks      FacultyCourseLink[] @relation("FacultyCourseLinkFaculty")
+  auditLogsAsActor        AuditLog[]          @relation("AuditLogActor")
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+model StudentProfile {
+  id            String        @id @default(uuid())
+  userId        String        @unique
+  tenantId      String
+  studentNumber String
+  major         String
+  academicStage String
+  phone         String
+  requestStatus RequestStatus @default(pending)
+  verified      Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  deletedAt     DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  documents          Document[]
+  assessments        Assessment[]
+  supportPlans       SupportPlan[]
+  usageEvents        UsageEvent[]
+  mentorAlerts       MentorAlert[]
+  facultyCourseLinks FacultyCourseLink[]
+  auditLogTargets    AuditLog[]          @relation("AuditLogTargetStudent")
+
+  @@index([tenantId])
+  @@index([tenantId, requestStatus])
+  @@map("student_profiles")
+}
+
+// ─────────────────────── Classification taxonomy ───────────────────────
+
+model Category {
+  id       String @id @default(uuid())
+  tenantId String
+  nameAr   String
+  nameEn   String
+  code     String
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conditions Condition[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("categories")
+}
+
+model Condition {
+  id         String @id @default(uuid())
+  categoryId String
+  tenantId   String
+  nameAr     String
+  nameEn     String
+
+  category    Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assessments Assessment[]
+
+  @@index([tenantId])
+  @@index([categoryId])
+  @@map("conditions")
+}
+
+model SupportLevel {
+  id       String @id @default(uuid())
+  tenantId String
+  nameAr   String
+  order    Int // 1 = light, 2 = medium, 3 = intensive
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assessments   Assessment[]
+  planRevisions PlanRevision[]
+
+  @@unique([tenantId, order])
+  @@index([tenantId])
+  @@map("support_levels")
+}
+
+// ───────────────────────────── Documents ─────────────────────────────
+
+model Document {
+  id               String         @id @default(uuid())
+  tenantId         String
+  studentProfileId String
+  uploadedByUserId String
+  objectKey        String
+  originalFilename String
+  mimeType         String
+  sizeBytes        Int
+  encryptionKeyRef String
+  status           DocumentStatus @default(pending)
+  deletedAt        DateTime?
+  createdAt        DateTime       @default(now())
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  uploadedBy     User           @relation("DocumentUploadedBy", fields: [uploadedByUserId], references: [id])
+
+  @@index([tenantId])
+  @@index([studentProfileId])
+  @@map("documents")
+}
+
+// ───────────────────────────── Assessment ─────────────────────────────
+
+model Assessment {
+  id               String   @id @default(uuid())
+  tenantId         String
+  studentProfileId String
+  specialistUserId String
+  conditionId      String
+  supportLevelId   String
+  notes            String
+  assessedAt       DateTime
+  createdAt        DateTime @default(now())
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  specialist     User           @relation("AssessmentSpecialist", fields: [specialistUserId], references: [id])
+  condition      Condition      @relation(fields: [conditionId], references: [id])
+  supportLevel   SupportLevel   @relation(fields: [supportLevelId], references: [id])
+
+  supportPlans SupportPlan[]
+
+  @@index([tenantId])
+  @@index([studentProfileId])
+  @@index([specialistUserId])
+  @@map("assessments")
+}
+
+// ───────────────────────────── Support Plan ─────────────────────────────
+
+model SupportPlan {
+  id               String            @id @default(uuid())
+  tenantId         String
+  studentProfileId String
+  assessmentId     String
+  approvedByUserId String?
+  status           SupportPlanStatus @default(draft)
+  approvedAt       DateTime?
+  expiresAt        DateTime?
+  createdAt        DateTime          @default(now())
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  assessment     Assessment     @relation(fields: [assessmentId], references: [id])
+  approvedBy     User?          @relation("SupportPlanApprovedBy", fields: [approvedByUserId], references: [id])
+
+  toolActivations ToolActivation[]
+  planRevisions   PlanRevision[]
+
+  @@index([tenantId])
+  @@index([studentProfileId])
+  @@map("support_plans")
+}
+
+model ToolActivation {
+  id            String   @id @default(uuid())
+  supportPlanId String
+  toolCode      ToolCode
+  enabled       Boolean  @default(true)
+  config        Json?
+
+  supportPlan SupportPlan @relation(fields: [supportPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([supportPlanId, toolCode])
+  @@index([supportPlanId])
+  @@map("tool_activations")
+}
+
+model PlanRevision {
+  id                String   @id @default(uuid())
+  supportPlanId     String
+  revisedByUserId   String
+  newSupportLevelId String
+  reason            String
+  createdAt         DateTime @default(now())
+
+  supportPlan     SupportPlan  @relation(fields: [supportPlanId], references: [id], onDelete: Cascade)
+  revisedBy       User         @relation("PlanRevisionBy", fields: [revisedByUserId], references: [id])
+  newSupportLevel SupportLevel @relation(fields: [newSupportLevelId], references: [id])
+
+  @@index([supportPlanId])
+  @@map("plan_revisions")
+}
+
+// ───────────────────────────── Usage & Alerts ─────────────────────────────
+
+model UsageEvent {
+  id               String   @id @default(uuid())
+  tenantId         String
+  studentProfileId String
+  eventType        String
+  payload          Json?
+  occurredAt       DateTime
+  receivedAt       DateTime @default(now())
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  mentorAlerts MentorAlert[]
+
+  @@index([tenantId])
+  @@index([studentProfileId])
+  @@map("usage_events")
+}
+
+model MentorAlert {
+  id                      String        @id @default(uuid())
+  tenantId                String
+  studentProfileId        String
+  assignedSpecialistId    String
+  triggeredByUsageEventId String?
+  alertType               String
+  severity                AlertSeverity
+  status                  AlertStatus   @default(open)
+  message                 String
+  createdAt               DateTime      @default(now())
+
+  tenant                Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  studentProfile        StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  assignedSpecialist    User        @relation("MentorAlertAssignedSpecialist", fields: [assignedSpecialistId], references: [id])
+  triggeredByUsageEvent UsageEvent? @relation(fields: [triggeredByUsageEventId], references: [id])
+
+  @@index([tenantId])
+  @@index([studentProfileId])
+  @@index([assignedSpecialistId])
+  @@map("mentor_alerts")
+}
+
+// ───────────────────────────── Faculty ─────────────────────────────
+
+model FacultyCourseLink {
+  id                     String @id @default(uuid())
+  tenantId               String
+  facultyUserId          String
+  studentProfileId       String
+  courseCode             String
+  approvedAccommodations Json?
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  faculty        User           @relation("FacultyCourseLinkFaculty", fields: [facultyUserId], references: [id], onDelete: Cascade)
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([facultyUserId, studentProfileId, courseCode])
+  @@index([tenantId])
+  @@index([facultyUserId])
+  @@index([studentProfileId])
+  @@map("faculty_course_links")
+}
+
+// ───────────────────────────── Audit ─────────────────────────────
+
+model AuditLog {
+  id                     String   @id @default(uuid())
+  tenantId               String
+  actorUserId            String
+  targetStudentProfileId String?
+  action                 String
+  resourceType           String
+  resourceId             String?
+  ipAddress              String?
+  createdAt              DateTime @default(now())
+
+  tenant               Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actor                User            @relation("AuditLogActor", fields: [actorUserId], references: [id])
+  targetStudentProfile StudentProfile? @relation("AuditLogTargetStudent", fields: [targetStudentProfileId], references: [id])
+
+  @@index([tenantId])
+  @@index([actorUserId])
+  @@index([targetStudentProfileId])
+  @@map("audit_logs")
+}

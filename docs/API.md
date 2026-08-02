@@ -40,6 +40,27 @@ always comes from the verified token.
 which role(s) it accepts. A request from a wrong role gets `403`. A request
 with no/invalid/expired token gets `401`.
 
+### ToolCode reference
+
+Fixed enum, both in the Prisma schema (`ToolCode`) and `src/lib/tool-codes.ts`
+— NOT admin-editable free text. `enabledTools` in `GET /api/student/profile`
+and `GET /api/student/support-plan` only ever contains these exact strings.
+Two tiers, deliberately separate:
+
+**Granular tools** (gate an individual feature inside whichever mode is
+already open):
+`REMINDER_MODE`, `FOCUS_MODE`, `EXTRA_TIME_TRACKER`, `SIMPLIFIED_UI`,
+`TEXT_TO_SPEECH`, `SPEECH_TO_TEXT`, `VISUAL_SCHEDULE`, `CALM_MODE`.
+
+**Mode-level tools** (Phase 3 addition — gate whether one of the app's 4
+top-level mode cards/screens appears at all, on the home/mode-selection
+screen):
+`DEAF_MODE`, `VISUAL_MODE`, `LEARNING_MODE`, `PHYSICAL_MODE`.
+
+A mode's card should be hidden entirely if its code is absent from
+`enabledTools`, mirroring how the 8 granular codes already gate individual
+in-mode features.
+
 ---
 
 ## `POST /api/auth/login`
@@ -122,8 +143,9 @@ Exchanges a valid, non-expired refresh token for a new access token.
 
 ## `GET /api/student/profile`
 
-Returns the calling student's own basic profile fields and their currently
-enabled tools.
+Returns the calling student's own basic profile fields, their currently
+enabled tools, and a set of ready-made **adaptation directives** for the app
+to apply.
 
 - **Auth required:** Bearer token, role = `student`.
 
@@ -131,9 +153,12 @@ enabled tools.
 `condition`, or `supportLevel`.** Students are never shown their own
 classification or support level anywhere in this platform (web or mobile) —
 the level is meant to be reduced over time based on need, not carried around
-as a label. If the app genuinely needs richer state to render UI, that
-should be a deliberate, separately-approved product decision, not something
-this endpoint quietly starts returning.
+as a label. `adaptationDirectives` (added in Phase 3) exists specifically so
+the app never needs the raw classification to drive its UI/behavior: the
+platform computes it server-side (see `src/lib/adaptation.ts`) from the
+student's current approved plan's Assessment, and sends only the *already
+decided* opaque values — font sizes, text styles, alert thresholds — never
+the category/condition/level that produced them.
 
 **Response `200 OK`**
 
@@ -145,19 +170,152 @@ this endpoint quietly starts returning.
   "phone": "+966500000001",
   "requestStatus": "approved",
   "verified": true,
-  "enabledTools": ["REMINDER_MODE", "FOCUS_MODE", "EXTRA_TIME_TRACKER"]
+  "enabledTools": [
+    "REMINDER_MODE",
+    "FOCUS_MODE",
+    "EXTRA_TIME_TRACKER",
+    "DEAF_MODE",
+    "VISUAL_MODE",
+    "LEARNING_MODE",
+    "PHYSICAL_MODE"
+  ],
+  "adaptationDirectives": {
+    "mode": {
+      "deafMode": {
+        "displayedTextStyle": "auto_summary_every_5min",
+        "defaultFontSize": 18,
+        "hardTermHandling": "mark_only",
+        "postLectureOutput": "text_and_bullet_summary",
+        "mentorAlert": "weekly_report"
+      },
+      "visualMode": {
+        "imageDescriptionStyle": "structured_broken_into_elements",
+        "readAloudSpeed": "minus_20_percent",
+        "followUpQuestion": "want_more_detail",
+        "mentorAlert": "weekly_report"
+      },
+      "learningMode": {
+        "summarizeButtonOutput": "bulleted_one_point_per_idea",
+        "simplifyButtonOutput": "full_easier_language_rephrase",
+        "reviewQuestionsButtonOutput": "five_graduated",
+        "defaultFontSize": 18,
+        "mentorAlert": "weekly_report"
+      },
+      "physicalMode": {
+        "voiceCommandHandling": "repeat_then_execute",
+        "quickContactButtonSize": "large",
+        "listeningDurationSeconds": 5,
+        "tolerantOfStutter": false,
+        "mentorAlert": "weekly_report"
+      }
+    },
+    "categoryLayer": {
+      "reducesNotifications": false,
+      "hidesNonEssentialVisualElements": false,
+      "maxOneInteractiveElementPerScreen": false,
+      "calmColorPalette": false,
+      "autoSummarizesEverywhere": true,
+      "repeatsIdeasTwoWays": true,
+      "ttsSupportEverywhere": true,
+      "oneStepAtATime": false,
+      "confirmAfterEveryStep": false,
+      "dailyLifeExamplesInsteadOfDefinitions": false,
+      "simplerUiLanguage": false,
+      "autoRephrasing": false,
+      "readyMadePhrasesForFacultyMessaging": [],
+      "reassuringTone": false,
+      "hidesFailureWording": false,
+      "gentleAlternativePhrasing": false,
+      "suppressesRepeatedAnnoyingAlerts": false
+    }
+  }
 }
 ```
 
-| Field         | Type                                                             | Notes                                             |
-|---------------|-------------------------------------------------------------------|----------------------------------------------------|
-| studentNumber | string                                                             |                                                      |
-| major         | string                                                             |                                                      |
-| academicStage | string                                                             |                                                      |
-| phone         | string                                                             |                                                      |
-| requestStatus | `"pending" \| "under_review" \| "approved" \| "rejected"`         |                                                      |
-| verified      | boolean                                                            | domain-verified enrollment (see README)             |
-| enabledTools  | `string[]`                                                        | tool codes from the fixed `ToolCode` enum, only from an **approved** plan; empty array if none |
+(The example above is for a student classified — server-side only — as
+Learning Difficulties, medium support level; that's why `autoSummarizesEverywhere`
+etc. are on and every `mode.*` block shows the medium-tier values. A student
+with no approved plan yet gets the safe light-tier defaults for every mode
+and an all-`false`/empty `categoryLayer`.)
+
+| Field                 | Type                                                       | Notes                                             |
+|-----------------------|-------------------------------------------------------------|----------------------------------------------------|
+| studentNumber         | string                                                       |                                                      |
+| major                 | string                                                       |                                                      |
+| academicStage         | string                                                       |                                                      |
+| phone                 | string                                                       |                                                      |
+| requestStatus         | `"pending" \| "under_review" \| "approved" \| "rejected"`   |                                                      |
+| verified              | boolean                                                      | domain-verified enrollment (see README)             |
+| enabledTools          | `string[]`                                                   | tool codes from the fixed `ToolCode` enum, only from an **approved** plan; empty array if none. As of Phase 3 this includes 4 new **mode-level** codes (`DEAF_MODE`, `VISUAL_MODE`, `LEARNING_MODE`, `PHYSICAL_MODE`) alongside the original 8 granular tool codes — see "ToolCode reference" below. |
+| adaptationDirectives  | `AdaptationDirectives` object (see below)                   | always present; light-tier defaults if no approved plan |
+
+### `AdaptationDirectives` shape
+
+```ts
+interface AdaptationDirectives {
+  mode: {
+    deafMode: {
+      displayedTextStyle: "continuous_punctuated" | "auto_summary_every_5min" | "short_sentences_summary_every_2min_highlight_hard_terms";
+      defaultFontSize: 16 | 18 | 22;
+      hardTermHandling: "none" | "mark_only" | "mark_and_simplified_explanation_on_tap";
+      postLectureOutput: "full_text" | "text_and_bullet_summary" | "text_and_summary_and_auto_review_questions";
+      mentorAlert: "none" | "weekly_report" | "immediate_if_3_consecutive_lectures_unopened";
+    };
+    visualMode: {
+      imageDescriptionStyle: "one_concise_paragraph" | "structured_broken_into_elements" | "short_sequential_sentences_most_important_first";
+      readAloudSpeed: "normal" | "minus_20_percent" | "minus_40_percent_auto_repeat_on_finish";
+      followUpQuestion: "none" | "want_more_detail" | "clear_after_every_2_sentences";
+      mentorAlert: "none" | "weekly_report" | "immediate_if_same_image_requested_more_than_3_times";
+    };
+    learningMode: {
+      summarizeButtonOutput: "brief_paragraph" | "bulleted_one_point_per_idea" | "very_short_sentences_one_idea_per_line_with_icons";
+      simplifyButtonOutput: "light_rephrase" | "full_easier_language_rephrase" | "max_simplification_daily_life_examples_idea_repeated_two_ways";
+      reviewQuestionsButtonOutput: "three_analytical" | "five_graduated" | "five_easy_with_model_simplified_answers";
+      defaultFontSize: 14 | 18 | 22;
+      mentorAlert: "none" | "weekly_report" | "immediate_if_simplify_used_more_than_5_times_on_same_file";
+    };
+    physicalMode: {
+      voiceCommandHandling: "execute_directly" | "repeat_then_execute" | "repeat_and_confirm_then_execute";
+      quickContactButtonSize: "normal" | "large" | "extra_large_with_direct_home_screen_access";
+      listeningDurationSeconds: 3 | 5 | 8;
+      tolerantOfStutter: boolean; // true only at the intensive tier
+      mentorAlert: "none" | "weekly_report" | "immediate_if_quick_contact_used_more_than_2_times_per_day";
+    };
+  };
+  categoryLayer: {
+    // Neurodevelopmental (autism/ADHD)
+    reducesNotifications: boolean;
+    hidesNonEssentialVisualElements: boolean;
+    maxOneInteractiveElementPerScreen: boolean;
+    calmColorPalette: boolean;
+    // Learning difficulties
+    autoSummarizesEverywhere: boolean;
+    repeatsIdeasTwoWays: boolean;
+    ttsSupportEverywhere: boolean;
+    // Mild cognitive disabilities
+    oneStepAtATime: boolean;
+    confirmAfterEveryStep: boolean;
+    dailyLifeExamplesInsteadOfDefinitions: boolean;
+    // Communication & language disorders
+    simplerUiLanguage: boolean;
+    autoRephrasing: boolean;
+    readyMadePhrasesForFacultyMessaging: string[]; // non-empty only for this category
+    // Behavioral & emotional disorders
+    reassuringTone: boolean;
+    hidesFailureWording: boolean;
+    gentleAlternativePhrasing: boolean;
+    suppressesRepeatedAnnoyingAlerts: boolean;
+  };
+}
+```
+
+`mode.*` varies along the support-level axis only (light/medium/intensive —
+one full set of values per mode, independent of category).
+`categoryLayer` is additive and independent of level: exactly one category's
+flags are `true` (the rest `false`/empty), applied on top of whichever
+`mode.*` block the app is currently using. A student always has exactly one
+category and one level server-side, but the app never learns which — it just
+reads whichever flags are `true`.
 
 **Errors**
 
@@ -221,9 +379,31 @@ support level, or specialist notes, ever.
 
 Batch-ingests usage events from the app for the calling student. Feeds the
 specialist's usage-summary dashboard and (future) automated mentor alerts.
+Accepts an **array** of events in one request — the app is expected to
+buffer events client-side and flush them as a batch (every 60 seconds or
+when a mode screen closes, whichever comes first), not call this once per
+event.
+
+Recommended event vocabulary from the mobile app (any string works — this
+isn't schema-enforced — but the specialist dashboard and future alerting
+logic key off these):
+
+| `eventType`      | `payload` shape                          | When the app sends it                          |
+|-------------------|--------------------------------------------|---------------------------------------------------|
+| `mode_opened`     | `{ "mode": "deaf" \| "visual" \| "learning" \| "physical" }` | a top-level mode screen is opened   |
+| `tool_used`       | `{ "mode": "...", "tool": "..." }`         | a feature/tool inside a mode is used              |
+| `provider_error`  | `{ "provider": "deepgram" \| "gemini", "errorType": "..." }` | a Deepgram/Gemini call fails — type + timestamp only, **never** request/response content, transcripts, or any PII |
 
 - **Auth required:** Bearer token, role = `student`.
 - **Headers:** `Content-Type: application/json`.
+- **Rate limit:** **20 requests per 60-second window, per authenticated
+  user** (in-memory fixed window — see `src/lib/rate-limit.ts`; fine for
+  this single-process deployment stage, would need a shared store like Redis
+  behind multiple instances). Comfortably above the expected ~1 request/60s
+  buffered-flush pattern, while still stopping a malfunctioning or
+  loop-stuck client from flooding the server. Exceeding it returns `429`
+  with a `Retry-After` header (seconds) and `X-RateLimit-Limit` /
+  `X-RateLimit-Remaining` headers.
 
 **Request body**
 
@@ -231,13 +411,19 @@ specialist's usage-summary dashboard and (future) automated mentor alerts.
 {
   "events": [
     {
-      "eventType": "focus_mode_session_completed",
-      "payload": { "durationSeconds": 1500 },
+      "eventType": "mode_opened",
+      "payload": { "mode": "deaf" },
+      "occurredAt": "2026-08-01T10:14:30.000Z"
+    },
+    {
+      "eventType": "tool_used",
+      "payload": { "mode": "deaf", "tool": "TEXT_TO_SPEECH" },
       "occurredAt": "2026-08-01T10:15:00.000Z"
     },
     {
-      "eventType": "app_open",
-      "occurredAt": "2026-08-01T10:14:30.000Z"
+      "eventType": "provider_error",
+      "payload": { "provider": "deepgram", "errorType": "connection_timeout" },
+      "occurredAt": "2026-08-01T10:15:05.000Z"
     }
   ]
 }
@@ -246,8 +432,8 @@ specialist's usage-summary dashboard and (future) automated mentor alerts.
 | Field              | Type                | Required | Notes                                      |
 |---------------------|---------------------|----------|----------------------------------------------|
 | events              | array, 1–200 items  | yes      | batch limit is 200 events per call            |
-| events[].eventType  | string, non-empty   | yes      | free-form, app-defined event name             |
-| events[].payload    | any JSON value       | no       | arbitrary structured detail for the event      |
+| events[].eventType  | string, non-empty   | yes      | free-form, app-defined event name (see table above) |
+| events[].payload    | any JSON value       | no       | arbitrary structured detail for the event — never audio/image/PDF content |
 | events[].occurredAt | ISO 8601 datetime    | yes      | must be a valid ISO datetime string            |
 
 **Response `200 OK`**
@@ -264,6 +450,7 @@ specialist's usage-summary dashboard and (future) automated mentor alerts.
 | 401    | `{ "error": "غير مصرح" }`                   | missing/invalid/expired token           |
 | 403    | `{ "error": "لا تملك صلاحية الوصول" }`      | role != student                         |
 | 404    | `{ "error": "الملف الشخصي غير موجود" }`     | no StudentProfile for this user         |
+| 429    | `{ "error": "عدد الطلبات كبير جداً، الرجاء المحاولة لاحقاً" }` | rate limit exceeded (20 req/60s per user) — check `Retry-After` |
 
 ---
 

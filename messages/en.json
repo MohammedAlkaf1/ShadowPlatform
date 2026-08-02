@@ -1,0 +1,22 @@
+{
+  "Brand": {
+    "name": "Shadow Platform",
+    "tagline": "Disability support services management for universities"
+  },
+  "Login": {
+    "title": "Shadow Platform",
+    "subtitle": "Sign in to manage disability support services",
+    "emailLabel": "Email address",
+    "passwordLabel": "Password",
+    "submitButton": "Sign in",
+    "submitButtonLoading": "Signing in...",
+    "errorInvalidCredentials": "Incorrect email or password",
+    "noAccountText": "Don't have an account?",
+    "registerLink": "Register as a new student"
+  },
+  "LanguageSwitcher": {
+    "label": "Language",
+    "arabic": "العربية",
+    "english": "English"
+  }
+}

@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+
+// Points at the request-config module that resolves locale WITHOUT
+// URL-based i18n routing — see src/i18n/request.ts for why.
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
   /**
@@ -22,4 +27,4 @@ const nextConfig: NextConfig = {
   distDir: process.env.NODE_ENV === "production" ? ".next-prod" : ".next",
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

@@ -1,0 +1,22 @@
+{
+  "Brand": {
+    "name": "منصة شادو",
+    "tagline": "منصة إدارة خدمات الدعم لذوي الإعاقة في الجامعات"
+  },
+  "Login": {
+    "title": "منصة شادو",
+    "subtitle": "تسجيل الدخول لإدارة خدمات الدعم لذوي الإعاقة",
+    "emailLabel": "البريد الإلكتروني",
+    "passwordLabel": "كلمة المرور",
+    "submitButton": "تسجيل الدخول",
+    "submitButtonLoading": "جاري الدخول...",
+    "errorInvalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+    "noAccountText": "ليس لديك حساب؟",
+    "registerLink": "سجّل كطالب جديد"
+  },
+  "LanguageSwitcher": {
+    "label": "اللغة",
+    "arabic": "العربية",
+    "english": "English"
+  }
+}

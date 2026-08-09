@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { logAudit } from "@/lib/audit";
@@ -9,6 +10,7 @@ import { ManageResourcesDialog } from "./manage-resources-dialog";
 export default async function FacultyStudentsPage() {
   const ctx = await requireRole("faculty", "admin");
   const db = getTenantScopedPrisma(ctx.tenantId);
+  const t = await getTranslations("FacultyStudents");
 
   // Faculty only ever sees students linked to THEM via FacultyCourseLink,
   // and only the approved accommodations JSON — never medical reports,
@@ -38,28 +40,28 @@ export default async function FacultyStudentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-primary">طلابي</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          قائمة الطلاب المسجّلين في مقرراتك والتسهيلات المعتمدة لهم فقط
-        </p>
+        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">القائمة ({links.length})</CardTitle>
+          <CardTitle className="text-base">
+            {t("listTitle")} ({links.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {links.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">لا يوجد طلاب مرتبطون بمقرراتك حالياً</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{t("noStudents")}</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>المقرر</TableHead>
-                  <TableHead>الرقم الجامعي</TableHead>
-                  <TableHead>البريد الإلكتروني</TableHead>
-                  <TableHead>التسهيلات المعتمدة</TableHead>
-                  {ctx.role === "faculty" && <TableHead>الملفات المخصصة</TableHead>}
+                  <TableHead>{t("tableCourse")}</TableHead>
+                  <TableHead>{t("tableStudentNumber")}</TableHead>
+                  <TableHead>{t("tableEmail")}</TableHead>
+                  <TableHead>{t("tableAccommodations")}</TableHead>
+                  {ctx.role === "faculty" && <TableHead>{t("tableFiles")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -74,7 +76,7 @@ export default async function FacultyStudentsPage() {
                       </TableCell>
                       <TableCell>
                         {!accommodations || Object.keys(accommodations).length === 0 ? (
-                          <span className="text-sm text-muted-foreground">لا توجد تسهيلات مسجّلة</span>
+                          <span className="text-sm text-muted-foreground">{t("noAccommodations")}</span>
                         ) : (
                           <div className="flex flex-wrap gap-1">
                             {Object.entries(accommodations).map(([key, value]) => (

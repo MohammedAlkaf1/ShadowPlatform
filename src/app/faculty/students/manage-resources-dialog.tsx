@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/format-date";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,7 @@ export function ManageResourcesDialog({
   studentLabel: string;
 }) {
   const t = useTranslations("FacultyResources");
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [resources, setResources] = useState<ResourceItem[]>([]);
   const [loadingList, setLoadingList] = useState(false);
@@ -216,7 +218,7 @@ export function ManageResourcesDialog({
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{r.title}</p>
                       <p className="text-xs text-muted-foreground" dir="ltr">
-                        {new Date(r.createdAt).toLocaleDateString("ar-SA")}
+                        {formatDate(new Date(r.createdAt), locale)}
                       </p>
                     </div>
                   </div>

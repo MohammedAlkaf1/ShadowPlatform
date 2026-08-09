@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { uploadDocument } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { toast } from "sonner";
 
 export function UploadForm() {
   const router = useRouter();
+  const t = useTranslations("StudentDocuments");
   const formRef = useRef<HTMLFormElement>(null);
   const [loading, setLoading] = useState(false);
 
@@ -21,10 +23,10 @@ export function UploadForm() {
     const result = await uploadDocument(formData);
     setLoading(false);
     if (!result.ok) {
-      toast.error(result.error ?? "تعذر رفع الملف");
+      toast.error(result.error ?? t("errorUploadFailed"));
       return;
     }
-    toast.success("تم رفع المستند بنجاح");
+    toast.success(t("successUploaded"));
     formRef.current.reset();
     router.refresh();
   }
@@ -32,11 +34,11 @@ export function UploadForm() {
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
       <div className="flex-1 space-y-2">
-        <Label htmlFor="file">رفع مستند طبي (PDF فقط)</Label>
+        <Label htmlFor="file">{t("fileLabel")}</Label>
         <Input id="file" name="file" type="file" accept="application/pdf" required />
       </div>
       <Button type="submit" disabled={loading} className="sm:w-40">
-        {loading ? "جاري الرفع..." : "رفع المستند"}
+        {loading ? t("uploading") : t("uploadButton")}
       </Button>
     </form>
   );

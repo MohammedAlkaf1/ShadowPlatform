@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { registerStudent } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ const initialForm = {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const t = useTranslations("Register");
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -34,7 +36,7 @@ export default function RegisterPage() {
     const result = await registerStudent(form);
     setLoading(false);
     if (!result.ok) {
-      setError(result.error ?? "حدث خطأ أثناء التسجيل");
+      setError(result.error ?? t("errorGeneric"));
       return;
     }
     router.push("/login?registered=1");
@@ -44,14 +46,14 @@ export default function RegisterPage() {
     <div className="flex flex-1 items-center justify-center bg-secondary px-4 py-12">
       <Card className="w-full max-w-lg border-border shadow-md">
         <CardHeader className="text-center space-y-1">
-          <CardTitle className="text-2xl font-bold text-primary">تسجيل طالب جديد</CardTitle>
-          <CardDescription>أنشئ حسابك للتقديم على خدمات الدعم</CardDescription>
+          <CardTitle className="text-2xl font-bold text-primary">{t("title")}</CardTitle>
+          <CardDescription>{t("subtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="email">البريد الإلكتروني الجامعي</Label>
+                <Label htmlFor="email">{t("emailLabel")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -62,7 +64,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="password">كلمة المرور</Label>
+                <Label htmlFor="password">{t("passwordLabel")}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -74,7 +76,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="studentNumber">الرقم الجامعي</Label>
+                <Label htmlFor="studentNumber">{t("studentNumberLabel")}</Label>
                 <Input
                   id="studentNumber"
                   value={form.studentNumber}
@@ -83,7 +85,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">رقم الجوال</Label>
+                <Label htmlFor="phone">{t("phoneLabel")}</Label>
                 <Input
                   id="phone"
                   dir="ltr"
@@ -93,7 +95,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="major">التخصص</Label>
+                <Label htmlFor="major">{t("majorLabel")}</Label>
                 <Input
                   id="major"
                   value={form.major}
@@ -102,25 +104,25 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="academicStage">المرحلة الدراسية</Label>
+                <Label htmlFor="academicStage">{t("academicStageLabel")}</Label>
                 <Input
                   id="academicStage"
                   value={form.academicStage}
                   onChange={(e) => update("academicStage", e.target.value)}
                   required
-                  placeholder="مثال: السنة الثانية"
+                  placeholder={t("academicStagePlaceholder")}
                 />
               </div>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "جاري التسجيل..." : "إنشاء الحساب"}
+              {loading ? t("submitButtonLoading") : t("submitButton")}
             </Button>
           </form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            لديك حساب بالفعل؟{" "}
+            {t("haveAccountText")}{" "}
             <a href="/login" className="text-accent font-medium hover:underline">
-              تسجيل الدخول
+              {t("loginLink")}
             </a>
           </p>
         </CardContent>

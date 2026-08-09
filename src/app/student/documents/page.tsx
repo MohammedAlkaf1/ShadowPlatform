@@ -1,5 +1,7 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
+import { formatDate } from "@/lib/format-date";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UploadForm } from "./upload-form";
@@ -8,6 +10,9 @@ import { FileText } from "lucide-react";
 export default async function StudentDocumentsPage() {
   const ctx = await requireRole("student");
   const db = getTenantScopedPrisma(ctx.tenantId);
+  const t = await getTranslations("StudentDocuments");
+  const tDocumentStatus = await getTranslations("Common.documentStatus");
+  const locale = await getLocale();
 
   const studentProfile = await db.studentProfile.findUnique({
     where: { userId: ctx.userId },
@@ -24,16 +29,13 @@ export default async function StudentDocumentsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-primary">المستندات الطبية</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          ارفع تقاريرك الطبية بصيغة PDF ليتم مراجعتها من قِبل المختص. المستندات مشفّرة ولا يمكن إعادة فتحها من هنا بعد
-          رفعها.
-        </p>
+        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">رفع مستند جديد</CardTitle>
+          <CardTitle className="text-base">{t("uploadTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           <UploadForm />
@@ -42,18 +44,18 @@ export default async function StudentDocumentsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">مستنداتي المرفوعة</CardTitle>
+          <CardTitle className="text-base">{t("myDocumentsTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           {documents.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">لا توجد مستندات مرفوعة بعد</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{t("noDocuments")}</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>الملف</TableHead>
-                  <TableHead>تاريخ الرفع</TableHead>
-                  <TableHead>الحالة</TableHead>
+                  <TableHead>{t("tableFile")}</TableHead>
+                  <TableHead>{t("tableUploadDate")}</TableHead>
+                  <TableHead>{t("tableStatus")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -64,9 +66,9 @@ export default async function StudentDocumentsPage() {
                       {doc.originalFilename}
                     </TableCell>
                     <TableCell dir="ltr" className="text-end text-muted-foreground">
-                      {doc.createdAt.toLocaleDateString("ar-SA")}
+                      {formatDate(doc.createdAt, locale)}
                     </TableCell>
-                    <TableCell>{doc.status === "reviewed" ? "تمت المراجعة" : "بانتظار المراجعة"}</TableCell>
+                    <TableCell>{tDocumentStatus(doc.status === "reviewed" ? "reviewed" : "pending")}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

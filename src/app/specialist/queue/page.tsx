@@ -63,7 +63,7 @@ export default async function SpecialistQueuePage() {
                     <TableHead>آخر تقييم</TableHead>
                     <TableHead>حالة الخطة</TableHead>
                     <TableHead>تنبيهات مفتوحة</TableHead>
-                    <TableHead>إجراءات</TableHead>
+                    <TableHead className="w-72">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

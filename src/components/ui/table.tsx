@@ -70,7 +70,15 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
+        // ROOT CAUSE of the reported column-misalignment bug: this used to
+        // be hardcoded `text-left`, which never adapts to dir="rtl" — every
+        // header stayed left-aligned while TableCell (below) had no forced
+        // alignment and followed the browser's direction-aware default,
+        // putting header text and body text on opposite sides of the
+        // column in RTL. `text-start` is the logical-property equivalent —
+        // it resolves to "left" in LTR and "right" in RTL, matching
+        // whichever direction TableCell also now explicitly uses.
+        "h-10 px-2 text-start align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pe-0",
         className
       )}
       {...props}
@@ -83,7 +91,13 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
+        // Explicit `text-start` (not left implicit/inherited) so this
+        // always matches TableHead's alignment strategy exactly, in both
+        // directions — see the note on TableHead above. Callers that need
+        // a cell to visually anchor to the end (e.g. an always-LTR email
+        // address column) pass `text-end` themselves, which cn()/
+        // tailwind-merge correctly overrides this default with.
+        "p-2 align-middle text-start whitespace-nowrap [&:has([role=checkbox])]:pe-0",
         className
       )}
       {...props}

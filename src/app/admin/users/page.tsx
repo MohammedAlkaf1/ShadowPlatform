@@ -66,7 +66,7 @@ export default async function AdminUsersPage() {
                 <TableHead>البريد الإلكتروني</TableHead>
                 <TableHead>الدور</TableHead>
                 <TableHead>الحالة</TableHead>
-                <TableHead>إجراءات</TableHead>
+                <TableHead className="w-56">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

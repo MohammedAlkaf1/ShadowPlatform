@@ -54,7 +54,7 @@ export default async function SpecialistAlertsPage() {
                     <TableHead>النوع</TableHead>
                     <TableHead>الرسالة</TableHead>
                     <TableHead>الحالة</TableHead>
-                    <TableHead>إجراءات</TableHead>
+                    <TableHead className="min-w-64">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

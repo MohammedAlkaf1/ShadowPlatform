@@ -58,6 +58,7 @@ export default async function RootLayout({
       lang={locale}
       dir={dir}
       className={`${sansFont.variable} ${ibmPlexSansArabic.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <NextIntlClientProvider messages={messages}>

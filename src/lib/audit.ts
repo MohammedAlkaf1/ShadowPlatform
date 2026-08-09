@@ -22,7 +22,10 @@ export type AuditAction =
   | "resolve_alert"
   | "view_audit_log"
   | "export_report"
-  | "view_document_denied";
+  | "view_document_denied"
+  | "upload_faculty_resource"
+  | "view_faculty_resource"
+  | "delete_faculty_resource";
 
 export interface AuditLogInput {
   tenantId: string;

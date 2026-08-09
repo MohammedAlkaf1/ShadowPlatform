@@ -18,5 +18,39 @@
     "label": "Language",
     "arabic": "العربية",
     "english": "English"
+  },
+  "FacultyResources": {
+    "manageButton": "Manage custom files",
+    "dialogTitle": "Custom files for this student",
+    "fileLabel": "File (PDF, PPTX, DOCX, PNG)",
+    "titleLabel": "Title",
+    "categoryLabel": "Category (optional)",
+    "categoryPlaceholder": "Choose a category",
+    "category": {
+      "simplified_content": "Simplified content",
+      "visual_adjustment": "Visual adjustment (color/font)",
+      "extra_exercises": "Extra exercises",
+      "other": "Other"
+    },
+    "noteLabel": "Note (optional)",
+    "submitUpload": "Upload file",
+    "submitReplace": "Replace file",
+    "submitting": "Uploading...",
+    "cancelReplace": "Cancel replace",
+    "existingListTitle": "Previously uploaded files",
+    "loading": "Loading...",
+    "noResources": "No files uploaded for this student yet",
+    "download": "Download",
+    "replace": "Replace",
+    "delete": "Delete",
+    "close": "Close",
+    "successUploaded": "File uploaded successfully",
+    "successReplaced": "File replaced successfully",
+    "successDeleted": "File deleted",
+    "errorFileRequired": "Please select a file",
+    "errorTitleRequired": "Please enter a title",
+    "errorUploadFailed": "Failed to upload file",
+    "errorDeleteFailed": "Failed to delete file",
+    "errorLoadingList": "Failed to load the file list"
   }
 }

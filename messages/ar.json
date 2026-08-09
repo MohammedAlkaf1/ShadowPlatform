@@ -18,5 +18,39 @@
     "label": "اللغة",
     "arabic": "العربية",
     "english": "English"
+  },
+  "FacultyResources": {
+    "manageButton": "إدارة الملفات المخصصة",
+    "dialogTitle": "الملفات المخصصة للطالب",
+    "fileLabel": "الملف (PDF، PPTX، DOCX، PNG)",
+    "titleLabel": "العنوان",
+    "categoryLabel": "التصنيف (اختياري)",
+    "categoryPlaceholder": "اختر التصنيف",
+    "category": {
+      "simplified_content": "تبسيط محتوى",
+      "visual_adjustment": "تعديل بصري (ألوان/خط)",
+      "extra_exercises": "تمارين إضافية",
+      "other": "أخرى"
+    },
+    "noteLabel": "ملاحظة (اختياري)",
+    "submitUpload": "رفع الملف",
+    "submitReplace": "استبدال الملف",
+    "submitting": "جاري الرفع...",
+    "cancelReplace": "إلغاء الاستبدال",
+    "existingListTitle": "الملفات المرفوعة سابقاً",
+    "loading": "جاري التحميل...",
+    "noResources": "لا توجد ملفات مرفوعة لهذا الطالب بعد",
+    "download": "تنزيل",
+    "replace": "استبدال",
+    "delete": "حذف",
+    "close": "إغلاق",
+    "successUploaded": "تم رفع الملف بنجاح",
+    "successReplaced": "تم استبدال الملف بنجاح",
+    "successDeleted": "تم حذف الملف",
+    "errorFileRequired": "الرجاء اختيار ملف",
+    "errorTitleRequired": "الرجاء إدخال عنوان",
+    "errorUploadFailed": "تعذر رفع الملف",
+    "errorDeleteFailed": "تعذر حذف الملف",
+    "errorLoadingList": "تعذر تحميل قائمة الملفات"
   }
 }

@@ -79,6 +79,13 @@ enum ToolCode {
   PHYSICAL_MODE
 }
 
+enum FacultyResourceCategory {
+  simplified_content
+  visual_adjustment
+  extra_exercises
+  other
+}
+
 // ───────────────────────────── Tenant ─────────────────────────────
 
 model Tenant {
@@ -104,6 +111,7 @@ model Tenant {
   facultyCourseLinks FacultyCourseLink[]
   auditLogs          AuditLog[]
   specialistAssignments SpecialistAssignment[]
+  facultyResources   FacultyResource[]
 
   @@map("tenants")
 }
@@ -134,6 +142,7 @@ model User {
   auditLogsAsActor        AuditLog[]          @relation("AuditLogActor")
   specialistAssignments   SpecialistAssignment[] @relation("SpecialistAssignmentSpecialist")
   assignmentsMade         SpecialistAssignment[] @relation("SpecialistAssignmentAssignedBy")
+  uploadedFacultyResources FacultyResource[]     @relation("FacultyResourceUploadedBy")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -164,6 +173,7 @@ model StudentProfile {
   facultyCourseLinks    FacultyCourseLink[]
   auditLogTargets       AuditLog[]             @relation("AuditLogTargetStudent")
   specialistAssignments SpecialistAssignment[]
+  facultyResources      FacultyResource[]
 
   @@index([tenantId])
   @@index([tenantId, requestStatus])
@@ -414,6 +424,40 @@ model FacultyCourseLink {
   @@index([facultyUserId])
   @@index([studentProfileId])
   @@map("faculty_course_links")
+}
+
+// Per-student custom files a faculty member uploads for one of their own
+// students (simplified slides, adjusted-color copies, extra exercises,
+// etc.) — decided entirely from the faculty member's own judgment, not from
+// anything the system tells them; the system still never surfaces
+// category/condition/support level to faculty. Deliberately NOT encrypted
+// (explicit user decision, overriding the default Document pattern) — see
+// src/lib/s3.ts's faculty-resources/ object-key prefix, kept visually
+// distinct from Document's encrypted objects in the bucket.
+model FacultyResource {
+  id               String                   @id @default(uuid())
+  tenantId         String
+  uploadedByUserId String
+  studentProfileId String
+  courseCode       String
+  objectKey        String
+  originalFilename String
+  mimeType         String
+  sizeBytes        Int
+  title            String
+  category         FacultyResourceCategory?
+  note             String?
+  createdAt        DateTime                 @default(now())
+  deletedAt        DateTime?
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  uploadedBy     User           @relation("FacultyResourceUploadedBy", fields: [uploadedByUserId], references: [id])
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([studentProfileId])
+  @@index([uploadedByUserId])
+  @@map("faculty_resources")
 }
 
 // ───────────────────────────── Audit ─────────────────────────────

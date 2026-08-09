@@ -4,6 +4,7 @@ import { logAudit } from "@/lib/audit";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ManageResourcesDialog } from "./manage-resources-dialog";
 
 export default async function FacultyStudentsPage() {
   const ctx = await requireRole("faculty", "admin");
@@ -58,6 +59,7 @@ export default async function FacultyStudentsPage() {
                   <TableHead>الرقم الجامعي</TableHead>
                   <TableHead>البريد الإلكتروني</TableHead>
                   <TableHead>التسهيلات المعتمدة</TableHead>
+                  {ctx.role === "faculty" && <TableHead>الملفات المخصصة</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -83,6 +85,19 @@ export default async function FacultyStudentsPage() {
                           </div>
                         )}
                       </TableCell>
+                      {ctx.role === "faculty" && (
+                        <TableCell>
+                          {/* Present uniformly on every row regardless of whether this
+                              student already has resources — the roster must never let
+                              "has a manage button" vs "doesn't" become a distinguishing
+                              signal. */}
+                          <ManageResourcesDialog
+                            studentProfileId={link.studentProfileId}
+                            courseCode={link.courseCode}
+                            studentLabel={`${link.studentProfile.studentNumber} — ${link.studentProfile.user.email}`}
+                          />
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}

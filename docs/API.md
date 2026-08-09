@@ -375,6 +375,82 @@ support level, or specialist notes, ever.
 
 ---
 
+## `GET /api/student/faculty-resources`
+
+Returns the calling student's OWN faculty-uploaded custom files
+(`FacultyResource`) — simplified slides, color/font-adjusted copies, extra
+exercises, etc. that a faculty member has chosen to share with this
+specific student in one of their courses. There is no way, via this or any
+other endpoint, to learn whether ANY OTHER student has resources, or how
+many — only your own list.
+
+- **Auth required:** Bearer token, role = `student`.
+
+**Response `200 OK`**
+
+```json
+{
+  "resources": [
+    {
+      "id": "6d9f6c1a-2e4b-4a1f-9c3e-6a2b1f0d9e8a",
+      "title": "شرائح مبسطة - المحاضرة 5",
+      "category": "simplified_content",
+      "note": "ركّزي على الجزء الثاني قبل الاختبار",
+      "courseCode": "CS301",
+      "uploadedAt": "2026-08-09T12:00:00.000Z",
+      "faculty": { "email": "faculty@demo.shadow.sa" },
+      "downloadUrl": "/api/student/faculty-resources/6d9f6c1a-2e4b-4a1f-9c3e-6a2b1f0d9e8a/download"
+    }
+  ]
+}
+```
+
+| Field                | Type                                                                             | Notes |
+|------------------------|-------------------------------------------------------------------------------|-------|
+| resources               | array                                                                        | empty array if none — never an error |
+| resources[].id           | string (uuid)                                                              | |
+| resources[].title         | string                                                                    | |
+| resources[].category       | `"simplified_content" \| "visual_adjustment" \| "extra_exercises" \| "other" \| null` | optional, set by the faculty member |
+| resources[].note            | string \| null                                                          | optional |
+| resources[].courseCode       | string                                                                 | |
+| resources[].uploadedAt        | ISO 8601 string                                                      | |
+| resources[].faculty             | `{ email: string }`                                                | the uploading faculty member's display info — never anything disability-related |
+| resources[].downloadUrl          | string                                                            | relative path; `GET` it with the same Bearer token to receive the file bytes |
+
+**Errors**
+
+| Status | Body                                      | When                                |
+|--------|----------------------------------------------|----------------------------------------|
+| 401    | `{ "error": "غير مصرح" }`                   | missing/invalid/expired token           |
+| 403    | `{ "error": "لا تملك صلاحية الوصول" }`      | role != student                         |
+| 404    | `{ "error": "الملف الشخصي غير موجود" }`     | no StudentProfile for this user         |
+
+## `GET /api/student/faculty-resources/:id/download`
+
+Downloads one of the calling student's own faculty resources. Unencrypted
+(this file class is stored as plaintext — see `docs/API.md`'s note on
+`FacultyResource` not following Document's encryption pattern, a deliberate
+product decision).
+
+- **Auth required:** Bearer token, role = `student` — **or** the web
+  NextAuth session cookie (this route is also used directly by the
+  `/student/status` page's download link, which has no way to attach an
+  `Authorization` header to a plain browser navigation). Either way the
+  resource must belong to the caller's own `StudentProfile`.
+
+**Response `200 OK`**: binary file body, `Content-Type` set to the
+resource's stored MIME type, `Content-Disposition: inline`.
+
+**Errors**
+
+| Status | Body                                      | When                                                    |
+|--------|----------------------------------------------|------------------------------------------------------------|
+| 401    | `{ "error": "غير مصرح" }`                   | no valid Bearer token AND no valid web session              |
+| 404    | `{ "error": "الملف الشخصي غير موجود" }`     | no StudentProfile for this user                              |
+| 404    | `{ "error": "لم يتم العثور على الملف" }`    | no such resource id, it's deleted, **or it belongs to a different student** — deliberately the same response as "doesn't exist" in that last case, never confirming another student's resource id is real |
+
+---
+
 ## `POST /api/events`
 
 Batch-ingests usage events from the app for the calling student. Feeds the
@@ -563,6 +639,9 @@ flow. Message text may change; status codes won't.
 
 The following exist as **web-only** features today (NextAuth session, not
 Bearer JWT) and have no mobile API equivalent yet: alert
-acknowledge/resolve, plan revision, admin CSV export, audit log viewing.
-Ask before assuming any of these will be added to the mobile surface — none
-were in the Phase 1/2 scope for the app.
+acknowledge/resolve, plan revision, admin CSV export, audit log viewing,
+and every faculty-side FacultyResource route (`/api/faculty/resources`,
+`/api/faculty/resources/:id`, `/api/faculty/resources/:id/download` — a
+faculty member uploads/manages files from the web `/faculty/students` page
+only; there is no faculty mobile app surface). Ask before assuming any of
+these will be added to the mobile surface — none were in scope for the app.

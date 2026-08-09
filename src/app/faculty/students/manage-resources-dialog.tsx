@@ -16,13 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { FileText, Trash2, Download, RefreshCw } from "lucide-react";
 
 interface ResourceItem {
@@ -35,8 +28,6 @@ interface ResourceItem {
   sizeBytes: number;
   createdAt: string;
 }
-
-const CATEGORY_KEYS = ["simplified_content", "visual_adjustment", "extra_exercises", "other"] as const;
 
 export function ManageResourcesDialog({
   studentProfileId,
@@ -190,21 +181,6 @@ export function ManageResourcesDialog({
               onChange={(e) => setTitle(e.target.value)}
               required
             />
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t("categoryLabel")}</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v ?? "")}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("categoryPlaceholder")} />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORY_KEYS.map((key) => (
-                  <SelectItem key={key} value={key}>
-                    {t(`category.${key}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="resource-note">{t("noteLabel")}</Label>

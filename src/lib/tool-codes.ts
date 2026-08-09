@@ -35,65 +35,80 @@ export const TOOL_CODES = [
 
 export type ToolCodeValue = (typeof TOOL_CODES)[number];
 
-export const TOOL_CODE_LABELS: Record<ToolCodeValue, { ar: string; en: string; description: string }> = {
+export const TOOL_CODE_LABELS: Record<
+  ToolCodeValue,
+  { ar: string; en: string; description: string; descriptionEn: string }
+> = {
   REMINDER_MODE: {
     ar: "وضع التذكير",
     en: "Reminder Mode",
     description: "تذكيرات بالمهام والمواعيد النهائية داخل التطبيق",
+    descriptionEn: "Reminders for tasks and deadlines inside the app",
   },
   FOCUS_MODE: {
     ar: "وضع التركيز",
     en: "Focus Mode",
     description: "تقليل المشتتات والإشعارات داخل التطبيق",
+    descriptionEn: "Reduces distractions and notifications inside the app",
   },
   EXTRA_TIME_TRACKER: {
     ar: "متتبع الوقت الإضافي",
     en: "Extra Time Tracker",
     description: "تفعيل ومتابعة الوقت الإضافي المعتمد للاختبارات والواجبات",
+    descriptionEn: "Enables and tracks approved extra time for exams and assignments",
   },
   SIMPLIFIED_UI: {
     ar: "واجهة مبسّطة",
     en: "Simplified UI",
     description: "تقليل التعقيد البصري وتبسيط التنقل داخل التطبيق",
+    descriptionEn: "Reduces visual complexity and simplifies navigation inside the app",
   },
   TEXT_TO_SPEECH: {
     ar: "تحويل النص إلى كلام",
     en: "Text to Speech",
     description: "قراءة النصوص الظاهرة على الشاشة صوتياً",
+    descriptionEn: "Reads on-screen text aloud",
   },
   SPEECH_TO_TEXT: {
     ar: "تحويل الكلام إلى نص",
     en: "Speech to Text",
     description: "إدخال الكلام بدلاً من الكتابة",
+    descriptionEn: "Dictate instead of typing",
   },
   VISUAL_SCHEDULE: {
     ar: "جدول بصري",
     en: "Visual Schedule",
     description: "جدول خطوات بصري لدعم التنظيم اليومي",
+    descriptionEn: "A visual step-by-step schedule to support daily organization",
   },
   CALM_MODE: {
     ar: "وضع الهدوء",
     en: "Calm Mode",
     description: "أدوات لتقليل القلق داخل التطبيق",
+    descriptionEn: "Tools to reduce anxiety inside the app",
   },
   DEAF_MODE: {
     ar: "وضع الصم وضعاف السمع",
     en: "Deaf / Hard-of-Hearing Mode",
     description: "تفعيل واجهة ترجمة المحاضرات الفورية بالكامل",
+    descriptionEn: "Enables the full live lecture transcription interface",
   },
   VISUAL_MODE: {
     ar: "وضع الإعاقة البصرية",
     en: "Visual Assistance Mode",
     description: "تفعيل واجهة وصف الصور والمحيط بالكامل",
+    descriptionEn: "Enables the full image and surroundings description interface",
   },
   LEARNING_MODE: {
     ar: "وضع صعوبات التعلم",
     en: "Learning Support Mode",
     description: "تفعيل واجهة تبسيط المستندات الدراسية بالكامل",
+    descriptionEn: "Enables the full academic document simplification interface",
   },
   PHYSICAL_MODE: {
     ar: "وضع الإعاقة الحركية",
     en: "Physical Assistance Mode",
     description: "تفعيل واجهة الأوامر الصوتية والتواصل السريع بالكامل",
+    descriptionEn: "Enables the full voice-command and quick-contact interface",
   },
 };

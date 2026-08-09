@@ -3,6 +3,53 @@
     "name": "منصة شادو",
     "tagline": "منصة إدارة خدمات الدعم لذوي الإعاقة في الجامعات"
   },
+  "Register": {
+    "title": "سجّل كطالب جديد",
+    "subtitle": "أنشئ حسابك للتقديم على خدمات الدعم",
+    "emailLabel": "البريد الإلكتروني الجامعي",
+    "passwordLabel": "كلمة المرور",
+    "studentNumberLabel": "الرقم الجامعي",
+    "phoneLabel": "رقم الجوال",
+    "majorLabel": "التخصص",
+    "academicStageLabel": "المرحلة الدراسية",
+    "academicStagePlaceholder": "مثال: السنة الثانية",
+    "submitButton": "إنشاء الحساب",
+    "submitButtonLoading": "جاري التسجيل...",
+    "errorGeneric": "حدث خطأ أثناء التسجيل",
+    "haveAccountText": "لديك حساب بالفعل؟",
+    "loginLink": "تسجيل الدخول"
+  },
+  "Unauthorized": {
+    "title": "غير مصرح بالوصول",
+    "message": "لا تملك الصلاحية اللازمة لعرض هذه الصفحة. إذا كنت تعتقد أن هذا خطأ، تواصل مع مسؤول النظام.",
+    "homeButton": "العودة للصفحة الرئيسية"
+  },
+  "Nav": {
+    "signOut": "تسجيل الخروج",
+    "roles": {
+      "student": "طالب",
+      "faculty": "عضو هيئة تدريس",
+      "specialist": "مختص",
+      "admin": "مسؤول النظام"
+    },
+    "admin": {
+      "stats": "الإحصائيات",
+      "users": "إدارة المستخدمين",
+      "reports": "التقارير",
+      "auditLog": "سجل التدقيق"
+    },
+    "faculty": {
+      "students": "طلابي"
+    },
+    "specialist": {
+      "queue": "قائمة المراجعة",
+      "alerts": "التنبيهات"
+    },
+    "student": {
+      "status": "حالة الطلب",
+      "documents": "المستندات"
+    }
+  },
   "Login": {
     "title": "منصة شادو",
     "subtitle": "تسجيل الدخول لإدارة خدمات الدعم لذوي الإعاقة",
@@ -52,5 +99,271 @@
     "errorUploadFailed": "تعذر رفع الملف",
     "errorDeleteFailed": "تعذر حذف الملف",
     "errorLoadingList": "تعذر تحميل قائمة الملفات"
+  },
+  "Common": {
+    "roles": {
+      "student": "طالب",
+      "faculty": "عضو هيئة تدريس",
+      "specialist": "مختص",
+      "admin": "مسؤول النظام"
+    },
+    "requestStatus": {
+      "pending": "قيد الانتظار",
+      "under_review": "قيد المراجعة",
+      "approved": "مقبول",
+      "rejected": "مرفوض"
+    },
+    "planStatus": {
+      "draft": "مسودة",
+      "approved": "معتمدة",
+      "expired": "منتهية"
+    },
+    "alertSeverity": {
+      "high": "مرتفعة",
+      "medium": "متوسطة",
+      "low": "منخفضة"
+    },
+    "alertStatus": {
+      "open": "مفتوح",
+      "acknowledged": "تم الإقرار",
+      "resolved": "مغلق"
+    },
+    "supportLevel": {
+      "1": "دعم خفيف",
+      "2": "دعم متوسط",
+      "3": "دعم مكثف"
+    },
+    "documentStatus": {
+      "reviewed": "تمت المراجعة",
+      "pending": "بانتظار المراجعة"
+    },
+    "actions": {
+      "edit": "تعديل",
+      "delete": "حذف",
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "close": "إغلاق",
+      "download": "تنزيل",
+      "apply": "تطبيق",
+      "all": "الكل",
+      "active": "نشط",
+      "disabled": "معطّل",
+      "activate": "تفعيل",
+      "deactivate": "تعطيل"
+    }
+  },
+  "AdminUsers": {
+    "title": "إدارة المستخدمين",
+    "subtitle": "إضافة وتعديل صلاحيات المستخدمين داخل الجامعة",
+    "addUserTitle": "إضافة مستخدم جديد",
+    "emailLabel": "البريد الإلكتروني",
+    "passwordLabel": "كلمة المرور",
+    "roleLabel": "الدور",
+    "addUserButton": "إضافة مستخدم",
+    "addingUser": "جاري الإنشاء...",
+    "usersListTitle": "المستخدمون",
+    "tableEmail": "البريد الإلكتروني",
+    "tableRole": "الدور",
+    "tableStatus": "الحالة",
+    "tableActions": "إجراءات",
+    "assignSpecialistTitle": "تعيين المختصين للطلاب",
+    "assignSpecialistNote": "التعيين هنا يدوي بالكامل — لا يتم ربط أي طالب بمختص تلقائياً. المختص لا يرى إلا الطلاب المعيّنين له.",
+    "specialistLabel": "المختص",
+    "specialistPlaceholder": "اختر المختص",
+    "studentLabel": "الطالب",
+    "studentPlaceholder": "اختر الطالب",
+    "assignButton": "تعيين المختص",
+    "assigning": "جاري التعيين...",
+    "tableSpecialist": "المختص",
+    "tableStudent": "الطالب",
+    "successUserCreated": "تم إنشاء المستخدم",
+    "errorUserCreateFailed": "تعذر إنشاء المستخدم",
+    "successRoleUpdated": "تم تحديث الدور",
+    "errorRoleUpdateFailed": "تعذر تحديث الدور",
+    "successUserActivated": "تم تفعيل المستخدم",
+    "successUserDeactivated": "تم تعطيل المستخدم",
+    "errorStatusUpdateFailed": "تعذر تحديث الحالة",
+    "errorSelectSpecialistAndStudent": "الرجاء اختيار المختص والطالب",
+    "successSpecialistAssigned": "تم تعيين المختص للطالب",
+    "errorAssignFailed": "تعذر التعيين"
+  },
+  "AdminStats": {
+    "title": "إحصائيات الجامعة",
+    "subtitle": "نظرة عامة على الطلاب والطلبات على مستوى الجامعة",
+    "totalStudents": "إجمالي الطلاب",
+    "pending": "قيد الانتظار",
+    "underReview": "قيد المراجعة",
+    "avgReviewTime": "متوسط وقت المراجعة",
+    "byCategory": "توزيع الطلاب حسب الفئة",
+    "bySupportLevel": "توزيع الطلاب حسب مستوى الدعم",
+    "hours": "ساعة",
+    "days": "يوم"
+  },
+  "AdminReports": {
+    "title": "التقارير",
+    "subtitle": "تصدير تقارير إدارية لا تتضمن أي بيانات طبية",
+    "studentReportTitle": "تقرير الطلاب (CSV)",
+    "studentReportDescription": "يتضمن التقرير: اسم الطالب (البريد الإلكتروني)، حالة الطلب، تاريخ التسجيل، وحالة خطة الدعم فقط. لا يتضمن التصنيف أو مستوى الدعم أو ملاحظات التقييم أو أي بيانات طبية.",
+    "downloadButton": "تنزيل التقرير"
+  },
+  "AuditLog": {
+    "title": "سجل التدقيق",
+    "subtitle": "سجل كامل لجميع محاولات الوصول لسجلات الطلاب — للمسؤول فقط",
+    "filterTitle": "تصفية",
+    "userLabel": "المستخدم",
+    "actionLabel": "نوع الإجراء",
+    "fromLabel": "من تاريخ",
+    "toLabel": "إلى تاريخ",
+    "resultsTitle": "النتائج",
+    "tableDate": "التاريخ",
+    "tableUser": "المستخدم",
+    "tableAction": "الإجراء",
+    "tableResourceType": "نوع المورد",
+    "tableTargetStudent": "الطالب المستهدف",
+    "noResults": "لا توجد سجلات مطابقة"
+  },
+  "FacultyStudents": {
+    "title": "طلابي",
+    "subtitle": "قائمة الطلاب المسجّلين في مقرراتك والتسهيلات المعتمدة لهم فقط",
+    "listTitle": "القائمة",
+    "noStudents": "لا يوجد طلاب مرتبطون بمقرراتك حالياً",
+    "tableCourse": "المقرر",
+    "tableStudentNumber": "الرقم الجامعي",
+    "tableEmail": "البريد الإلكتروني",
+    "tableAccommodations": "التسهيلات المعتمدة",
+    "tableFiles": "الملفات المخصصة",
+    "noAccommodations": "لا توجد تسهيلات مسجّلة"
+  },
+  "SpecialistQueue": {
+    "title": "قائمة المراجعة",
+    "subtitle": "الطلاب المُحالون إليك من قِبل مسؤول النظام",
+    "listTitle": "الطلاب",
+    "noStudents": "لا يوجد طلاب محالون إليك حالياً",
+    "tableStudent": "الطالب",
+    "tableCategory": "الفئة",
+    "tableSupportLevel": "مستوى الدعم",
+    "tableLastAssessment": "آخر تقييم",
+    "tablePlanStatus": "حالة الخطة",
+    "tableOpenAlerts": "تنبيهات مفتوحة",
+    "tableActions": "إجراءات",
+    "noAssessmentYet": "لا يوجد تقييم بعد",
+    "noPlan": "لا توجد خطة",
+    "detailsButton": "التفاصيل",
+    "assessButton": "التقييم",
+    "planButton": "خطة الدعم"
+  },
+  "SpecialistAlerts": {
+    "title": "تنبيهات المتابعة",
+    "subtitle": "تنبيهات ناتجة عن أنماط استخدام التطبيق لدى طلابك",
+    "listTitle": "التنبيهات",
+    "noAlerts": "لا توجد تنبيهات حالياً",
+    "tableSeverity": "الخطورة",
+    "tableStudent": "الطالب",
+    "tableType": "النوع",
+    "tableMessage": "الرسالة",
+    "tableStatus": "الحالة",
+    "tableActions": "إجراءات",
+    "closed": "تم الإغلاق",
+    "acknowledgeButton": "إقرار",
+    "closeAlertButton": "إغلاق التنبيه",
+    "closeReasonPlaceholder": "سبب الإغلاق (اختياري)",
+    "confirmCloseButton": "تأكيد الإغلاق",
+    "successAcknowledged": "تم الإقرار بالتنبيه",
+    "errorAcknowledgeFailed": "تعذر تحديث التنبيه",
+    "successResolved": "تم إغلاق التنبيه",
+    "errorResolveFailed": "تعذر إغلاق التنبيه"
+  },
+  "SpecialistStudentDetail": {
+    "title": "ملف الطالب",
+    "assessButton": "التقييم",
+    "planButton": "خطة الدعم",
+    "assessmentsTitle": "سجل التقييمات",
+    "noAssessments": "لا توجد تقييمات بعد",
+    "supportLevelLabel": "مستوى الدعم",
+    "plansTitle": "خطط الدعم",
+    "noPlans": "لا توجد خطط بعد",
+    "revisionsTitle": "سجل مراجعات مستوى الدعم",
+    "noRevisions": "لا توجد مراجعات مسجّلة",
+    "newLevelLabel": "المستوى الجديد",
+    "usageSummaryTitle": "ملخص استخدام التطبيق",
+    "noUsageData": "لا توجد بيانات استخدام بعد"
+  },
+  "SpecialistAssess": {
+    "title": "تقييم الطالب",
+    "newAssessmentTitle": "تقييم جديد",
+    "categoryLabel": "الفئة",
+    "categoryPlaceholder": "اختر الفئة",
+    "conditionLabel": "الحالة الفرعية",
+    "conditionPlaceholder": "اختر الحالة الفرعية",
+    "supportLevelLabel": "مستوى الدعم",
+    "supportLevelPlaceholder": "اختر مستوى الدعم",
+    "notesLabel": "ملاحظات المختص",
+    "notesPlaceholder": "اكتب ملاحظات التقييم...",
+    "submitButton": "حفظ التقييم",
+    "submitting": "جاري الحفظ...",
+    "errorMissingFields": "الرجاء اختيار الفئة والحالة الفرعية ومستوى الدعم",
+    "errorSaveFailed": "تعذر حفظ التقييم",
+    "successSaved": "تم حفظ التقييم بنجاح",
+    "historyTitle": "سجل التقييمات",
+    "noHistory": "لا توجد تقييمات سابقة",
+    "supportLevelPrefix": "مستوى الدعم"
+  },
+  "SpecialistPlan": {
+    "title": "خطة الدعم",
+    "cannotCreateYet": "لا يمكن إنشاء خطة دعم قبل إجراء تقييم للطالب أولاً.",
+    "basisTitle": "أساس الخطة (آخر تقييم)",
+    "baseSupportLevel": "مستوى الدعم الأساسي",
+    "planStatusLabel": "حالة الخطة",
+    "toolsTitle": "الأدوات المفعّلة في التطبيق",
+    "saveToolsButton": "حفظ الأدوات",
+    "approveButton": "اعتماد الخطة",
+    "reviseButton": "مراجعة مستوى الدعم",
+    "newLevelLabel": "المستوى الجديد",
+    "newLevelPlaceholder": "اختر المستوى",
+    "revisionReasonLabel": "سبب المراجعة",
+    "saveRevisionButton": "حفظ المراجعة",
+    "errorSaveFailed": "تعذر حفظ الخطة",
+    "successSaved": "تم حفظ الخطة",
+    "errorApproveFailed": "تعذر اعتماد الخطة",
+    "successApproved": "تم اعتماد الخطة",
+    "errorSelectNewLevel": "الرجاء اختيار المستوى الجديد",
+    "errorReviseFailed": "تعذر تسجيل المراجعة",
+    "successRevised": "تم تسجيل مراجعة المستوى",
+    "revisionsTitle": "سجل مراجعات المستوى",
+    "newLevelPrefix": "المستوى الجديد"
+  },
+  "StudentStatus": {
+    "title": "حالة الطلب",
+    "subtitle": "متابعة حالة طلب الدعم والأدوات المفعّلة في حسابك",
+    "requestStatusTitle": "حالة طلبك",
+    "verificationPending": "حسابك بانتظار التحقق من تسجيلك الجامعي من قِبل الجهة المختصة.",
+    "toolsTitle": "الأدوات المفعّلة في التطبيق",
+    "planLastUpdated": "آخر تحديث لخطتك",
+    "noTools": "لا توجد أدوات مفعّلة حالياً. سيتم تفعيلها بعد اعتماد خطة الدعم الخاصة بك.",
+    "facultyResourcesTitle": "موارد من أستاذك",
+    "newBadge": "جديد",
+    "newResourceNotice": "أضاف أستاذك مادة تعليمية جديدة في مقرر {course}",
+    "downloadButton": "تنزيل",
+    "resourceCategory": {
+      "simplified_content": "تبسيط محتوى",
+      "visual_adjustment": "تعديل بصري (ألوان/خط)",
+      "extra_exercises": "تمارين إضافية",
+      "other": "أخرى"
+    }
+  },
+  "StudentDocuments": {
+    "title": "المستندات الطبية",
+    "subtitle": "ارفع تقاريرك الطبية بصيغة PDF ليتم مراجعتها من قِبل المختص. المستندات مشفّرة ولا يمكن إعادة فتحها من هنا بعد رفعها.",
+    "uploadTitle": "رفع مستند جديد",
+    "fileLabel": "رفع مستند طبي (PDF فقط)",
+    "uploadButton": "رفع المستند",
+    "uploading": "جاري الرفع...",
+    "errorUploadFailed": "تعذر رفع الملف",
+    "successUploaded": "تم رفع المستند بنجاح",
+    "myDocumentsTitle": "مستنداتي المرفوعة",
+    "noDocuments": "لا توجد مستندات مرفوعة بعد",
+    "tableFile": "الملف",
+    "tableUploadDate": "تاريخ الرفع",
+    "tableStatus": "الحالة"
   }
 }

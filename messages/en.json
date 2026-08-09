@@ -3,6 +3,53 @@
     "name": "Shadow Platform",
     "tagline": "Disability support services management for universities"
   },
+  "Register": {
+    "title": "Register as a New Student",
+    "subtitle": "Create your account to apply for support services",
+    "emailLabel": "University email address",
+    "passwordLabel": "Password",
+    "studentNumberLabel": "Student number",
+    "phoneLabel": "Mobile number",
+    "majorLabel": "Major",
+    "academicStageLabel": "Academic stage",
+    "academicStagePlaceholder": "e.g. Second year",
+    "submitButton": "Create account",
+    "submitButtonLoading": "Registering...",
+    "errorGeneric": "An error occurred during registration",
+    "haveAccountText": "Already have an account?",
+    "loginLink": "Sign in"
+  },
+  "Unauthorized": {
+    "title": "Access Denied",
+    "message": "You don't have permission to view this page. If you believe this is a mistake, contact your system administrator.",
+    "homeButton": "Back to home"
+  },
+  "Nav": {
+    "signOut": "Sign out",
+    "roles": {
+      "student": "Student",
+      "faculty": "Faculty member",
+      "specialist": "Specialist",
+      "admin": "System administrator"
+    },
+    "admin": {
+      "stats": "Statistics",
+      "users": "User Management",
+      "reports": "Reports",
+      "auditLog": "Audit Log"
+    },
+    "faculty": {
+      "students": "My Students"
+    },
+    "specialist": {
+      "queue": "Review Queue",
+      "alerts": "Alerts"
+    },
+    "student": {
+      "status": "Request Status",
+      "documents": "Documents"
+    }
+  },
   "Login": {
     "title": "Shadow Platform",
     "subtitle": "Sign in to manage disability support services",
@@ -52,5 +99,271 @@
     "errorUploadFailed": "Failed to upload file",
     "errorDeleteFailed": "Failed to delete file",
     "errorLoadingList": "Failed to load the file list"
+  },
+  "Common": {
+    "roles": {
+      "student": "Student",
+      "faculty": "Faculty member",
+      "specialist": "Specialist",
+      "admin": "System administrator"
+    },
+    "requestStatus": {
+      "pending": "Pending",
+      "under_review": "Under review",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "planStatus": {
+      "draft": "Draft",
+      "approved": "Approved",
+      "expired": "Expired"
+    },
+    "alertSeverity": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "alertStatus": {
+      "open": "Open",
+      "acknowledged": "Acknowledged",
+      "resolved": "Closed"
+    },
+    "supportLevel": {
+      "1": "Light support",
+      "2": "Moderate support",
+      "3": "Intensive support"
+    },
+    "documentStatus": {
+      "reviewed": "Reviewed",
+      "pending": "Awaiting review"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "close": "Close",
+      "download": "Download",
+      "apply": "Apply",
+      "all": "All",
+      "active": "Active",
+      "disabled": "Disabled",
+      "activate": "Activate",
+      "deactivate": "Deactivate"
+    }
+  },
+  "AdminUsers": {
+    "title": "User Management",
+    "subtitle": "Add and manage user permissions within the university",
+    "addUserTitle": "Add New User",
+    "emailLabel": "Email address",
+    "passwordLabel": "Password",
+    "roleLabel": "Role",
+    "addUserButton": "Add user",
+    "addingUser": "Adding...",
+    "usersListTitle": "Users",
+    "tableEmail": "Email address",
+    "tableRole": "Role",
+    "tableStatus": "Status",
+    "tableActions": "Actions",
+    "assignSpecialistTitle": "Assign Specialists to Students",
+    "assignSpecialistNote": "Assignment here is entirely manual — no student is ever linked to a specialist automatically. A specialist only ever sees students assigned to them.",
+    "specialistLabel": "Specialist",
+    "specialistPlaceholder": "Choose a specialist",
+    "studentLabel": "Student",
+    "studentPlaceholder": "Choose a student",
+    "assignButton": "Assign specialist",
+    "assigning": "Assigning...",
+    "tableSpecialist": "Specialist",
+    "tableStudent": "Student",
+    "successUserCreated": "User created successfully",
+    "errorUserCreateFailed": "Failed to create user",
+    "successRoleUpdated": "Role updated successfully",
+    "errorRoleUpdateFailed": "Failed to update role",
+    "successUserActivated": "User activated",
+    "successUserDeactivated": "User deactivated",
+    "errorStatusUpdateFailed": "Failed to update status",
+    "errorSelectSpecialistAndStudent": "Please choose both a specialist and a student",
+    "successSpecialistAssigned": "Specialist assigned to student",
+    "errorAssignFailed": "Failed to assign specialist"
+  },
+  "AdminStats": {
+    "title": "University Statistics",
+    "subtitle": "A university-wide overview of students and requests",
+    "totalStudents": "Total students",
+    "pending": "Pending",
+    "underReview": "Under review",
+    "avgReviewTime": "Average review time",
+    "byCategory": "Students by category",
+    "bySupportLevel": "Students by support level",
+    "hours": "hours",
+    "days": "days"
+  },
+  "AdminReports": {
+    "title": "Reports",
+    "subtitle": "Export administrative reports that contain no medical data",
+    "studentReportTitle": "Student Report (CSV)",
+    "studentReportDescription": "This report includes: student name (email), request status, registration date, and support plan status only. It does not include classification, support level, assessment notes, or any medical data.",
+    "downloadButton": "Download report"
+  },
+  "AuditLog": {
+    "title": "Audit Log",
+    "subtitle": "A complete log of every access attempt to student records — administrators only",
+    "filterTitle": "Filter",
+    "userLabel": "User",
+    "actionLabel": "Action type",
+    "fromLabel": "From date",
+    "toLabel": "To date",
+    "resultsTitle": "Results",
+    "tableDate": "Date",
+    "tableUser": "User",
+    "tableAction": "Action",
+    "tableResourceType": "Resource type",
+    "tableTargetStudent": "Target student",
+    "noResults": "No matching log entries"
+  },
+  "FacultyStudents": {
+    "title": "My Students",
+    "subtitle": "Students enrolled in your courses and their approved accommodations only",
+    "listTitle": "List",
+    "noStudents": "No students are currently linked to your courses",
+    "tableCourse": "Course",
+    "tableStudentNumber": "Student ID",
+    "tableEmail": "Email address",
+    "tableAccommodations": "Approved accommodations",
+    "tableFiles": "Custom files",
+    "noAccommodations": "No accommodations recorded"
+  },
+  "SpecialistQueue": {
+    "title": "Review Queue",
+    "subtitle": "Students referred to you by the system administrator",
+    "listTitle": "Students",
+    "noStudents": "No students have been referred to you yet",
+    "tableStudent": "Student",
+    "tableCategory": "Category",
+    "tableSupportLevel": "Support level",
+    "tableLastAssessment": "Last assessment",
+    "tablePlanStatus": "Plan status",
+    "tableOpenAlerts": "Open alerts",
+    "tableActions": "Actions",
+    "noAssessmentYet": "No assessment yet",
+    "noPlan": "No plan",
+    "detailsButton": "Details",
+    "assessButton": "Assess",
+    "planButton": "Support plan"
+  },
+  "SpecialistAlerts": {
+    "title": "Follow-up Alerts",
+    "subtitle": "Alerts generated from app usage patterns among your students",
+    "listTitle": "Alerts",
+    "noAlerts": "No alerts at this time",
+    "tableSeverity": "Severity",
+    "tableStudent": "Student",
+    "tableType": "Type",
+    "tableMessage": "Message",
+    "tableStatus": "Status",
+    "tableActions": "Actions",
+    "closed": "Closed",
+    "acknowledgeButton": "Acknowledge",
+    "closeAlertButton": "Close alert",
+    "closeReasonPlaceholder": "Reason for closing (optional)",
+    "confirmCloseButton": "Confirm closing",
+    "successAcknowledged": "Alert acknowledged",
+    "errorAcknowledgeFailed": "Failed to update alert",
+    "successResolved": "Alert closed",
+    "errorResolveFailed": "Failed to close alert"
+  },
+  "SpecialistStudentDetail": {
+    "title": "Student File",
+    "assessButton": "Assess",
+    "planButton": "Support plan",
+    "assessmentsTitle": "Assessment History",
+    "noAssessments": "No assessments yet",
+    "supportLevelLabel": "Support level",
+    "plansTitle": "Support Plans",
+    "noPlans": "No plans yet",
+    "revisionsTitle": "Support Level Revision History",
+    "noRevisions": "No revisions recorded",
+    "newLevelLabel": "New level",
+    "usageSummaryTitle": "App Usage Summary",
+    "noUsageData": "No usage data yet"
+  },
+  "SpecialistAssess": {
+    "title": "Assess Student",
+    "newAssessmentTitle": "New Assessment",
+    "categoryLabel": "Category",
+    "categoryPlaceholder": "Choose a category",
+    "conditionLabel": "Sub-condition",
+    "conditionPlaceholder": "Choose a sub-condition",
+    "supportLevelLabel": "Support level",
+    "supportLevelPlaceholder": "Choose a support level",
+    "notesLabel": "Specialist notes",
+    "notesPlaceholder": "Write your assessment notes...",
+    "submitButton": "Save assessment",
+    "submitting": "Saving...",
+    "errorMissingFields": "Please choose a category, sub-condition, and support level",
+    "errorSaveFailed": "Failed to save assessment",
+    "successSaved": "Assessment saved successfully",
+    "historyTitle": "Assessment History",
+    "noHistory": "No previous assessments",
+    "supportLevelPrefix": "Support level"
+  },
+  "SpecialistPlan": {
+    "title": "Support Plan",
+    "cannotCreateYet": "A support plan cannot be created before the student has been assessed.",
+    "basisTitle": "Plan Basis (Latest Assessment)",
+    "baseSupportLevel": "Base support level",
+    "planStatusLabel": "Plan status",
+    "toolsTitle": "Tools Enabled in the App",
+    "saveToolsButton": "Save tools",
+    "approveButton": "Approve plan",
+    "reviseButton": "Revise support level",
+    "newLevelLabel": "New level",
+    "newLevelPlaceholder": "Choose a level",
+    "revisionReasonLabel": "Reason for revision",
+    "saveRevisionButton": "Save revision",
+    "errorSaveFailed": "Failed to save plan",
+    "successSaved": "Plan saved",
+    "errorApproveFailed": "Failed to approve plan",
+    "successApproved": "Plan approved",
+    "errorSelectNewLevel": "Please choose the new level",
+    "errorReviseFailed": "Failed to record the revision",
+    "successRevised": "Level revision recorded",
+    "revisionsTitle": "Level Revision History",
+    "newLevelPrefix": "New level"
+  },
+  "StudentStatus": {
+    "title": "Request Status",
+    "subtitle": "Track your support request status and the tools enabled on your account",
+    "requestStatusTitle": "Your Request Status",
+    "verificationPending": "Your account is awaiting verification of your university enrollment by the relevant office.",
+    "toolsTitle": "Tools Enabled in the App",
+    "planLastUpdated": "Your plan was last updated",
+    "noTools": "No tools are enabled yet. They will be enabled once your support plan is approved.",
+    "facultyResourcesTitle": "Resources From Your Instructor",
+    "newBadge": "New",
+    "newResourceNotice": "Your instructor added a new learning resource in course {course}",
+    "downloadButton": "Download",
+    "resourceCategory": {
+      "simplified_content": "Simplified content",
+      "visual_adjustment": "Visual adjustment (color/font)",
+      "extra_exercises": "Extra exercises",
+      "other": "Other"
+    }
+  },
+  "StudentDocuments": {
+    "title": "Medical Documents",
+    "subtitle": "Upload your medical reports as PDF for review by the specialist. Documents are encrypted and cannot be reopened from here once uploaded.",
+    "uploadTitle": "Upload a New Document",
+    "fileLabel": "Upload a medical document (PDF only)",
+    "uploadButton": "Upload document",
+    "uploading": "Uploading...",
+    "errorUploadFailed": "Failed to upload file",
+    "successUploaded": "Document uploaded successfully",
+    "myDocumentsTitle": "My Uploaded Documents",
+    "noDocuments": "No documents uploaded yet",
+    "tableFile": "File",
+    "tableUploadDate": "Upload date",
+    "tableStatus": "Status"
   }
 }

@@ -1,21 +1,21 @@
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
+import { formatDate } from "@/lib/format-date";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 
-const PLAN_STATUS_LABELS: Record<string, string> = {
-  draft: "مسودة",
-  approved: "معتمدة",
-  expired: "منتهية",
-};
-
 export default async function SpecialistQueuePage() {
   const ctx = await requireRole("specialist", "admin");
   const db = getTenantScopedPrisma(ctx.tenantId);
+  const t = await getTranslations("SpecialistQueue");
+  const tPlanStatus = await getTranslations("Common.planStatus");
+  const tSupportLevel = await getTranslations("Common.supportLevel");
+  const locale = await getLocale();
 
   // A specialist only ever sees students an admin has manually assigned to
   // them. Admins viewing this page see the whole tenant's queue instead.
@@ -41,29 +41,31 @@ export default async function SpecialistQueuePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-primary">قائمة المراجعة</h1>
-        <p className="mt-1 text-sm text-muted-foreground">الطلاب المُحالون إليك من قِبل مسؤول النظام</p>
+        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">الطلاب ({assignments.length})</CardTitle>
+          <CardTitle className="text-base">
+            {t("listTitle")} ({assignments.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {assignments.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">لا يوجد طلاب محالون إليك حالياً</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{t("noStudents")}</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>الطالب</TableHead>
-                    <TableHead>الفئة</TableHead>
-                    <TableHead>مستوى الدعم</TableHead>
-                    <TableHead>آخر تقييم</TableHead>
-                    <TableHead>حالة الخطة</TableHead>
-                    <TableHead>تنبيهات مفتوحة</TableHead>
-                    <TableHead className="w-72">إجراءات</TableHead>
+                    <TableHead>{t("tableStudent")}</TableHead>
+                    <TableHead>{t("tableCategory")}</TableHead>
+                    <TableHead>{t("tableSupportLevel")}</TableHead>
+                    <TableHead>{t("tableLastAssessment")}</TableHead>
+                    <TableHead>{t("tablePlanStatus")}</TableHead>
+                    <TableHead>{t("tableOpenAlerts")}</TableHead>
+                    <TableHead className="w-72">{t("tableActions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -83,22 +85,26 @@ export default async function SpecialistQueuePage() {
                         <TableCell className="text-sm">
                           {lastAssessment ? (
                             <>
-                              <p>{lastAssessment.condition.category.nameAr}</p>
-                              <p className="text-xs text-muted-foreground">{lastAssessment.condition.nameAr}</p>
+                              <p>{locale === "en" ? lastAssessment.condition.category.nameEn : lastAssessment.condition.category.nameAr}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {locale === "en" ? lastAssessment.condition.nameEn : lastAssessment.condition.nameAr}
+                              </p>
                             </>
                           ) : (
-                            <span className="text-muted-foreground">لا يوجد تقييم بعد</span>
+                            <span className="text-muted-foreground">{t("noAssessmentYet")}</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm">{lastAssessment?.supportLevel.nameAr ?? "—"}</TableCell>
+                        <TableCell className="text-sm">
+                          {lastAssessment ? tSupportLevel(String(lastAssessment.supportLevel.order)) : "—"}
+                        </TableCell>
                         <TableCell dir="ltr" className="text-end text-sm text-muted-foreground">
-                          {lastAssessment ? lastAssessment.assessedAt.toLocaleDateString("ar-SA") : "—"}
+                          {lastAssessment ? formatDate(lastAssessment.assessedAt, locale) : "—"}
                         </TableCell>
                         <TableCell>
                           {lastPlan ? (
-                            <Badge variant="secondary">{PLAN_STATUS_LABELS[lastPlan.status]}</Badge>
+                            <Badge variant="secondary">{tPlanStatus(lastPlan.status)}</Badge>
                           ) : (
-                            <span className="text-sm text-muted-foreground">لا توجد خطة</span>
+                            <span className="text-sm text-muted-foreground">{t("noPlan")}</span>
                           )}
                         </TableCell>
                         <TableCell>
@@ -116,14 +122,17 @@ export default async function SpecialistQueuePage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              render={<Link href={`/specialist/students/${sp.id}`}>التفاصيل</Link>}
+                              render={<Link href={`/specialist/students/${sp.id}`}>{t("detailsButton")}</Link>}
                             />
                             <Button
                               size="sm"
                               variant="outline"
-                              render={<Link href={`/specialist/students/${sp.id}/assess`}>التقييم</Link>}
+                              render={<Link href={`/specialist/students/${sp.id}/assess`}>{t("assessButton")}</Link>}
                             />
-                            <Button size="sm" render={<Link href={`/specialist/students/${sp.id}/plan`}>خطة الدعم</Link>} />
+                            <Button
+                              size="sm"
+                              render={<Link href={`/specialist/students/${sp.id}/plan`}>{t("planButton")}</Link>}
+                            />
                           </div>
                         </TableCell>
                       </TableRow>

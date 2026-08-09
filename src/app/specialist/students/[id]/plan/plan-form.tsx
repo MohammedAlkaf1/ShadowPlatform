@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useLocale, useTranslations } from "next-intl";
 import { saveSupportPlan, approveSupportPlan, reviseSupportLevel } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,7 +20,7 @@ import { TOOL_CODES, TOOL_CODE_LABELS, type ToolCodeValue } from "@/lib/tool-cod
 
 interface SupportLevelOption {
   id: string;
-  nameAr: string;
+  name: string;
   order: number;
 }
 
@@ -39,6 +40,8 @@ export function PlanForm({
   supportLevels: SupportLevelOption[];
 }) {
   const router = useRouter();
+  const t = useTranslations("SpecialistPlan");
+  const locale = useLocale();
   const [selected, setSelected] = useState<Set<ToolCodeValue>>(new Set(initialEnabledCodes));
   const [loading, setLoading] = useState(false);
   const [revising, setRevising] = useState(false);
@@ -65,10 +68,10 @@ export function PlanForm({
     });
     setLoading(false);
     if (!result.ok) {
-      toast.error(result.error ?? "تعذر حفظ الخطة");
+      toast.error(result.error ?? t("errorSaveFailed"));
       return;
     }
-    toast.success("تم حفظ الخطة");
+    toast.success(t("successSaved"));
     router.refresh();
   }
 
@@ -78,16 +81,16 @@ export function PlanForm({
     const result = await approveSupportPlan(planId, studentProfileId);
     setLoading(false);
     if (!result.ok) {
-      toast.error(result.error ?? "تعذر اعتماد الخطة");
+      toast.error(result.error ?? t("errorApproveFailed"));
       return;
     }
-    toast.success("تم اعتماد الخطة");
+    toast.success(t("successApproved"));
     router.refresh();
   }
 
   async function handleRevise() {
     if (!planId || !newLevelId) {
-      toast.error("الرجاء اختيار المستوى الجديد");
+      toast.error(t("errorSelectNewLevel"));
       return;
     }
     setLoading(true);
@@ -99,10 +102,10 @@ export function PlanForm({
     });
     setLoading(false);
     if (!result.ok) {
-      toast.error(result.error ?? "تعذر تسجيل المراجعة");
+      toast.error(result.error ?? t("errorReviseFailed"));
       return;
     }
-    toast.success("تم تسجيل مراجعة المستوى");
+    toast.success(t("successRevised"));
     setRevising(false);
     setReason("");
     router.refresh();
@@ -124,8 +127,12 @@ export function PlanForm({
                 onCheckedChange={() => toggle(code)}
               />
               <span>
-                <span className="block text-sm font-medium text-foreground">{meta.ar}</span>
-                <span className="block text-xs text-muted-foreground">{meta.description}</span>
+                <span className="block text-sm font-medium text-foreground">
+                  {locale === "en" ? meta.en : meta.ar}
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  {locale === "en" ? meta.descriptionEn : meta.description}
+                </span>
               </span>
             </label>
           );
@@ -135,17 +142,17 @@ export function PlanForm({
       <div className="flex flex-wrap gap-3">
         {!isApproved && (
           <Button variant="outline" onClick={handleSave} disabled={loading}>
-            حفظ الأدوات
+            {t("saveToolsButton")}
           </Button>
         )}
         {!isApproved && planId && (
           <Button onClick={handleApprove} disabled={loading}>
-            اعتماد الخطة
+            {t("approveButton")}
           </Button>
         )}
         {isApproved && (
           <Button variant="outline" onClick={() => setRevising((r) => !r)}>
-            مراجعة مستوى الدعم
+            {t("reviseButton")}
           </Button>
         )}
       </div>
@@ -153,28 +160,28 @@ export function PlanForm({
       {revising && (
         <div className="space-y-3 rounded-md border border-border bg-secondary/40 p-4">
           <div className="space-y-2">
-            <Label>المستوى الجديد</Label>
+            <Label>{t("newLevelLabel")}</Label>
             <Select value={newLevelId} onValueChange={(v) => setNewLevelId(v ?? "")}>
               <SelectTrigger>
-                <SelectValue placeholder="اختر المستوى" />
+                <SelectValue placeholder={t("newLevelPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {supportLevels
                   .sort((a, b) => a.order - b.order)
                   .map((lvl) => (
                     <SelectItem key={lvl.id} value={lvl.id}>
-                      {lvl.nameAr}
+                      {lvl.name}
                     </SelectItem>
                   ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>سبب المراجعة</Label>
+            <Label>{t("revisionReasonLabel")}</Label>
             <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} />
           </div>
           <Button onClick={handleRevise} disabled={loading}>
-            حفظ المراجعة
+            {t("saveRevisionButton")}
           </Button>
         </div>
       )}

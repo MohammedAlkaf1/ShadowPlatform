@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { createAssessment } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -17,16 +18,16 @@ import {
 
 interface ConditionOption {
   id: string;
-  nameAr: string;
+  name: string;
 }
 interface CategoryOption {
   id: string;
-  nameAr: string;
+  name: string;
   conditions: ConditionOption[];
 }
 interface SupportLevelOption {
   id: string;
-  nameAr: string;
+  name: string;
   order: number;
 }
 
@@ -40,6 +41,7 @@ export function AssessForm({
   supportLevels: SupportLevelOption[];
 }) {
   const router = useRouter();
+  const t = useTranslations("SpecialistAssess");
   const [categoryId, setCategoryId] = useState<string>("");
   const [conditionId, setConditionId] = useState<string>("");
   const [supportLevelId, setSupportLevelId] = useState<string>("");
@@ -54,17 +56,17 @@ export function AssessForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!conditionId || !supportLevelId) {
-      toast.error("الرجاء اختيار الفئة والحالة الفرعية ومستوى الدعم");
+      toast.error(t("errorMissingFields"));
       return;
     }
     setLoading(true);
     const result = await createAssessment({ studentProfileId, conditionId, supportLevelId, notes });
     setLoading(false);
     if (!result.ok) {
-      toast.error(result.error ?? "تعذر حفظ التقييم");
+      toast.error(result.error ?? t("errorSaveFailed"));
       return;
     }
-    toast.success("تم حفظ التقييم بنجاح");
+    toast.success(t("successSaved"));
     router.refresh();
   }
 
@@ -72,7 +74,7 @@ export function AssessForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>الفئة</Label>
+          <Label>{t("categoryLabel")}</Label>
           <Select
             value={categoryId}
             onValueChange={(v) => {
@@ -81,12 +83,12 @@ export function AssessForm({
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="اختر الفئة" />
+              <SelectValue placeholder={t("categoryPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {categories.map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
-                  {cat.nameAr}
+                  {cat.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -94,15 +96,15 @@ export function AssessForm({
         </div>
 
         <div className="space-y-2">
-          <Label>الحالة الفرعية</Label>
+          <Label>{t("conditionLabel")}</Label>
           <Select value={conditionId} onValueChange={(v) => setConditionId(v ?? "")} disabled={!categoryId}>
             <SelectTrigger>
-              <SelectValue placeholder="اختر الحالة الفرعية" />
+              <SelectValue placeholder={t("conditionPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {conditions.map((cond) => (
                 <SelectItem key={cond.id} value={cond.id}>
-                  {cond.nameAr}
+                  {cond.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -110,17 +112,17 @@ export function AssessForm({
         </div>
 
         <div className="space-y-2 sm:col-span-2">
-          <Label>مستوى الدعم</Label>
+          <Label>{t("supportLevelLabel")}</Label>
           <Select value={supportLevelId} onValueChange={(v) => setSupportLevelId(v ?? "")}>
             <SelectTrigger>
-              <SelectValue placeholder="اختر مستوى الدعم" />
+              <SelectValue placeholder={t("supportLevelPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {supportLevels
                 .sort((a, b) => a.order - b.order)
                 .map((lvl) => (
                   <SelectItem key={lvl.id} value={lvl.id}>
-                    {lvl.nameAr}
+                    {lvl.name}
                   </SelectItem>
                 ))}
             </SelectContent>
@@ -128,20 +130,20 @@ export function AssessForm({
         </div>
 
         <div className="space-y-2 sm:col-span-2">
-          <Label>ملاحظات المختص</Label>
+          <Label>{t("notesLabel")}</Label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={4}
             required
             minLength={5}
-            placeholder="اكتب ملاحظات التقييم..."
+            placeholder={t("notesPlaceholder")}
           />
         </div>
       </div>
 
       <Button type="submit" disabled={loading}>
-        {loading ? "جاري الحفظ..." : "حفظ التقييم"}
+        {loading ? t("submitting") : t("submitButton")}
       </Button>
     </form>
   );

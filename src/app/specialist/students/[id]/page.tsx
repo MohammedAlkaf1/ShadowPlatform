@@ -1,19 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { assertSpecialistAssigned } from "@/lib/specialist-access";
 import { logAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
+import { formatDateTime } from "@/lib/format-date";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
-const PLAN_STATUS_LABELS: Record<string, string> = {
-  draft: "مسودة",
-  approved: "معتمدة",
-  expired: "منتهية",
-};
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: studentProfileId } = await params;
@@ -21,6 +17,10 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   await assertSpecialistAssigned(ctx, studentProfileId);
 
   const db = getTenantScopedPrisma(ctx.tenantId);
+  const t = await getTranslations("SpecialistStudentDetail");
+  const tPlanStatus = await getTranslations("Common.planStatus");
+  const tSupportLevel = await getTranslations("Common.supportLevel");
+  const locale = await getLocale();
 
   const student = await db.studentProfile.findUnique({
     where: { id: studentProfileId },
@@ -74,7 +74,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-primary">ملف الطالب</h1>
+          <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground" dir="ltr">
             {student.user.email}
           </p>
@@ -83,29 +83,37 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" render={<Link href={`/specialist/students/${studentProfileId}/assess`}>التقييم</Link>} />
-          <Button render={<Link href={`/specialist/students/${studentProfileId}/plan`}>خطة الدعم</Link>} />
+          <Button
+            variant="outline"
+            render={<Link href={`/specialist/students/${studentProfileId}/assess`}>{t("assessButton")}</Link>}
+          />
+          <Button render={<Link href={`/specialist/students/${studentProfileId}/plan`}>{t("planButton")}</Link>} />
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">سجل التقييمات ({assessments.length})</CardTitle>
+          <CardTitle className="text-base">
+            {t("assessmentsTitle")} ({assessments.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {assessments.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">لا توجد تقييمات بعد</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">{t("noAssessments")}</p>
           ) : (
             <ul className="space-y-3">
               {assessments.map((a) => (
                 <li key={a.id} className="rounded-md border border-border p-3 text-sm">
                   <p className="font-medium text-foreground">
-                    {a.condition.category.nameAr} — {a.condition.nameAr}
+                    {locale === "en" ? a.condition.category.nameEn : a.condition.category.nameAr} —{" "}
+                    {locale === "en" ? a.condition.nameEn : a.condition.nameAr}
                   </p>
-                  <p className="text-muted-foreground">مستوى الدعم: {a.supportLevel.nameAr}</p>
+                  <p className="text-muted-foreground">
+                    {t("supportLevelLabel")}: {tSupportLevel(String(a.supportLevel.order))}
+                  </p>
                   <p className="mt-1 text-foreground">{a.notes}</p>
                   <p className="mt-1 text-xs text-muted-foreground" dir="ltr">
-                    {a.assessedAt.toLocaleString("ar-SA")}
+                    {formatDateTime(a.assessedAt, locale)}
                   </p>
                 </li>
               ))}
@@ -116,19 +124,21 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">خطط الدعم ({supportPlans.length})</CardTitle>
+          <CardTitle className="text-base">
+            {t("plansTitle")} ({supportPlans.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {supportPlans.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">لا توجد خطط بعد</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">{t("noPlans")}</p>
           ) : (
             <ul className="space-y-2">
               {supportPlans.map((p) => (
                 <li key={p.id} className="flex items-center justify-between rounded-md border border-border p-3 text-sm">
                   <span dir="ltr" className="text-muted-foreground">
-                    {p.createdAt.toLocaleDateString("ar-SA")}
+                    {formatDateTime(p.createdAt, locale)}
                   </span>
-                  <Badge variant="secondary">{PLAN_STATUS_LABELS[p.status]}</Badge>
+                  <Badge variant="secondary">{tPlanStatus(p.status)}</Badge>
                 </li>
               ))}
             </ul>
@@ -138,19 +148,23 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">سجل مراجعات مستوى الدعم ({planRevisions.length})</CardTitle>
+          <CardTitle className="text-base">
+            {t("revisionsTitle")} ({planRevisions.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {planRevisions.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">لا توجد مراجعات مسجّلة</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">{t("noRevisions")}</p>
           ) : (
             <ul className="space-y-3">
               {planRevisions.map((rev) => (
                 <li key={rev.id} className="rounded-md border border-border p-3 text-sm">
-                  <p className="font-medium">المستوى الجديد: {rev.newSupportLevel.nameAr}</p>
+                  <p className="font-medium">
+                    {t("newLevelLabel")}: {tSupportLevel(String(rev.newSupportLevel.order))}
+                  </p>
                   <p className="text-muted-foreground">{rev.reason}</p>
                   <p className="mt-1 text-xs text-muted-foreground" dir="ltr">
-                    {rev.revisedBy.email} — {rev.createdAt.toLocaleString("ar-SA")}
+                    {rev.revisedBy.email} — {formatDateTime(rev.createdAt, locale)}
                   </p>
                 </li>
               ))}
@@ -161,11 +175,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">ملخص استخدام التطبيق</CardTitle>
+          <CardTitle className="text-base">{t("usageSummaryTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           {Object.keys(usageSummary).length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">لا توجد بيانات استخدام بعد</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">{t("noUsageData")}</p>
           ) : (
             <ul className="grid gap-2 sm:grid-cols-2">
               {Object.entries(usageSummary).map(([eventType, count]) => (

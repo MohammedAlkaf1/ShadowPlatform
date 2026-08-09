@@ -1,18 +1,14 @@
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { assertSpecialistAssigned } from "@/lib/specialist-access";
 import { logAudit } from "@/lib/audit";
+import { formatDateTime } from "@/lib/format-date";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PlanForm } from "./plan-form";
 import type { ToolCodeValue } from "@/lib/tool-codes";
-
-const PLAN_STATUS_LABELS: Record<string, string> = {
-  draft: "مسودة",
-  approved: "معتمدة",
-  expired: "منتهية",
-};
 
 export default async function StudentPlanPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: studentProfileId } = await params;
@@ -20,6 +16,10 @@ export default async function StudentPlanPage({ params }: { params: Promise<{ id
   await assertSpecialistAssigned(ctx, studentProfileId);
 
   const db = getTenantScopedPrisma(ctx.tenantId);
+  const t = await getTranslations("SpecialistPlan");
+  const tPlanStatus = await getTranslations("Common.planStatus");
+  const tSupportLevel = await getTranslations("Common.supportLevel");
+  const locale = await getLocale();
 
   const student = await db.studentProfile.findUnique({
     where: { id: studentProfileId },
@@ -41,15 +41,20 @@ export default async function StudentPlanPage({ params }: { params: Promise<{ id
     include: { condition: { include: { category: true } }, supportLevel: true },
   });
 
-  const supportLevels = await db.supportLevel.findMany({ orderBy: { order: "asc" } });
+  const supportLevelsRaw = await db.supportLevel.findMany({ orderBy: { order: "asc" } });
+  const supportLevels = supportLevelsRaw.map((l) => ({
+    id: l.id,
+    name: tSupportLevel(String(l.order)),
+    order: l.order,
+  }));
 
   if (!latestAssessment) {
     return (
       <div className="mx-auto max-w-2xl space-y-4">
-        <h1 className="text-2xl font-bold text-primary">خطة الدعم</h1>
+        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            لا يمكن إنشاء خطة دعم قبل إجراء تقييم للطالب أولاً.
+            {t("cannotCreateYet")}
           </CardContent>
         </Card>
       </div>
@@ -67,7 +72,7 @@ export default async function StudentPlanPage({ params }: { params: Promise<{ id
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-primary">خطة الدعم</h1>
+        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground" dir="ltr">
           {student.user.email}
         </p>
@@ -75,16 +80,19 @@ export default async function StudentPlanPage({ params }: { params: Promise<{ id
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">أساس الخطة (آخر تقييم)</CardTitle>
+          <CardTitle className="text-base">{t("basisTitle")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1 text-sm">
           <p>
-            {latestAssessment.condition.category.nameAr} — {latestAssessment.condition.nameAr}
+            {locale === "en" ? latestAssessment.condition.category.nameEn : latestAssessment.condition.category.nameAr} —{" "}
+            {locale === "en" ? latestAssessment.condition.nameEn : latestAssessment.condition.nameAr}
           </p>
-          <p className="text-muted-foreground">مستوى الدعم الأساسي: {latestAssessment.supportLevel.nameAr}</p>
+          <p className="text-muted-foreground">
+            {t("baseSupportLevel")}: {tSupportLevel(String(latestAssessment.supportLevel.order))}
+          </p>
           {plan && (
             <Badge variant="secondary" className="mt-2">
-              حالة الخطة: {PLAN_STATUS_LABELS[plan.status]}
+              {t("planStatusLabel")}: {tPlanStatus(plan.status)}
             </Badge>
           )}
         </CardContent>
@@ -92,7 +100,7 @@ export default async function StudentPlanPage({ params }: { params: Promise<{ id
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">الأدوات المفعّلة في التطبيق</CardTitle>
+          <CardTitle className="text-base">{t("toolsTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           <PlanForm
@@ -109,16 +117,18 @@ export default async function StudentPlanPage({ params }: { params: Promise<{ id
       {plan && plan.planRevisions.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">سجل مراجعات المستوى</CardTitle>
+            <CardTitle className="text-base">{t("revisionsTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-3 text-sm">
               {plan.planRevisions.map((rev) => (
                 <li key={rev.id} className="rounded-md border border-border p-3">
-                  <p className="font-medium">المستوى الجديد: {rev.newSupportLevel.nameAr}</p>
+                  <p className="font-medium">
+                    {t("newLevelPrefix")}: {tSupportLevel(String(rev.newSupportLevel.order))}
+                  </p>
                   <p className="text-muted-foreground">{rev.reason}</p>
                   <p className="mt-1 text-xs text-muted-foreground" dir="ltr">
-                    {rev.createdAt.toLocaleString("ar-SA")}
+                    {formatDateTime(rev.createdAt, locale)}
                   </p>
                 </li>
               ))}

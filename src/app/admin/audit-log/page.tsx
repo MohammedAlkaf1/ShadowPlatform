@@ -1,6 +1,8 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { logAudit } from "@/lib/audit";
+import { formatDateTime } from "@/lib/format-date";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
@@ -23,6 +25,9 @@ export default async function AdminAuditLogPage({
   const ctx = await requireRole("admin");
   const params = await searchParams;
   const db = getTenantScopedPrisma(ctx.tenantId);
+  const t = await getTranslations("AuditLog");
+  const tActions = await getTranslations("Common.actions");
+  const locale = await getLocale();
 
   const where: Prisma.AuditLogWhereInput = {};
   if (params.actorUserId) where.actorUserId = params.actorUserId;
@@ -58,25 +63,25 @@ export default async function AdminAuditLogPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-primary">سجل التدقيق</h1>
-        <p className="mt-1 text-sm text-muted-foreground">سجل كامل لجميع محاولات الوصول لسجلات الطلاب — للمسؤول فقط</p>
+        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">تصفية</CardTitle>
+          <CardTitle className="text-base">{t("filterTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form method="GET" className="grid gap-4 sm:grid-cols-5 sm:items-end">
             <div className="space-y-2">
-              <Label htmlFor="actorUserId">المستخدم</Label>
+              <Label htmlFor="actorUserId">{t("userLabel")}</Label>
               <select
                 id="actorUserId"
                 name="actorUserId"
                 defaultValue={params.actorUserId ?? ""}
                 className="flex h-8 w-full rounded-md border border-input bg-background px-2 text-sm"
               >
-                <option value="">الكل</option>
+                <option value="">{tActions("all")}</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.email}
@@ -85,14 +90,14 @@ export default async function AdminAuditLogPage({
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="action">نوع الإجراء</Label>
+              <Label htmlFor="action">{t("actionLabel")}</Label>
               <select
                 id="action"
                 name="action"
                 defaultValue={params.action ?? ""}
                 className="flex h-8 w-full rounded-md border border-input bg-background px-2 text-sm"
               >
-                <option value="">الكل</option>
+                <option value="">{tActions("all")}</option>
                 {actionOptions.map((a) => (
                   <option key={a} value={a}>
                     {a}
@@ -101,39 +106,41 @@ export default async function AdminAuditLogPage({
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="from">من تاريخ</Label>
+              <Label htmlFor="from">{t("fromLabel")}</Label>
               <Input id="from" name="from" type="date" defaultValue={params.from ?? ""} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="to">إلى تاريخ</Label>
+              <Label htmlFor="to">{t("toLabel")}</Label>
               <Input id="to" name="to" type="date" defaultValue={params.to ?? ""} />
             </div>
-            <Button type="submit">تطبيق</Button>
+            <Button type="submit">{tActions("apply")}</Button>
           </form>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">النتائج ({logs.length})</CardTitle>
+          <CardTitle className="text-base">
+            {t("resultsTitle")} ({logs.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead>المستخدم</TableHead>
-                  <TableHead>الإجراء</TableHead>
-                  <TableHead>نوع المورد</TableHead>
-                  <TableHead>الطالب المستهدف</TableHead>
+                  <TableHead>{t("tableDate")}</TableHead>
+                  <TableHead>{t("tableUser")}</TableHead>
+                  <TableHead>{t("tableAction")}</TableHead>
+                  <TableHead>{t("tableResourceType")}</TableHead>
+                  <TableHead>{t("tableTargetStudent")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {logs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell dir="ltr" className="text-end text-xs text-muted-foreground">
-                      {log.createdAt.toLocaleString("ar-SA")}
+                      {formatDateTime(log.createdAt, locale)}
                     </TableCell>
                     <TableCell dir="ltr" className="text-end text-sm">
                       {log.actor.email}
@@ -148,7 +155,7 @@ export default async function AdminAuditLogPage({
               </TableBody>
             </Table>
             {logs.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted-foreground">لا توجد سجلات مطابقة</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">{t("noResults")}</p>
             )}
           </div>
         </CardContent>

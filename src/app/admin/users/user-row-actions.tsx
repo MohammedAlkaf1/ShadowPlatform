@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { updateUserRole, setUserActive } from "./actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,15 +15,13 @@ import {
 } from "@/components/ui/select";
 import type { UserRole } from "@prisma/client";
 
-const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
-  { value: "student", label: "طالب" },
-  { value: "faculty", label: "عضو هيئة تدريس" },
-  { value: "specialist", label: "مختص" },
-  { value: "admin", label: "مسؤول النظام" },
-];
+const ROLE_VALUES: UserRole[] = ["student", "faculty", "specialist", "admin"];
 
 export function UserRowActions({ userId, role, active }: { userId: string; role: UserRole; active: boolean }) {
   const router = useRouter();
+  const t = useTranslations("AdminUsers");
+  const tRoles = useTranslations("Common.roles");
+  const tActions = useTranslations("Common.actions");
   const [loading, setLoading] = useState(false);
 
   async function handleRoleChange(newRole: string | null) {
@@ -31,10 +30,10 @@ export function UserRowActions({ userId, role, active }: { userId: string; role:
     const result = await updateUserRole({ userId, role: newRole });
     setLoading(false);
     if (!result.ok) {
-      toast.error(result.error ?? "تعذر تحديث الدور");
+      toast.error(result.error ?? t("errorRoleUpdateFailed"));
       return;
     }
-    toast.success("تم تحديث الدور");
+    toast.success(t("successRoleUpdated"));
     router.refresh();
   }
 
@@ -43,10 +42,10 @@ export function UserRowActions({ userId, role, active }: { userId: string; role:
     const result = await setUserActive(userId, !active);
     setLoading(false);
     if (!result.ok) {
-      toast.error(result.error ?? "تعذر تحديث الحالة");
+      toast.error(result.error ?? t("errorStatusUpdateFailed"));
       return;
     }
-    toast.success(active ? "تم تعطيل المستخدم" : "تم تفعيل المستخدم");
+    toast.success(active ? t("successUserDeactivated") : t("successUserActivated"));
     router.refresh();
   }
 
@@ -57,15 +56,15 @@ export function UserRowActions({ userId, role, active }: { userId: string; role:
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {ROLE_OPTIONS.map((r) => (
-            <SelectItem key={r.value} value={r.value}>
-              {r.label}
+          {ROLE_VALUES.map((r) => (
+            <SelectItem key={r} value={r}>
+              {tRoles(r)}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
       <Button size="sm" variant={active ? "outline" : "default"} disabled={loading} onClick={handleToggleActive}>
-        {active ? "تعطيل" : "تفعيل"}
+        {active ? tActions("deactivate") : tActions("activate")}
       </Button>
     </div>
   );

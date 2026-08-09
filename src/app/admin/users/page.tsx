@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,16 +8,12 @@ import { CreateUserForm } from "./create-user-form";
 import { UserRowActions } from "./user-row-actions";
 import { AssignSpecialistForm } from "./assign-specialist-form";
 
-const ROLE_LABELS: Record<string, string> = {
-  student: "طالب",
-  faculty: "عضو هيئة تدريس",
-  specialist: "مختص",
-  admin: "مسؤول النظام",
-};
-
 export default async function AdminUsersPage() {
   const ctx = await requireRole("admin");
   const db = getTenantScopedPrisma(ctx.tenantId);
+  const t = await getTranslations("AdminUsers");
+  const tRoles = await getTranslations("Common.roles");
+  const tActions = await getTranslations("Common.actions");
 
   const users = await db.user.findMany({
     orderBy: { createdAt: "asc" },
@@ -42,13 +39,13 @@ export default async function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-primary">إدارة المستخدمين</h1>
-        <p className="mt-1 text-sm text-muted-foreground">إضافة وتعديل صلاحيات المستخدمين داخل الجامعة</p>
+        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">إضافة مستخدم جديد</CardTitle>
+          <CardTitle className="text-base">{t("addUserTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           <CreateUserForm />
@@ -57,16 +54,18 @@ export default async function AdminUsersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">المستخدمون ({users.length})</CardTitle>
+          <CardTitle className="text-base">
+            {t("usersListTitle")} ({users.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>البريد الإلكتروني</TableHead>
-                <TableHead>الدور</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead className="w-56">إجراءات</TableHead>
+                <TableHead>{t("tableEmail")}</TableHead>
+                <TableHead>{t("tableRole")}</TableHead>
+                <TableHead>{t("tableStatus")}</TableHead>
+                <TableHead className="w-56">{t("tableActions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -76,10 +75,12 @@ export default async function AdminUsersPage() {
                     {u.email}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{ROLE_LABELS[u.role]}</Badge>
+                    <Badge variant="secondary">{tRoles(u.role)}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={u.active ? "secondary" : "destructive"}>{u.active ? "نشط" : "معطّل"}</Badge>
+                    <Badge variant={u.active ? "secondary" : "destructive"}>
+                      {u.active ? tActions("active") : tActions("disabled")}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <UserRowActions userId={u.id} role={u.role} active={u.active} />
@@ -93,20 +94,18 @@ export default async function AdminUsersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">تعيين المختصين للطلاب</CardTitle>
+          <CardTitle className="text-base">{t("assignSpecialistTitle")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <p className="text-sm text-muted-foreground">
-            التعيين هنا يدوي بالكامل — لا يتم ربط أي طالب بمختص تلقائياً. المختص لا يرى إلا الطلاب المعيّنين له.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("assignSpecialistNote")}</p>
           <AssignSpecialistForm specialists={specialists} students={students} />
 
           {assignments.length > 0 && (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>المختص</TableHead>
-                  <TableHead>الطالب</TableHead>
+                  <TableHead>{t("tableSpecialist")}</TableHead>
+                  <TableHead>{t("tableStudent")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

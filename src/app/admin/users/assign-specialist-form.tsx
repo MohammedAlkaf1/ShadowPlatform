@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { assignSpecialist } from "./actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +22,7 @@ interface Option {
 
 export function AssignSpecialistForm({ specialists, students }: { specialists: Option[]; students: Option[] }) {
   const router = useRouter();
+  const t = useTranslations("AdminUsers");
   const [specialistUserId, setSpecialistUserId] = useState("");
   const [studentProfileId, setStudentProfileId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,27 +30,27 @@ export function AssignSpecialistForm({ specialists, students }: { specialists: O
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!specialistUserId || !studentProfileId) {
-      toast.error("الرجاء اختيار المختص والطالب");
+      toast.error(t("errorSelectSpecialistAndStudent"));
       return;
     }
     setLoading(true);
     const result = await assignSpecialist({ specialistUserId, studentProfileId });
     setLoading(false);
     if (!result.ok) {
-      toast.error(result.error ?? "تعذر التعيين");
+      toast.error(result.error ?? t("errorAssignFailed"));
       return;
     }
-    toast.success("تم تعيين المختص للطالب");
+    toast.success(t("successSpecialistAssigned"));
     router.refresh();
   }
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-3 sm:items-end">
       <div className="space-y-2">
-        <Label>المختص</Label>
+        <Label>{t("specialistLabel")}</Label>
         <Select value={specialistUserId} onValueChange={(v) => setSpecialistUserId(v ?? "")}>
           <SelectTrigger>
-            <SelectValue placeholder="اختر المختص" />
+            <SelectValue placeholder={t("specialistPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
             {specialists.map((s) => (
@@ -60,10 +62,10 @@ export function AssignSpecialistForm({ specialists, students }: { specialists: O
         </Select>
       </div>
       <div className="space-y-2">
-        <Label>الطالب</Label>
+        <Label>{t("studentLabel")}</Label>
         <Select value={studentProfileId} onValueChange={(v) => setStudentProfileId(v ?? "")}>
           <SelectTrigger>
-            <SelectValue placeholder="اختر الطالب" />
+            <SelectValue placeholder={t("studentPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
             {students.map((s) => (
@@ -75,7 +77,7 @@ export function AssignSpecialistForm({ specialists, students }: { specialists: O
         </Select>
       </div>
       <Button type="submit" disabled={loading}>
-        {loading ? "جاري التعيين..." : "تعيين المختص"}
+        {loading ? t("assigning") : t("assignButton")}
       </Button>
     </form>
   );

@@ -119,11 +119,23 @@ function SelectLabel({
 function SelectItem({
   className,
   children,
+  label,
   ...props
 }: SelectPrimitive.Item.Props) {
+  // Base UI's collapsed trigger (`<Select.Value>`) resolves its displayed
+  // text from each item's registered `label` prop, NOT from the item's
+  // rendered `children` — those two are entirely separate channels. Every
+  // usage in this app only ever passed `children` (for the open popup) and
+  // never `label`, so once an item was selected the trigger fell back to
+  // stringifying the raw `value` (e.g. a UUID) instead of showing readable
+  // text. Default `label` to `children` when it's a plain string, which
+  // covers every current usage, while still letting a caller override it
+  // explicitly for non-string children.
+  const resolvedLabel = label ?? (typeof children === "string" ? children : undefined);
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
+      label={resolvedLabel}
       className={cn(
         "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pe-8 ps-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className

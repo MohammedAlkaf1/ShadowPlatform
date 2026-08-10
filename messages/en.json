@@ -327,6 +327,7 @@
     "errorApproveFailed": "Failed to approve plan",
     "successApproved": "Plan approved",
     "errorSelectNewLevel": "Please choose the new level",
+    "errorReasonTooShort": "Please write a reason for the revision of at least 5 characters",
     "errorReviseFailed": "Failed to record the revision",
     "successRevised": "Level revision recorded",
     "revisionsTitle": "Level Revision History",

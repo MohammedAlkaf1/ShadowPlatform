@@ -327,6 +327,7 @@
     "errorApproveFailed": "تعذر اعتماد الخطة",
     "successApproved": "تم اعتماد الخطة",
     "errorSelectNewLevel": "الرجاء اختيار المستوى الجديد",
+    "errorReasonTooShort": "الرجاء كتابة سبب للمراجعة لا يقل عن 5 أحرف",
     "errorReviseFailed": "تعذر تسجيل المراجعة",
     "successRevised": "تم تسجيل مراجعة المستوى",
     "revisionsTitle": "سجل مراجعات المستوى",

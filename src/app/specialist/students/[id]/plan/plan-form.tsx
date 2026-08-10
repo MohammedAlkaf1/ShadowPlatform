@@ -93,6 +93,15 @@ export function PlanForm({
       toast.error(t("errorSelectNewLevel"));
       return;
     }
+    // The server requires reason.length >= 5 (reviseLevelSchema in
+    // actions.ts) and rejects anything shorter with a generic "invalid
+    // data" error. Nothing here was enforcing that before submit, so an
+    // empty/short reason silently reached the server and came back as an
+    // unexplained failure. Checked client-side first for a clear message.
+    if (reason.trim().length < 5) {
+      toast.error(t("errorReasonTooShort"));
+      return;
+    }
     setLoading(true);
     const result = await reviseSupportLevel({
       studentProfileId,
@@ -178,7 +187,13 @@ export function PlanForm({
           </div>
           <div className="space-y-2">
             <Label>{t("revisionReasonLabel")}</Label>
-            <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} />
+            <Textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              required
+              minLength={5}
+            />
           </div>
           <Button onClick={handleRevise} disabled={loading}>
             {t("saveRevisionButton")}

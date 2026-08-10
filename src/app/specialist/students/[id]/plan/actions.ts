@@ -8,9 +8,19 @@ import { logAudit } from "@/lib/audit";
 import { TOOL_CODES } from "@/lib/tool-codes";
 import { z } from "zod";
 
+// `.guid()`, not `.uuid()`: Zod's `.uuid()` enforces the RFC 4122
+// version/variant nibbles (e.g. rejects an id whose 3rd group doesn't
+// start with 1-8), which real Prisma-generated v4 ids always satisfy but
+// this project's seed script's intentionally-readable placeholder ids
+// (e.g. "00000000-0000-0000-0000-0000000a5501") do not. Postgres's own
+// uuid column has no such restriction and already stores these ids fine
+// — `.uuid()` here was strictly more restrictive than the actual data
+// model, and was the real cause of "بيانات غير صالحة" when submitting
+// against seeded records. `.guid()` checks the same 8-4-4-4-12 hex shape
+// without the version/variant constraint.
 const savePlanSchema = z.object({
-  studentProfileId: z.string().uuid(),
-  assessmentId: z.string().uuid(),
+  studentProfileId: z.string().guid(),
+  assessmentId: z.string().guid(),
   enabledToolCodes: z.array(z.enum(TOOL_CODES)),
 });
 
@@ -116,10 +126,11 @@ export async function approveSupportPlan(planId: string, studentProfileId: strin
   return { ok: true };
 }
 
+// See the comment on savePlanSchema above: `.guid()` not `.uuid()`.
 const reviseLevelSchema = z.object({
-  studentProfileId: z.string().uuid(),
-  supportPlanId: z.string().uuid(),
-  newSupportLevelId: z.string().uuid(),
+  studentProfileId: z.string().guid(),
+  supportPlanId: z.string().guid(),
+  newSupportLevelId: z.string().guid(),
   reason: z.string().min(5),
 });
 

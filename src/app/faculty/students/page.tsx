@@ -71,7 +71,8 @@ export default async function FacultyStudentsPage() {
                     <TableRow key={link.id}>
                       <TableCell className="font-medium">{link.courseCode}</TableCell>
                       <TableCell>{link.studentProfile.studentNumber}</TableCell>
-                      <TableCell dir="ltr" className="text-end text-muted-foreground">
+                      {/* text-start with dir="ltr" — see admin/audit-log/page.tsx. */}
+                      <TableCell dir="ltr" className="text-start text-muted-foreground">
                         {link.studentProfile.user.email}
                       </TableCell>
                       <TableCell>

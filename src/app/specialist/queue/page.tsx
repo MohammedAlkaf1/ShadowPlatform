@@ -98,7 +98,8 @@ export default async function SpecialistQueuePage() {
                         <TableCell className="text-sm">
                           {lastAssessment ? tSupportLevel(String(lastAssessment.supportLevel.order)) : "—"}
                         </TableCell>
-                        <TableCell dir="ltr" className="text-end text-sm text-muted-foreground">
+                        {/* text-start with dir="ltr" — see admin/audit-log/page.tsx. */}
+                        <TableCell dir="ltr" className="text-start text-sm text-muted-foreground">
                           {lastAssessment ? formatDate(lastAssessment.assessedAt, locale) : "—"}
                         </TableCell>
                         <TableCell>

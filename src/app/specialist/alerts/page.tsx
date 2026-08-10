@@ -75,7 +75,8 @@ export default async function SpecialistAlertsPage() {
                           {alert.studentProfile.user.email}
                         </p>
                       </TableCell>
-                      <TableCell dir="ltr" className="text-end font-mono text-xs text-muted-foreground">
+                      {/* text-start with dir="ltr" — see admin/audit-log/page.tsx. */}
+                      <TableCell dir="ltr" className="text-start font-mono text-xs text-muted-foreground">
                         {alert.alertType}
                       </TableCell>
                       <TableCell className="max-w-xs whitespace-pre-wrap text-sm">{alert.message}</TableCell>

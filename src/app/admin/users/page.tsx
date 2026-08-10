@@ -71,7 +71,10 @@ export default async function AdminUsersPage() {
             <TableBody>
               {users.map((u) => (
                 <TableRow key={u.id}>
-                  <TableCell dir="ltr" className="text-end font-medium">
+                  {/* text-start (not text-end) with dir="ltr" — see the comment in
+                      admin/audit-log/page.tsx: this always resolves to physical
+                      left, which is correct in both languages, not just RTL. */}
+                  <TableCell dir="ltr" className="text-start font-medium">
                     {u.email}
                   </TableCell>
                   <TableCell>
@@ -111,10 +114,11 @@ export default async function AdminUsersPage() {
               <TableBody>
                 {assignments.map((a) => (
                   <TableRow key={a.id}>
-                    <TableCell dir="ltr" className="text-end">
+                    {/* text-start with dir="ltr" — see admin/audit-log/page.tsx. */}
+                    <TableCell dir="ltr" className="text-start">
                       {a.specialist.email}
                     </TableCell>
-                    <TableCell dir="ltr" className="text-end">
+                    <TableCell dir="ltr" className="text-start">
                       {a.studentProfile.user.email}
                     </TableCell>
                   </TableRow>

@@ -139,10 +139,22 @@ export default async function AdminAuditLogPage({
               <TableBody>
                 {logs.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell dir="ltr" className="text-end text-xs text-muted-foreground">
+                    {/* dir="ltr" forces these to always render left-to-right (dates/
+                        emails shouldn't get bidi-mirrored in an RTL page), and
+                        text-start (not text-end) is deliberate: text-align:start
+                        resolves against THIS element's own dir="ltr", so it always
+                        computes to physical left — which is simultaneously "the end
+                        edge" in an RTL page (matching the rest of the RTL table's
+                        visual flow) and "the start edge" in an LTR page (matching
+                        every other left-aligned column in English). text-end here
+                        would instead always resolve to physical right, which is only
+                        coincidentally correct in RTL and visibly wrong in LTR — that
+                        was the actual cause of English-mode date columns still
+                        looking RTL-aligned. */}
+                    <TableCell dir="ltr" className="text-start text-xs text-muted-foreground">
                       {formatDateTime(log.createdAt, locale)}
                     </TableCell>
-                    <TableCell dir="ltr" className="text-end text-sm">
+                    <TableCell dir="ltr" className="text-start text-sm">
                       {log.actor.email}
                     </TableCell>
                     <TableCell className="font-mono text-xs">{log.action}</TableCell>

@@ -140,7 +140,8 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                       <FileText className="size-4 text-muted-foreground" />
                       {doc.originalFilename}
                     </TableCell>
-                    <TableCell dir="ltr" className="text-end text-muted-foreground">
+                    {/* text-start with dir="ltr" — see admin/audit-log/page.tsx. */}
+                    <TableCell dir="ltr" className="text-start text-muted-foreground">
                       {formatDate(doc.createdAt, locale)}
                     </TableCell>
                     <TableCell>{tDocumentStatus(doc.status === "reviewed" ? "reviewed" : "pending")}</TableCell>

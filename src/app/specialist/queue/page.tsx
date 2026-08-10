@@ -6,7 +6,8 @@ import { formatDate } from "@/lib/format-date";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { AlertTriangle } from "lucide-react";
 
 export default async function SpecialistQueuePage() {
@@ -119,20 +120,29 @@ export default async function SpecialistQueuePage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              render={<Link href={`/specialist/students/${sp.id}`}>{t("detailsButton")}</Link>}
-                            />
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              render={<Link href={`/specialist/students/${sp.id}/assess`}>{t("assessButton")}</Link>}
-                            />
-                            <Button
-                              size="sm"
-                              render={<Link href={`/specialist/students/${sp.id}/plan`}>{t("planButton")}</Link>}
-                            />
+                            {/* These are navigation links styled to look like buttons, not
+                                actions — per Base UI's own Button docs, a <Link>/<a> should
+                                never be swapped in via Button's `render` prop (that's reserved
+                                for elements that can take on real button semantics); style the
+                                link directly with buttonVariants instead. */}
+                            <Link
+                              href={`/specialist/students/${sp.id}`}
+                              className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+                            >
+                              {t("detailsButton")}
+                            </Link>
+                            <Link
+                              href={`/specialist/students/${sp.id}/assess`}
+                              className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+                            >
+                              {t("assessButton")}
+                            </Link>
+                            <Link
+                              href={`/specialist/students/${sp.id}/plan`}
+                              className={cn(buttonVariants({ size: "sm" }))}
+                            >
+                              {t("planButton")}
+                            </Link>
                           </div>
                         </TableCell>
                       </TableRow>

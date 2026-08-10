@@ -9,7 +9,8 @@ import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/format-date";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: studentProfileId } = await params;
@@ -83,11 +84,18 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            render={<Link href={`/specialist/students/${studentProfileId}/assess`}>{t("assessButton")}</Link>}
-          />
-          <Button render={<Link href={`/specialist/students/${studentProfileId}/plan`}>{t("planButton")}</Link>} />
+          {/* Navigation links styled as buttons — see the comment in
+              specialist/queue/page.tsx for why these use buttonVariants
+              directly on <Link> instead of Button's `render` prop. */}
+          <Link
+            href={`/specialist/students/${studentProfileId}/assess`}
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            {t("assessButton")}
+          </Link>
+          <Link href={`/specialist/students/${studentProfileId}/plan`} className={cn(buttonVariants())}>
+            {t("planButton")}
+          </Link>
         </div>
       </div>
 

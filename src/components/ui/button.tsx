@@ -40,6 +40,21 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * Renders a real `<button>` by default (`nativeButton` defaults to `true`
+ * on the underlying Base UI primitive). If you need this to render as a
+ * different tag via `render`, that tag must be something that can
+ * meaningfully take on button semantics (e.g. `<div>`) — set
+ * `nativeButton={false}` in that case so Base UI doesn't warn about
+ * losing native button semantics on a non-`<button>` element.
+ *
+ * Do NOT use `render` to swap in a `<Link>`/`<a>` — links have their own
+ * semantics (they navigate, are middle-click/ctrl-click-openable, show a
+ * URL on hover, etc.) that button semantics would override, which is
+ * exactly what Base UI's own docs warn against. For a link that should
+ * look like a button, style the `<Link>`/`<a>` directly with
+ * `buttonVariants({...})` instead of routing it through this component.
+ */
 function Button({
   className,
   variant = "default",

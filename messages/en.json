@@ -331,7 +331,8 @@
     "errorReviseFailed": "Failed to record the revision",
     "successRevised": "Level revision recorded",
     "revisionsTitle": "Level Revision History",
-    "newLevelPrefix": "New level"
+    "newLevelPrefix": "New level",
+    "toolsLockedNotice": "Tools can't be changed after the plan is approved. You can revise the support level below."
   },
   "StudentStatus": {
     "title": "Request Status",

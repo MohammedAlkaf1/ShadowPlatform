@@ -122,6 +122,10 @@ export function PlanForm({
 
   return (
     <div className="space-y-6">
+      {isApproved && (
+        <p className="rounded-md bg-secondary/60 p-3 text-sm text-muted-foreground">{t("toolsLockedNotice")}</p>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2">
         {TOOL_CODES.map((code) => {
           const meta = TOOL_CODE_LABELS[code];

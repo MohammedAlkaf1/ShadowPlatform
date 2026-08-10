@@ -331,7 +331,8 @@
     "errorReviseFailed": "تعذر تسجيل المراجعة",
     "successRevised": "تم تسجيل مراجعة المستوى",
     "revisionsTitle": "سجل مراجعات المستوى",
-    "newLevelPrefix": "المستوى الجديد"
+    "newLevelPrefix": "المستوى الجديد",
+    "toolsLockedNotice": "لا يمكن تعديل الأدوات بعد اعتماد الخطة. يمكنك مراجعة مستوى الدعم أدناه."
   },
   "StudentStatus": {
     "title": "حالة الطلب",

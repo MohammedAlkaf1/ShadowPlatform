@@ -6,11 +6,13 @@ import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { assertSpecialistAssigned } from "@/lib/specialist-access";
 import { logAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
-import { formatDateTime } from "@/lib/format-date";
+import { formatDate, formatDateTime } from "@/lib/format-date";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { FileText } from "lucide-react";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: studentProfileId } = await params;
@@ -21,6 +23,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const t = await getTranslations("SpecialistStudentDetail");
   const tPlanStatus = await getTranslations("Common.planStatus");
   const tSupportLevel = await getTranslations("Common.supportLevel");
+  const tDocumentStatus = await getTranslations("Common.documentStatus");
   const locale = await getLocale();
 
   const student = await db.studentProfile.findUnique({
@@ -38,7 +41,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     targetStudentProfileId: studentProfileId,
   });
 
-  const [assessments, supportPlans, usageEvents] = await Promise.all([
+  const [assessments, supportPlans, usageEvents, documents] = await Promise.all([
     db.assessment.findMany({
       where: { studentProfileId },
       include: { condition: { include: { category: true } }, supportLevel: true },
@@ -51,6 +54,19 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     db.usageEvent.findMany({
       where: { studentProfileId },
       select: { eventType: true },
+    }),
+    // Same download route the student's own /student/documents page links
+    // to for viewing purposes is NOT reused here — specialists go through
+    // the specialist-only GET /api/documents/:id route below, which is
+    // separately access-gated by assertSpecialistAssigned/SpecialistAssignment
+    // and audit-logs every view. This page previously queried assessments/
+    // supportPlans/usageEvents/planRevisions but never Document at all, so
+    // uploaded documents were invisible here even when the specialist was
+    // correctly assigned to the student.
+    db.document.findMany({
+      where: { studentProfileId, deletedAt: null },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, originalFilename: true, createdAt: true, status: true },
     }),
   ]);
 
@@ -98,6 +114,43 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           </Link>
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            {t("documentsTitle")} ({documents.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {documents.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">{t("noDocuments")}</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("tableFile")}</TableHead>
+                  <TableHead>{t("tableUploadDate")}</TableHead>
+                  <TableHead>{t("tableStatus")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {documents.map((doc) => (
+                  <TableRow key={doc.id}>
+                    <TableCell className="flex items-center gap-2 font-medium">
+                      <FileText className="size-4 text-muted-foreground" />
+                      {doc.originalFilename}
+                    </TableCell>
+                    <TableCell dir="ltr" className="text-end text-muted-foreground">
+                      {formatDate(doc.createdAt, locale)}
+                    </TableCell>
+                    <TableCell>{tDocumentStatus(doc.status === "reviewed" ? "reviewed" : "pending")}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

@@ -286,7 +286,12 @@
     "noRevisions": "No revisions recorded",
     "newLevelLabel": "New level",
     "usageSummaryTitle": "App Usage Summary",
-    "noUsageData": "No usage data yet"
+    "noUsageData": "No usage data yet",
+    "documentsTitle": "Uploaded Documents",
+    "noDocuments": "No documents uploaded yet",
+    "tableFile": "File",
+    "tableUploadDate": "Upload date",
+    "tableStatus": "Status"
   },
   "SpecialistAssess": {
     "title": "Assess Student",

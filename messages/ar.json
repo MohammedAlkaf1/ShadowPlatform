@@ -286,7 +286,12 @@
     "noRevisions": "لا توجد مراجعات مسجّلة",
     "newLevelLabel": "المستوى الجديد",
     "usageSummaryTitle": "ملخص استخدام التطبيق",
-    "noUsageData": "لا توجد بيانات استخدام بعد"
+    "noUsageData": "لا توجد بيانات استخدام بعد",
+    "documentsTitle": "المستندات المرفوعة",
+    "noDocuments": "لا توجد مستندات مرفوعة",
+    "tableFile": "الملف",
+    "tableUploadDate": "تاريخ الرفع",
+    "tableStatus": "الحالة"
   },
   "SpecialistAssess": {
     "title": "تقييم الطالب",

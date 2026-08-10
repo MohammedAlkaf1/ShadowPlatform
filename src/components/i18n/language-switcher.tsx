@@ -6,15 +6,25 @@ import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { LOCALE_COOKIE_NAME, type AppLocale } from "@/lib/locale";
 import { cn } from "@/lib/utils";
+import { setLocalePreference } from "./actions";
 
 /**
- * Sets the NEXT_LOCALE cookie client-side and refreshes the current route
- * so the server re-resolves locale (src/i18n/request.ts) on next render.
- * This is the ONLY mechanism available pre-login (e.g. on /login) — there's
- * no User row yet to save a preference to. Once authenticated, the same
- * cookie also gets synced into User.locale on the next sign-in (see
- * src/auth.ts) so the choice is genuinely "saved to their profile" as
- * required, not just a cookie forever.
+ * Shared switcher used both pre-login (/login) and inside the
+ * authenticated app (AppShell's sidebar, visible on every page).
+ *
+ * Two persistence paths run on every switch, since this component doesn't
+ * know whether a session exists:
+ *   1. The NEXT_LOCALE cookie is always set client-side — the only signal
+ *      available pre-login (no User row to save a preference to yet), and
+ *      it's what src/auth.ts syncs into User.locale on the NEXT sign-in.
+ *   2. setLocalePreference() (a server action) is always called too — for
+ *      an already-authenticated user it writes User.locale directly, so
+ *      the change sticks immediately without requiring a fresh sign-in.
+ *      It's a silent no-op with no session (e.g. on /login), so it's safe
+ *      to call unconditionally here rather than needing this component to
+ *      know its own context.
+ * router.refresh() then re-runs the server render, and resolveLocale()
+ * (src/i18n/request.ts) picks up whichever of the two just changed.
  */
 export function LanguageSwitcher({ className }: { className?: string }) {
   const locale = useLocale() as AppLocale;
@@ -25,7 +35,8 @@ export function LanguageSwitcher({ className }: { className?: string }) {
   function switchTo(next: AppLocale) {
     if (next === locale || isPending) return;
     document.cookie = `${LOCALE_COOKIE_NAME}=${next}; path=/; max-age=31536000; SameSite=Lax`;
-    startTransition(() => {
+    startTransition(async () => {
+      await setLocalePreference(next);
       router.refresh();
     });
   }

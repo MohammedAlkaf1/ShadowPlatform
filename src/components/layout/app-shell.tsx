@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
+import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { SignOutButton } from "./sign-out-button";
 
 export interface NavItem {
@@ -45,6 +46,7 @@ export async function AppShell({
           </nav>
         </div>
         <div className="border-t border-sidebar-border p-4">
+          <LanguageSwitcher className="mb-3 w-full justify-center" />
           <p className="truncate text-xs text-sidebar-foreground/70" dir="ltr">
             {userEmail}
           </p>

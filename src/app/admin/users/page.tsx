@@ -17,7 +17,7 @@ export default async function AdminUsersPage() {
 
   const users = await db.user.findMany({
     orderBy: { createdAt: "asc" },
-    include: { studentProfile: { select: { id: true, studentNumber: true } } },
+    include: { studentProfile: { select: { id: true, studentNumber: true, requestStatus: true } } },
   });
 
   const specialists = users
@@ -36,12 +36,37 @@ export default async function AdminUsersPage() {
     orderBy: { createdAt: "desc" },
   });
 
+  // Minimal visibility for the "which students need a specialist assigned"
+  // workflow gap: a student needs attention if their request is still
+  // pending OR no SpecialistAssignment exists for them yet at all (a
+  // request can move past "pending" via other steps while still having
+  // no assignment, so this is deliberately an OR, not just a status
+  // check). This reads entirely off data already fetched on this page —
+  // no new query, no new page, just a derived count + a per-row badge.
+  const assignedStudentProfileIds = new Set(assignments.map((a) => a.studentProfileId));
+  const needsAssignmentStudentProfileIds = new Set(
+    users
+      .filter(
+        (u) =>
+          u.role === "student" &&
+          u.studentProfile &&
+          (u.studentProfile.requestStatus === "pending" || !assignedStudentProfileIds.has(u.studentProfile.id))
+      )
+      .map((u) => u.studentProfile!.id)
+  );
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
+
+      {needsAssignmentStudentProfileIds.size > 0 && (
+        <Badge variant="destructive" className="text-sm">
+          {t("needsAssignmentCount", { count: needsAssignmentStudentProfileIds.size })}
+        </Badge>
+      )}
 
       <Card>
         <CardHeader>
@@ -69,8 +94,11 @@ export default async function AdminUsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((u) => (
-                <TableRow key={u.id}>
+              {users.map((u) => {
+                const needsAssignment =
+                  u.studentProfile != null && needsAssignmentStudentProfileIds.has(u.studentProfile.id);
+                return (
+                  <TableRow key={u.id} className={needsAssignment ? "bg-destructive/5" : undefined}>
                   {/* text-start (not text-end) with dir="ltr" — see the comment in
                       admin/audit-log/page.tsx: this always resolves to physical
                       left, which is correct in both languages, not just RTL. */}
@@ -81,15 +109,19 @@ export default async function AdminUsersPage() {
                     <Badge variant="secondary">{tRoles(u.role)}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={u.active ? "secondary" : "destructive"}>
-                      {u.active ? tActions("active") : tActions("disabled")}
-                    </Badge>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge variant={u.active ? "secondary" : "destructive"}>
+                        {u.active ? tActions("active") : tActions("disabled")}
+                      </Badge>
+                      {needsAssignment && <Badge variant="destructive">{t("needsAssignmentBadge")}</Badge>}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <UserRowActions userId={u.id} role={u.role} active={u.active} />
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>

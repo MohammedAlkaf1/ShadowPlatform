@@ -185,7 +185,9 @@
     "errorStatusUpdateFailed": "تعذر تحديث الحالة",
     "errorSelectSpecialistAndStudent": "الرجاء اختيار المختص والطالب",
     "successSpecialistAssigned": "تم تعيين المختص للطالب",
-    "errorAssignFailed": "تعذر التعيين"
+    "errorAssignFailed": "تعذر التعيين",
+    "needsAssignmentCount": "طلبات جديدة تحتاج تعييناً: {count}",
+    "needsAssignmentBadge": "بحاجة لتعيين"
   },
   "AdminStats": {
     "title": "إحصائيات الجامعة",

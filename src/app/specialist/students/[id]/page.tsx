@@ -131,6 +131,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                   <TableHead>{t("tableFile")}</TableHead>
                   <TableHead>{t("tableUploadDate")}</TableHead>
                   <TableHead>{t("tableStatus")}</TableHead>
+                  <TableHead className="w-28">{t("tableDownload")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -145,6 +146,20 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                       {formatDate(doc.createdAt, locale)}
                     </TableCell>
                     <TableCell>{tDocumentStatus(doc.status === "reviewed" ? "reviewed" : "pending")}</TableCell>
+                    <TableCell>
+                      {/* Hits GET /api/documents/:id via the browser's own
+                          session cookie — now supported alongside the mobile
+                          JWT path (see src/lib/api-auth.ts's requireApiRole),
+                          so this link actually works instead of always 401ing. */}
+                      <a
+                        href={`/api/documents/${doc.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+                      >
+                        {t("downloadButton")}
+                      </a>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

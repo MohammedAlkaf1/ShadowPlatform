@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireMobileRole } from "@/lib/api-auth";
+import { requireApiRole } from "@/lib/api-auth";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { getEncryptedObject } from "@/lib/s3";
 import { decryptBuffer } from "@/lib/encryption";
@@ -7,6 +7,17 @@ import { logAudit, getRequestIp } from "@/lib/audit";
 
 /**
  * GET /api/documents/:id — specialist-only download.
+ *
+ * Serves BOTH the mobile app (Bearer JWT) and the web app (NextAuth
+ * session cookie) via requireApiRole, which tries a mobile JWT first and
+ * falls back to a web session — see src/lib/api-auth.ts. Originally this
+ * only supported the JWT path, which meant a specialist using the actual
+ * web UI could never open a document at all (always 401) — discovered
+ * while adding document visibility to /specialist/students/[id] (commit
+ * b86fe52). Every check below (role, tenant scoping via
+ * getTenantScopedPrisma, the SpecialistAssignment check, audit logging)
+ * runs identically regardless of which auth path produced ctx — there is
+ * no separate/weaker code path for the web session.
  *
  * Access requires: role=specialist (or admin), same tenant, AND the document
  * belongs to a student that admin has manually assigned to this specialist
@@ -32,7 +43,7 @@ import { logAudit, getRequestIp } from "@/lib/audit";
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: documentId } = await params;
-  const auth = await requireMobileRole(request, "specialist", "admin");
+  const auth = await requireApiRole(request, "specialist", "admin");
   if (!auth.ok) {
     if (auth.ctx) {
       await logAudit({

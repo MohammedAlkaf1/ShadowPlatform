@@ -291,7 +291,9 @@
     "noDocuments": "No documents uploaded yet",
     "tableFile": "File",
     "tableUploadDate": "Upload date",
-    "tableStatus": "Status"
+    "tableStatus": "Status",
+    "tableDownload": "Download",
+    "downloadButton": "Download"
   },
   "SpecialistAssess": {
     "title": "Assess Student",

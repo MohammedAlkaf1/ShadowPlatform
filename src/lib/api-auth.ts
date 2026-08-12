@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { UserRole } from "@prisma/client";
 import { extractBearerToken, verifyMobileToken } from "./mobile-jwt";
 import { prisma } from "./prisma";
-import type { RequestContext } from "./session";
+import { getRequestContext, type RequestContext } from "./session";
 
 /**
  * Auth guard for the Flutter-app-facing /api/* endpoints. These are
@@ -39,16 +39,49 @@ export function forbiddenResponse(message = "لا تملك صلاحية الوص
   return NextResponse.json({ error: message }, { status: 403 });
 }
 
-export async function requireMobileRole(request: Request, ...roles: UserRole[]): Promise<
+export type ApiRoleResult =
   | { ok: true; ctx: RequestContext }
   // `ctx` is included on the role-forbidden branch (but not the
   // unauthenticated one, where there's no known actor) so callers can still
   // write an AuditLog row for a denied access attempt — AuditLog.actorUserId
   // is a required field, so there's nothing to log against when there's no
   // authenticated user at all.
-  | { ok: false; response: NextResponse; ctx?: RequestContext }
-> {
+  | { ok: false; response: NextResponse; ctx?: RequestContext };
+
+export async function requireMobileRole(request: Request, ...roles: UserRole[]): Promise<ApiRoleResult> {
   const ctx = await getMobileRequestContext(request);
+  if (!ctx) {
+    return { ok: false, response: unauthorizedResponse() };
+  }
+  if (roles.length > 0 && !roles.includes(ctx.role)) {
+    return { ok: false, response: forbiddenResponse(), ctx };
+  }
+  return { ok: true, ctx };
+}
+
+/**
+ * Resolves the request context from EITHER credential type an /api/* route
+ * might legitimately receive: a mobile Bearer JWT (native app, no cookie
+ * jar) or a NextAuth web session cookie (browser). Tried in that order —
+ * if an Authorization header is present it's an unambiguous mobile-app
+ * request, so that's checked first; otherwise falls back to the session
+ * cookie a browser would send. A request can't plausibly present both, so
+ * this is a straightforward "try A, then B", not a merge of two identities.
+ *
+ * Use this (via requireApiRole below) for any endpoint that must serve
+ * BOTH the Flutter app and the web app — most /api/* routes are
+ * mobile-only by design and should keep using requireMobileRole/
+ * getMobileRequestContext directly instead.
+ */
+export async function getAnyRequestContext(request: Request): Promise<RequestContext | null> {
+  const mobileCtx = await getMobileRequestContext(request);
+  if (mobileCtx) return mobileCtx;
+  return getRequestContext();
+}
+
+/** Same contract as requireMobileRole, but accepts either auth channel — see getAnyRequestContext. */
+export async function requireApiRole(request: Request, ...roles: UserRole[]): Promise<ApiRoleResult> {
+  const ctx = await getAnyRequestContext(request);
   if (!ctx) {
     return { ok: false, response: unauthorizedResponse() };
   }

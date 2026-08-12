@@ -291,7 +291,9 @@
     "noDocuments": "لا توجد مستندات مرفوعة",
     "tableFile": "الملف",
     "tableUploadDate": "تاريخ الرفع",
-    "tableStatus": "الحالة"
+    "tableStatus": "الحالة",
+    "tableDownload": "تنزيل",
+    "downloadButton": "تنزيل"
   },
   "SpecialistAssess": {
     "title": "تقييم الطالب",

@@ -187,7 +187,8 @@
     "successSpecialistAssigned": "تم تعيين المختص للطالب",
     "errorAssignFailed": "تعذر التعيين",
     "needsAssignmentCount": "طلبات جديدة تحتاج تعييناً: {count}",
-    "needsAssignmentBadge": "بحاجة لتعيين"
+    "needsAssignmentBadge": "بحاجة لتعيين",
+    "specialistCurrentLoad": "{count} طلاب حالياً"
   },
   "AdminStats": {
     "title": "إحصائيات الجامعة",

@@ -20,14 +20,6 @@ export default async function AdminUsersPage() {
     include: { studentProfile: { select: { id: true, studentNumber: true, requestStatus: true } } },
   });
 
-  const specialists = users
-    .filter((u) => u.role === "specialist" && u.active)
-    .map((u) => ({ id: u.id, label: u.email }));
-
-  const students = users
-    .filter((u) => u.role === "student" && u.active && u.studentProfile)
-    .map((u) => ({ id: u.studentProfile!.id, label: `${u.email} (${u.studentProfile!.studentNumber || "—"})` }));
-
   const assignments = await db.specialistAssignment.findMany({
     include: {
       specialist: { select: { email: true } },
@@ -35,6 +27,26 @@ export default async function AdminUsersPage() {
     },
     orderBy: { createdAt: "desc" },
   });
+
+  // Current caseload per specialist, so the assignment dropdown shows load
+  // instead of just an email — helps admins distribute students fairly
+  // instead of stacking one specialist. Derived from the assignments already
+  // fetched above, no extra query.
+  const caseloadBySpecialistId = new Map<string, number>();
+  for (const a of assignments) {
+    caseloadBySpecialistId.set(a.specialistUserId, (caseloadBySpecialistId.get(a.specialistUserId) ?? 0) + 1);
+  }
+
+  const specialists = users
+    .filter((u) => u.role === "specialist" && u.active)
+    .map((u) => ({
+      id: u.id,
+      label: `${u.email} — ${t("specialistCurrentLoad", { count: caseloadBySpecialistId.get(u.id) ?? 0 })}`,
+    }));
+
+  const students = users
+    .filter((u) => u.role === "student" && u.active && u.studentProfile)
+    .map((u) => ({ id: u.studentProfile!.id, label: `${u.email} (${u.studentProfile!.studentNumber || "—"})` }));
 
   // Minimal visibility for the "which students need a specialist assigned"
   // workflow gap: a student needs attention if their request is still

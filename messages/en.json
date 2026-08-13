@@ -187,7 +187,8 @@
     "successSpecialistAssigned": "Specialist assigned to student",
     "errorAssignFailed": "Failed to assign specialist",
     "needsAssignmentCount": "New requests needing assignment: {count}",
-    "needsAssignmentBadge": "Needs assignment"
+    "needsAssignmentBadge": "Needs assignment",
+    "specialistCurrentLoad": "{count} students currently"
   },
   "AdminStats": {
     "title": "University Statistics",

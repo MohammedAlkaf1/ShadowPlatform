@@ -22,6 +22,9 @@ export const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   role: z.enum(["student", "faculty", "specialist", "admin"]),
+  // Only meaningful when role === "student" - optional here since the field
+  // doesn't apply to the other three roles.
+  studentNumber: z.string().optional(),
 });
 
 export const updateUserSchema = z.object({

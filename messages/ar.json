@@ -159,6 +159,7 @@
     "emailLabel": "البريد الإلكتروني",
     "passwordLabel": "كلمة المرور",
     "roleLabel": "الدور",
+    "studentNumberLabel": "الرقم الجامعي",
     "addUserButton": "إضافة مستخدم",
     "addingUser": "جاري الإنشاء...",
     "usersListTitle": "المستخدمون",
@@ -251,6 +252,7 @@
     "tableActions": "إجراءات",
     "noAssessmentYet": "لا يوجد تقييم بعد",
     "noPlan": "لا توجد خطة",
+    "noStudentNumber": "— بلا رقم جامعي —",
     "detailsButton": "التفاصيل",
     "assessButton": "التقييم",
     "planButton": "خطة الدعم"

@@ -20,7 +20,7 @@ export async function createUser(input: unknown): Promise<ActionResult> {
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "بيانات غير صالحة" };
   }
-  const { email, password, role } = parsed.data;
+  const { email, password, role, studentNumber } = parsed.data;
   const emailLower = email.toLowerCase();
 
   const db = getTenantScopedPrisma(ctx.tenantId);
@@ -40,7 +40,7 @@ export async function createUser(input: unknown): Promise<ActionResult> {
         data: {
           tenantId: ctx.tenantId,
           userId: user.id,
-          studentNumber: "",
+          studentNumber: studentNumber?.trim() ?? "",
           major: "",
           academicStage: "",
           phone: "",

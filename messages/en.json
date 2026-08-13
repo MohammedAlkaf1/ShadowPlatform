@@ -159,6 +159,7 @@
     "emailLabel": "Email address",
     "passwordLabel": "Password",
     "roleLabel": "Role",
+    "studentNumberLabel": "Student number",
     "addUserButton": "Add user",
     "addingUser": "Adding...",
     "usersListTitle": "Users",
@@ -251,6 +252,7 @@
     "tableActions": "Actions",
     "noAssessmentYet": "No assessment yet",
     "noPlan": "No plan",
+    "noStudentNumber": "— No student number —",
     "detailsButton": "Details",
     "assessButton": "Assess",
     "planButton": "Support plan"

@@ -25,12 +25,13 @@ export function CreateUserForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("student");
+  const [studentNumber, setStudentNumber] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const result = await createUser({ email, password, role });
+    const result = await createUser({ email, password, role, studentNumber });
     setLoading(false);
     if (!result.ok) {
       toast.error(result.error ?? t("errorUserCreateFailed"));
@@ -39,6 +40,7 @@ export function CreateUserForm() {
     toast.success(t("successUserCreated"));
     setEmail("");
     setPassword("");
+    setStudentNumber("");
     router.refresh();
   }
 
@@ -75,6 +77,16 @@ export function CreateUserForm() {
           </SelectContent>
         </Select>
       </div>
+      {role === "student" && (
+        <div className="space-y-2">
+          <Label htmlFor="new-student-number">{t("studentNumberLabel")}</Label>
+          <Input
+            id="new-student-number"
+            value={studentNumber}
+            onChange={(e) => setStudentNumber(e.target.value)}
+          />
+        </div>
+      )}
       <Button type="submit" disabled={loading}>
         {loading ? t("addingUser") : t("addUserButton")}
       </Button>

@@ -78,7 +78,7 @@ export default async function SpecialistQueuePage() {
                     return (
                       <TableRow key={a.id}>
                         <TableCell>
-                          <p className="font-medium">{sp.studentNumber}</p>
+                          <p className="font-medium">{sp.studentNumber?.trim() ? sp.studentNumber : t("noStudentNumber")}</p>
                           <p dir="ltr" className="text-xs text-muted-foreground">
                             {sp.user.email}
                           </p>

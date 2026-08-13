@@ -66,11 +66,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
         }
 
+        // Fetched once here, at login, and carried in the JWT/session from
+        // then on (see the jwt/session callbacks below) specifically so
+        // requireRolePage (src/lib/require-role-page.ts, run at the top of
+        // every role's layout.tsx — i.e. on EVERY authenticated page
+        // navigation) doesn't need its own user.findUnique/tenant.findUnique
+        // round trip just to display the email/tenant name in the sidebar.
+        // That was two avoidable DB queries on every single navigation;
+        // this way it's one extra query, paid once per login instead.
+        const tenant = await prisma.tenant.findUnique({ where: { id: user.tenantId }, select: { name: true } });
+
         return {
           id: user.id,
           tenantId: user.tenantId,
           role: user.role,
           email: user.email,
+          tenantName: tenant?.name ?? "",
         };
       },
     }),
@@ -81,6 +92,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.userId = user.id;
         token.tenantId = user.tenantId;
         token.role = user.role;
+        token.email = user.email;
+        token.tenantName = user.tenantName;
       }
       return token;
     },
@@ -88,6 +101,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.id = token.userId;
       session.user.tenantId = token.tenantId;
       session.user.role = token.role;
+      session.user.email = token.email ?? "";
+      session.user.tenantName = token.tenantName;
       return session;
     },
   },

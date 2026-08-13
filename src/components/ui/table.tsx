@@ -93,10 +93,33 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
       className={cn(
         // Explicit `text-start` (not left implicit/inherited) so this
         // always matches TableHead's alignment strategy exactly, in both
-        // directions — see the note on TableHead above. Callers that need
-        // a cell to visually anchor to the end (e.g. an always-LTR email
-        // address column) pass `text-end` themselves, which cn()/
-        // tailwind-merge correctly overrides this default with.
+        // directions — see the note on TableHead above.
+        //
+        // PITFALL (this was a real, shipped regression — see the RTL
+        // email-column-alignment fix): do NOT put `dir="ltr"` directly on
+        // a <TableCell> that also carries (or inherits) a `text-start`/
+        // `text-end` class. `text-align: start/end` resolves against the
+        // element's OWN computed direction, not the page's — so a cell
+        // with `dir="ltr"` always aligns relative to LTR regardless of
+        // whether the page is actually RTL, which desyncs it from
+        // TableHead (whose alignment always follows the real page
+        // direction, since it's never given its own forced `dir`). This
+        // happens to be invisible for content that genuinely should
+        // always sit on the same physical side in both languages (dates,
+        // technical/monospace codes — `text-start` + `dir="ltr"` on those
+        // is intentional and correct, see admin/audit-log/page.tsx's date
+        // column), but for anything that should track the page's actual
+        // reading direction (emails, names, any natural-language-adjacent
+        // identifier), it silently breaks alignment against the header in
+        // one of the two languages.
+        //
+        // Safe pattern for LTR-only content (emails, etc.) that must still
+        // sit correctly under an RTL-or-LTR header: leave THIS cell with
+        // no `dir`/alignment override at all (so it follows the page,
+        // matching the header), and put `dir="ltr"` only on an inner
+        // wrapping element around just that text, e.g.
+        // `<TableCell><span dir="ltr">{email}</span></TableCell>`. See
+        // admin/users/page.tsx's user table for a real example.
         "p-2 align-middle text-start whitespace-nowrap [&:has([role=checkbox])]:pe-0",
         className
       )}

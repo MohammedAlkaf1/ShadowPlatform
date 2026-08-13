@@ -20,7 +20,7 @@ export async function createUser(input: unknown): Promise<ActionResult> {
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "بيانات غير صالحة" };
   }
-  const { email, password, role, studentNumber } = parsed.data;
+  const { email, fullName, password, role, studentNumber } = parsed.data;
   const emailLower = email.toLowerCase();
 
   const db = getTenantScopedPrisma(ctx.tenantId);
@@ -33,7 +33,7 @@ export async function createUser(input: unknown): Promise<ActionResult> {
 
   await db.$transaction(async (tx) => {
     const user = await tx.user.create({
-      data: { tenantId: ctx.tenantId, email: emailLower, passwordHash, role, active: true },
+      data: { tenantId: ctx.tenantId, email: emailLower, fullName: fullName.trim(), passwordHash, role, active: true },
     });
     if (role === "student") {
       await tx.studentProfile.create({

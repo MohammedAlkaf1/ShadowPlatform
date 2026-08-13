@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const studentRegisterSchema = z.object({
   email: z.string().email("بريد إلكتروني غير صالح"),
+  fullName: z.string().min(2, "الاسم الكامل مطلوب"),
   password: z.string().min(8, "كلمة المرور يجب ألا تقل عن 8 أحرف"),
   studentNumber: z.string().min(3, "الرقم الجامعي مطلوب"),
   major: z.string().min(2, "التخصص مطلوب"),
@@ -20,6 +21,7 @@ export const assessmentSchema = z.object({
 
 export const createUserSchema = z.object({
   email: z.string().email(),
+  fullName: z.string().min(2, "الاسم الكامل مطلوب"),
   password: z.string().min(8),
   role: z.enum(["student", "faculty", "specialist", "admin"]),
   // Only meaningful when role === "student" - optional here since the field

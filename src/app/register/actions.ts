@@ -59,6 +59,7 @@ export async function registerStudent(formData: unknown): Promise<RegisterResult
       data: {
         tenantId: tenant.id,
         email: emailLower,
+        fullName: data.fullName.trim(),
         passwordHash,
         role: "student",
         active: true,

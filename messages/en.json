@@ -6,6 +6,7 @@
   "Register": {
     "title": "Register as a New Student",
     "subtitle": "Create your account to apply for support services",
+    "fullNameLabel": "Full name",
     "emailLabel": "University email address",
     "passwordLabel": "Password",
     "studentNumberLabel": "Student number",
@@ -156,6 +157,7 @@
     "title": "User Management",
     "subtitle": "Add and manage user permissions within the university",
     "addUserTitle": "Add New User",
+    "fullNameLabel": "Full name",
     "emailLabel": "Email address",
     "passwordLabel": "Password",
     "roleLabel": "Role",
@@ -163,7 +165,7 @@
     "addUserButton": "Add user",
     "addingUser": "Adding...",
     "usersListTitle": "Users",
-    "tableEmail": "Email address",
+    "tableUser": "User",
     "tableRole": "Role",
     "tableStatus": "Status",
     "tableActions": "Actions",
@@ -233,7 +235,7 @@
     "noStudents": "No students are currently linked to your courses",
     "tableCourse": "Course",
     "tableStudentNumber": "Student ID",
-    "tableEmail": "Email address",
+    "tableStudentName": "Student",
     "tableAccommodations": "Approved accommodations",
     "tableFiles": "Custom files",
     "noAccommodations": "No accommodations recorded"

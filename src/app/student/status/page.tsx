@@ -79,7 +79,7 @@ export default async function StudentStatusPage() {
     ? await db.facultyResource.findMany({
         where: { studentProfileId: studentProfile.id, deletedAt: null },
         orderBy: { createdAt: "desc" },
-        include: { uploadedBy: { select: { email: true } } },
+        include: { uploadedBy: { select: { email: true, fullName: true } } },
       })
     : [];
   const newBadgeCutoff = newBadgeCutoffDate();
@@ -173,8 +173,9 @@ export default async function StudentStatusPage() {
                                 : resource.category}
                             </p>
                           )}
-                          <p className="text-xs text-muted-foreground" dir="ltr">
-                            {resource.uploadedBy.email} — {formatDate(resource.createdAt, locale)}
+                          <p className="text-xs text-muted-foreground">
+                            {resource.uploadedBy.fullName}{" "}
+                            <span dir="ltr">— {formatDate(resource.createdAt, locale)}</span>
                           </p>
                           {resource.note && <p className="mt-1 text-sm text-foreground">{resource.note}</p>}
                           {isNew && (

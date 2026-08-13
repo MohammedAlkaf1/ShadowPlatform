@@ -28,7 +28,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   const student = await db.studentProfile.findUnique({
     where: { id: studentProfileId },
-    include: { user: { select: { email: true } } },
+    include: { user: { select: { email: true, fullName: true } } },
   });
   if (!student) notFound();
 
@@ -77,7 +77,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const planRevisions = supportPlans.length
     ? await prisma.planRevision.findMany({
         where: { supportPlanId: { in: supportPlans.map((p) => p.id) } },
-        include: { newSupportLevel: true, revisedBy: { select: { email: true } } },
+        include: { newSupportLevel: true, revisedBy: { select: { email: true, fullName: true } } },
         orderBy: { createdAt: "desc" },
       })
     : [];
@@ -92,7 +92,8 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground" dir="ltr">
+          <p className="mt-1 text-base font-semibold text-foreground">{student.user.fullName}</p>
+          <p className="text-sm text-muted-foreground" dir="ltr">
             {student.user.email}
           </p>
           <p className="text-sm text-muted-foreground">
@@ -240,8 +241,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                     {t("newLevelLabel")}: {tSupportLevel(String(rev.newSupportLevel.order))}
                   </p>
                   <p className="text-muted-foreground">{rev.reason}</p>
-                  <p className="mt-1 text-xs text-muted-foreground" dir="ltr">
-                    {rev.revisedBy.email} — {formatDateTime(rev.createdAt, locale)}
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {rev.revisedBy.fullName}{" "}
+                    <span dir="ltr">— {formatDateTime(rev.createdAt, locale)}</span>
                   </p>
                 </li>
               ))}

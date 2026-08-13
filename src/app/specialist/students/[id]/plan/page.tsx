@@ -23,7 +23,7 @@ export default async function StudentPlanPage({ params }: { params: Promise<{ id
 
   const student = await db.studentProfile.findUnique({
     where: { id: studentProfileId },
-    include: { user: { select: { email: true } } },
+    include: { user: { select: { email: true, fullName: true } } },
   });
   if (!student) notFound();
 
@@ -73,7 +73,8 @@ export default async function StudentPlanPage({ params }: { params: Promise<{ id
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground" dir="ltr">
+        <p className="mt-1 text-base font-semibold text-foreground">{student.user.fullName}</p>
+        <p className="text-sm text-muted-foreground" dir="ltr">
           {student.user.email}
         </p>
       </div>

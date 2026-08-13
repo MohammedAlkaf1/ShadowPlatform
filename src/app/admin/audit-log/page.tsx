@@ -42,11 +42,11 @@ export default async function AdminAuditLogPage({
   const [logs, users] = await Promise.all([
     db.auditLog.findMany({
       where,
-      include: { actor: { select: { email: true } } },
+      include: { actor: { select: { email: true, fullName: true } } },
       orderBy: { createdAt: "desc" },
       take: 300,
     }),
-    db.user.findMany({ select: { id: true, email: true }, orderBy: { email: "asc" } }),
+    db.user.findMany({ select: { id: true, email: true, fullName: true }, orderBy: { fullName: "asc" } }),
   ]);
 
   const actionOptions = Array.from(new Set(logs.map((l) => l.action))).sort();
@@ -84,7 +84,7 @@ export default async function AdminAuditLogPage({
                 <option value="">{tActions("all")}</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
-                    {u.email}
+                    {u.fullName} ({u.email})
                   </option>
                 ))}
               </select>
@@ -154,8 +154,11 @@ export default async function AdminAuditLogPage({
                     <TableCell dir="ltr" className="text-start text-xs text-muted-foreground">
                       {formatDateTime(log.createdAt, locale)}
                     </TableCell>
-                    <TableCell dir="ltr" className="text-start text-sm">
-                      {log.actor.email}
+                    <TableCell className="text-sm">
+                      <p>{log.actor.fullName}</p>
+                      <p dir="ltr" className="text-xs text-muted-foreground">
+                        {log.actor.email}
+                      </p>
                     </TableCell>
                     <TableCell className="font-mono text-xs">{log.action}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{log.resourceType}</TableCell>

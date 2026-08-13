@@ -6,6 +6,7 @@
   "Register": {
     "title": "سجّل كطالب جديد",
     "subtitle": "أنشئ حسابك للتقديم على خدمات الدعم",
+    "fullNameLabel": "الاسم الكامل",
     "emailLabel": "البريد الإلكتروني الجامعي",
     "passwordLabel": "كلمة المرور",
     "studentNumberLabel": "الرقم الجامعي",
@@ -156,6 +157,7 @@
     "title": "إدارة المستخدمين",
     "subtitle": "إضافة وتعديل صلاحيات المستخدمين داخل الجامعة",
     "addUserTitle": "إضافة مستخدم جديد",
+    "fullNameLabel": "الاسم الكامل",
     "emailLabel": "البريد الإلكتروني",
     "passwordLabel": "كلمة المرور",
     "roleLabel": "الدور",
@@ -163,7 +165,7 @@
     "addUserButton": "إضافة مستخدم",
     "addingUser": "جاري الإنشاء...",
     "usersListTitle": "المستخدمون",
-    "tableEmail": "البريد الإلكتروني",
+    "tableUser": "المستخدم",
     "tableRole": "الدور",
     "tableStatus": "الحالة",
     "tableActions": "إجراءات",
@@ -233,7 +235,7 @@
     "noStudents": "لا يوجد طلاب مرتبطون بمقرراتك حالياً",
     "tableCourse": "المقرر",
     "tableStudentNumber": "الرقم الجامعي",
-    "tableEmail": "البريد الإلكتروني",
+    "tableStudentName": "الطالب",
     "tableAccommodations": "التسهيلات المعتمدة",
     "tableFiles": "الملفات المخصصة",
     "noAccommodations": "لا توجد تسهيلات مسجّلة"

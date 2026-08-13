@@ -22,8 +22,8 @@ export default async function AdminUsersPage() {
 
   const assignments = await db.specialistAssignment.findMany({
     include: {
-      specialist: { select: { email: true } },
-      studentProfile: { include: { user: { select: { email: true } } } },
+      specialist: { select: { email: true, fullName: true } },
+      studentProfile: { include: { user: { select: { email: true, fullName: true } } } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -41,12 +41,15 @@ export default async function AdminUsersPage() {
     .filter((u) => u.role === "specialist" && u.active)
     .map((u) => ({
       id: u.id,
-      label: `${u.email} — ${t("specialistCurrentLoad", { count: caseloadBySpecialistId.get(u.id) ?? 0 })}`,
+      label: `${u.fullName} (${u.email}) — ${t("specialistCurrentLoad", { count: caseloadBySpecialistId.get(u.id) ?? 0 })}`,
     }));
 
   const students = users
     .filter((u) => u.role === "student" && u.active && u.studentProfile)
-    .map((u) => ({ id: u.studentProfile!.id, label: `${u.email} (${u.studentProfile!.studentNumber || "—"})` }));
+    .map((u) => ({
+      id: u.studentProfile!.id,
+      label: `${u.fullName} (${u.studentProfile!.studentNumber || "—"}) — ${u.email}`,
+    }));
 
   // Minimal visibility for the "which students need a specialist assigned"
   // workflow gap: a student needs attention if their request is still
@@ -99,7 +102,7 @@ export default async function AdminUsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("tableEmail")}</TableHead>
+                <TableHead>{t("tableUser")}</TableHead>
                 <TableHead>{t("tableRole")}</TableHead>
                 <TableHead>{t("tableStatus")}</TableHead>
                 <TableHead className="w-56">{t("tableActions")}</TableHead>
@@ -111,11 +114,20 @@ export default async function AdminUsersPage() {
                   u.studentProfile != null && needsAssignmentStudentProfileIds.has(u.studentProfile.id);
                 return (
                   <TableRow key={u.id} className={needsAssignment ? "bg-destructive/5" : undefined}>
-                  {/* text-start (not text-end) with dir="ltr" — see the comment in
-                      admin/audit-log/page.tsx: this always resolves to physical
-                      left, which is correct in both languages, not just RTL. */}
-                  <TableCell dir="ltr" className="text-start font-medium">
-                    {u.email}
+                  {/* fullName is the primary line (normal direction — Arabic
+                      names read correctly RTL, no dir override needed on it
+                      or on the TableCell itself); email is demoted to a
+                      smaller muted line, with dir="ltr" only on that inner
+                      element rather than on the TableCell itself — text-align
+                      resolves against an element's OWN direction, so putting
+                      dir="ltr" on the outer cell (like the old email-only
+                      version of this cell did) would misalign the whole cell
+                      relative to its RTL column header. */}
+                  <TableCell className="font-medium">
+                    <p>{u.fullName}</p>
+                    <p dir="ltr" className="text-xs font-normal text-muted-foreground">
+                      {u.email}
+                    </p>
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">{tRoles(u.role)}</Badge>
@@ -158,12 +170,17 @@ export default async function AdminUsersPage() {
               <TableBody>
                 {assignments.map((a) => (
                   <TableRow key={a.id}>
-                    {/* text-start with dir="ltr" — see admin/audit-log/page.tsx. */}
-                    <TableCell dir="ltr" className="text-start">
-                      {a.specialist.email}
+                    <TableCell>
+                      <p>{a.specialist.fullName}</p>
+                      <p dir="ltr" className="text-xs text-muted-foreground">
+                        {a.specialist.email}
+                      </p>
                     </TableCell>
-                    <TableCell dir="ltr" className="text-start">
-                      {a.studentProfile.user.email}
+                    <TableCell>
+                      <p>{a.studentProfile.user.fullName}</p>
+                      <p dir="ltr" className="text-xs text-muted-foreground">
+                        {a.studentProfile.user.email}
+                      </p>
                     </TableCell>
                   </TableRow>
                 ))}

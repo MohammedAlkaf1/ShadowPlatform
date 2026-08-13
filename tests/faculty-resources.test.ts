@@ -54,6 +54,7 @@ describe("FacultyResource permissions (faculty custom per-student uploads)", () 
       data: {
         tenantId: faculty.tenantId,
         email: unlinkedEmail,
+        fullName: "طالب اختبار غير مرتبط",
         passwordHash: "not-used-in-this-test",
         role: "student",
         active: true,
@@ -77,6 +78,7 @@ describe("FacultyResource permissions (faculty custom per-student uploads)", () 
       data: {
         tenantId: faculty.tenantId,
         email: `second-faculty-${randomUUID()}@demo.shadow.sa`,
+        fullName: "عضو هيئة تدريس اختباري ثانٍ",
         passwordHash: "not-used-in-this-test",
         role: "faculty",
         active: true,

@@ -23,6 +23,7 @@ export function CreateUserForm() {
   const t = useTranslations("AdminUsers");
   const tRoles = useTranslations("Common.roles");
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("student");
   const [studentNumber, setStudentNumber] = useState("");
@@ -31,7 +32,7 @@ export function CreateUserForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const result = await createUser({ email, password, role, studentNumber });
+    const result = await createUser({ email, fullName, password, role, studentNumber });
     setLoading(false);
     if (!result.ok) {
       toast.error(result.error ?? t("errorUserCreateFailed"));
@@ -39,6 +40,7 @@ export function CreateUserForm() {
     }
     toast.success(t("successUserCreated"));
     setEmail("");
+    setFullName("");
     setPassword("");
     setStudentNumber("");
     router.refresh();
@@ -46,6 +48,16 @@ export function CreateUserForm() {
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-4 sm:items-end">
+      <div className="space-y-2">
+        <Label htmlFor="new-full-name">{t("fullNameLabel")}</Label>
+        <Input
+          id="new-full-name"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          minLength={2}
+          required
+        />
+      </div>
       <div className="space-y-2">
         <Label htmlFor="new-email">{t("emailLabel")}</Label>
         <Input id="new-email" type="email" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} required />

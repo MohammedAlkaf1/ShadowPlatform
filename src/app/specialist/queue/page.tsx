@@ -25,7 +25,7 @@ export default async function SpecialistQueuePage() {
     include: {
       studentProfile: {
         include: {
-          user: { select: { email: true } },
+          user: { select: { email: true, fullName: true } },
           assessments: {
             orderBy: { assessedAt: "desc" },
             take: 1,
@@ -78,7 +78,10 @@ export default async function SpecialistQueuePage() {
                     return (
                       <TableRow key={a.id}>
                         <TableCell>
-                          <p className="font-medium">{sp.studentNumber?.trim() ? sp.studentNumber : t("noStudentNumber")}</p>
+                          <p className="font-medium">{sp.user.fullName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {sp.studentNumber?.trim() ? sp.studentNumber : t("noStudentNumber")}
+                          </p>
                           <p dir="ltr" className="text-xs text-muted-foreground">
                             {sp.user.email}
                           </p>

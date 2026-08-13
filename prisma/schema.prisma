@@ -122,6 +122,7 @@ model User {
   id           String    @id @default(uuid())
   tenantId     String
   email        String
+  fullName     String
   passwordHash String
   role         UserRole
   active       Boolean   @default(true)

@@ -18,7 +18,7 @@ export default async function FacultyStudentsPage() {
   // whole tenant's links instead (university-wide access).
   const links = await db.facultyCourseLink.findMany({
     where: ctx.role === "admin" ? {} : { facultyUserId: ctx.userId },
-    include: { studentProfile: { include: { user: { select: { email: true } } } } },
+    include: { studentProfile: { include: { user: { select: { email: true, fullName: true } } } } },
     orderBy: { courseCode: "asc" },
   });
 
@@ -59,7 +59,7 @@ export default async function FacultyStudentsPage() {
                 <TableRow>
                   <TableHead>{t("tableCourse")}</TableHead>
                   <TableHead>{t("tableStudentNumber")}</TableHead>
-                  <TableHead>{t("tableEmail")}</TableHead>
+                  <TableHead>{t("tableStudentName")}</TableHead>
                   <TableHead>{t("tableAccommodations")}</TableHead>
                   {ctx.role === "faculty" && <TableHead>{t("tableFiles")}</TableHead>}
                 </TableRow>
@@ -71,9 +71,11 @@ export default async function FacultyStudentsPage() {
                     <TableRow key={link.id}>
                       <TableCell className="font-medium">{link.courseCode}</TableCell>
                       <TableCell>{link.studentProfile.studentNumber}</TableCell>
-                      {/* text-start with dir="ltr" — see admin/audit-log/page.tsx. */}
-                      <TableCell dir="ltr" className="text-start text-muted-foreground">
-                        {link.studentProfile.user.email}
+                      <TableCell>
+                        <p>{link.studentProfile.user.fullName}</p>
+                        <p dir="ltr" className="text-xs text-muted-foreground">
+                          {link.studentProfile.user.email}
+                        </p>
                       </TableCell>
                       <TableCell>
                         {!accommodations || Object.keys(accommodations).length === 0 ? (
@@ -97,7 +99,7 @@ export default async function FacultyStudentsPage() {
                           <ManageResourcesDialog
                             studentProfileId={link.studentProfileId}
                             courseCode={link.courseCode}
-                            studentLabel={`${link.studentProfile.studentNumber} — ${link.studentProfile.user.email}`}
+                            studentLabel={`${link.studentProfile.user.fullName} (${link.studentProfile.studentNumber}) — ${link.studentProfile.user.email}`}
                           />
                         </TableCell>
                       )}

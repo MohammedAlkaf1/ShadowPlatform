@@ -124,23 +124,27 @@ async function main() {
   }
 
   // ── Demo users (one per role) ───────────────────────────────────────
-  async function upsertUser(email: string, role: "student" | "faculty" | "specialist" | "admin") {
+  async function upsertUser(
+    email: string,
+    role: "student" | "faculty" | "specialist" | "admin",
+    fullName: string
+  ) {
     return prisma.user.upsert({
       where: { tenantId_email: { tenantId: tenant.id, email } },
-      update: {},
-      create: { tenantId: tenant.id, email, passwordHash, role, active: true },
+      update: { fullName },
+      create: { tenantId: tenant.id, email, fullName, passwordHash, role, active: true },
     });
   }
 
-  const studentUser = await upsertUser("student@demo.shadow.sa", "student");
-  const facultyUser = await upsertUser("faculty@demo.shadow.sa", "faculty");
-  const specialistUser = await upsertUser("specialist@demo.shadow.sa", "specialist");
-  const adminUser = await upsertUser("admin@demo.shadow.sa", "admin");
+  const studentUser = await upsertUser("student@demo.shadow.sa", "student", "أحمد محمد الطالب");
+  const facultyUser = await upsertUser("faculty@demo.shadow.sa", "faculty", "سارة عبدالله الأستاذة");
+  const specialistUser = await upsertUser("specialist@demo.shadow.sa", "specialist", "نورة سعيد المختصة");
+  const adminUser = await upsertUser("admin@demo.shadow.sa", "admin", "خالد إبراهيم المسؤول");
 
   // A second student, unassigned to any specialist yet, to show the
   // "assignment is manual" boundary — not enough on its own to prove it in
   // seed data, but keeps /specialist/queue from looking like a single-row demo.
-  const secondStudentUser = await upsertUser("student2@demo.shadow.sa", "student");
+  const secondStudentUser = await upsertUser("student2@demo.shadow.sa", "student", "منى فهد الطالبة");
 
   const studentProfile = await prisma.studentProfile.upsert({
     where: { userId: studentUser.id },

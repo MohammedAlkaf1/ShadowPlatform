@@ -22,7 +22,7 @@ export default async function SpecialistAlertsPage() {
 
   const alerts = await db.mentorAlert.findMany({
     where: ctx.role === "admin" ? {} : { assignedSpecialistId: ctx.userId },
-    include: { studentProfile: { include: { user: { select: { email: true } } } } },
+    include: { studentProfile: { include: { user: { select: { email: true, fullName: true } } } } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -70,7 +70,8 @@ export default async function SpecialistAlertsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <p className="text-sm font-medium">{alert.studentProfile.studentNumber}</p>
+                        <p className="text-sm font-medium">{alert.studentProfile.user.fullName}</p>
+                        <p className="text-xs text-muted-foreground">{alert.studentProfile.studentNumber}</p>
                         <p dir="ltr" className="text-xs text-muted-foreground">
                           {alert.studentProfile.user.email}
                         </p>

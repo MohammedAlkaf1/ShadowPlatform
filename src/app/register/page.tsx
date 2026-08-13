@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 const initialForm = {
   email: "",
+  fullName: "",
   password: "",
   studentNumber: "",
   major: "",
@@ -52,6 +53,16 @@ export default function RegisterPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="fullName">{t("fullNameLabel")}</Label>
+                <Input
+                  id="fullName"
+                  value={form.fullName}
+                  onChange={(e) => update("fullName", e.target.value)}
+                  required
+                  minLength={2}
+                />
+              </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="email">{t("emailLabel")}</Label>
                 <Input

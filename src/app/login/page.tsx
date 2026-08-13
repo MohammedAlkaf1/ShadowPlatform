@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 
 function LoginForm() {
   const router = useRouter();
@@ -46,9 +45,13 @@ function LoginForm() {
   return (
     <div className="flex flex-1 items-center justify-center bg-secondary px-4 py-12">
       <div className="w-full max-w-md space-y-4">
-        <div className="flex justify-center">
-          <LanguageSwitcher />
-        </div>
+        {/* The language switcher was intentionally removed from here — the
+            only place to change language is now inside the authenticated
+            app (AppShell's sidebar). This page still renders in whichever
+            locale resolveLocale() (src/i18n/request.ts) resolves to: a
+            returning browser's previously-set NEXT_LOCALE cookie still
+            works passively (priority 2 there), falling back to Arabic by
+            default — no new mechanism was added for this. */}
         <Card className="border-border shadow-md">
           <CardHeader className="text-center space-y-1">
             <CardTitle className="text-2xl font-bold text-primary">{t("title")}</CardTitle>

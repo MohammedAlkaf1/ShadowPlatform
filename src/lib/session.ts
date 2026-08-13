@@ -16,7 +16,20 @@ export interface RequestContext {
  * Returns null if there is no valid session (caller should respond 401).
  */
 export async function getRequestContext(): Promise<RequestContext | null> {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch {
+    // auth() reads the request-scoped cookie jar via next/headers, which
+    // only exists inside Next's own request-handling machinery. A route
+    // that legitimately has no session (e.g. an unauthenticated request
+    // falling through from the mobile-JWT check in getAnyRequestContext)
+    // should resolve to "no session" the same way a present-but-invalid
+    // cookie already does below - not bubble up as an unhandled 500. This
+    // also fails closed for any other unexpected error reading the
+    // session, which is the right default for an auth resolver.
+    return null;
+  }
   if (!session?.user?.id || !session.user.tenantId || !session.user.role) {
     return null;
   }

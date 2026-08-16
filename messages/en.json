@@ -34,21 +34,24 @@
       "admin": "System administrator"
     },
     "admin": {
-      "stats": "Statistics",
+      "stats": "Dashboard",
       "users": "User Management",
+      "assign": "Assign Specialist",
       "reports": "Reports",
       "auditLog": "Audit Log"
     },
     "faculty": {
-      "students": "My Students"
+      "students": "My Students",
+      "upload": "Upload for a Student"
     },
     "specialist": {
       "queue": "Review Queue",
       "alerts": "Alerts"
     },
     "student": {
-      "status": "Request Status",
-      "documents": "Documents"
+      "status": "My Dashboard",
+      "documents": "Documents",
+      "upload": "Upload a Document"
     }
   },
   "Login": {
@@ -168,11 +171,36 @@
       "disabled": "Disabled",
       "activate": "Activate",
       "deactivate": "Deactivate"
+    },
+    "auditActions": {
+      "acknowledge_alert": "Acknowledged a follow-up alert",
+      "approve_support_plan": "Approved a support plan after classifying a document",
+      "assign_specialist": "Manually assigned a specialist to a student",
+      "create_assessment": "Recorded a classification/assessment",
+      "create_support_plan": "Created a support plan",
+      "create_user": "Created a new user",
+      "delete_faculty_resource": "Deleted a custom file",
+      "export_report": "Exported a CSV report",
+      "resolve_alert": "Closed a follow-up alert",
+      "return_request_to_student": "Returned a request to the student",
+      "revise_support_plan": "Revised a support level",
+      "soft_delete_student": "Deactivated a student account",
+      "update_user": "Updated a user",
+      "upload_document": "Uploaded a medical or assessment document",
+      "upload_faculty_resource": "Uploaded a custom file for a student",
+      "view_audit_log": "Opened the audit log",
+      "view_document": "Opened an assessment document",
+      "view_document_denied": "Attempted to open a document without access",
+      "view_faculty_resource": "Opened a custom file",
+      "view_student_profile": "Viewed a student's profile"
     }
   },
   "AdminUsers": {
-    "title": "User Management",
-    "subtitle": "Add and manage user permissions within the university",
+    "title": "Assign a Specialist",
+    "subtitle": "Manually link a specialist to a student, and manage users when you need to",
+    "usersListSub": "For reference — expand below to add a user or change a role/status",
+    "manageUsersToggle": "Manage users",
+    "hiddenNote": "This screen never shows a student's classification or support level — assignment doesn't need it.",
     "addUserTitle": "Add New User",
     "fullNameLabel": "Full name",
     "emailLabel": "Email address",
@@ -256,8 +284,10 @@
     "tableUser": "User",
     "tableAction": "Action",
     "tableResourceType": "Resource type",
-    "tableTargetStudent": "Target student",
-    "noResults": "No matching log entries"
+    "tableTargetStudent": "Student",
+    "noResults": "No matching log entries",
+    "exportCsvButton": "Export log CSV",
+    "readOnlyNote": "The log is read-only and nothing is ever deleted from it. Visible to the administrator account only."
   },
   "FacultyStudents": {
     "title": "My Students",
@@ -278,8 +308,21 @@
     "tableStudentName": "Student",
     "tableAccommodations": "Approved accommodations",
     "tableFiles": "Custom files",
+    "manageFilesButton": "Manage files",
     "noAccommodations": "No accommodations recorded",
     "hiddenNote": "You only ever see approved accommodations for your own students — never their medical reports, diagnosis, classification, support level, or specialist notes, and never students outside your own courses."
+  },
+  "FacultyUpload": {
+    "title": "Upload for a Student",
+    "subtitle": "Choose a student in one of your courses, then upload a custom file for them.",
+    "heroTitle": "Upload a custom file for a student in your course",
+    "heroDescription": "The file reaches that one student only, and the upload is logged under your name.",
+    "chooseFileButton": "Choose a file",
+    "formTitle": "File details",
+    "studentLabel": "Student and course",
+    "studentPlaceholder": "Choose a student",
+    "noCourseLinks": "You have no students linked to your courses yet.",
+    "hiddenNote": "You cannot see a student's medical documents or classification, and you cannot upload for a student outside your own courses."
   },
   "SpecialistQueue": {
     "title": "Review Queue",
@@ -309,6 +352,7 @@
     "detailsButton": "Details",
     "assessButton": "Assess",
     "planButton": "Support plan",
+    "reviewButton": "Review",
     "hiddenNote": "You only ever see students an administrator has explicitly assigned to you — never the university's full student roster."
   },
   "SpecialistAlerts": {
@@ -336,6 +380,7 @@
     "title": "Student File",
     "assessButton": "Assess",
     "planButton": "Support plan",
+    "reviewButton": "Review document",
     "assessmentsTitle": "Assessment History",
     "noAssessments": "No assessments yet",
     "supportLevelLabel": "Support level",
@@ -400,9 +445,53 @@
     "newLevelPrefix": "New level",
     "toolsLockedNotice": "Tools can't be changed after the plan is approved. You can revise the support level below."
   },
+  "SpecialistReview": {
+    "title": "Review Document",
+    "fullHistoryButton": "Full history",
+    "documentsTitle": "Documents",
+    "previewPlaceholder": "Document preview\nserved from secure storage",
+    "noDocuments": "No documents uploaded yet",
+    "openButton": "Open",
+    "classifyTitle": "Classification and Support Level",
+    "classifySub": "Visible only to you, as the specialist assigned to this student.",
+    "categoryLabel": "Category",
+    "categoryPlaceholder": "Choose a category",
+    "conditionLabel": "Sub-condition",
+    "conditionPlaceholder": "Choose a sub-condition",
+    "supportLevelLabel": "Support level",
+    "notesLabel": "Specialist notes",
+    "notesPlaceholder": "Write your assessment notes...",
+    "submitClassifyButton": "Save classification",
+    "submitting": "Saving...",
+    "reclassifyButton": "Reclassify",
+    "cancelReclassify": "Cancel",
+    "errorMissingFields": "Please choose a category, sub-condition, and support level",
+    "errorSaveFailed": "Failed to save",
+    "successClassified": "Classification saved",
+    "planStatusLabel": "Plan status",
+    "saveToolsButton": "Save tools",
+    "createPlanButton": "Save plan",
+    "approveButton": "Approve support plan",
+    "sendBackButton": "Return to student",
+    "successSaved": "Plan saved",
+    "successApproved": "Plan approved",
+    "successReturned": "Request returned to student",
+    "toolsLockedNotice": "Tools can't be changed after the plan is approved. You can revise the support level below.",
+    "errorApproveFailed": "Failed to approve plan",
+    "reviseButton": "Revise support level",
+    "newLevelLabel": "New level",
+    "newLevelPlaceholder": "Choose a level",
+    "revisionReasonLabel": "Reason for revision",
+    "saveRevisionButton": "Save revision",
+    "errorSelectNewLevel": "Please choose the new level",
+    "errorReasonTooShort": "Please write a reason for the revision of at least 5 characters",
+    "errorReviseFailed": "Failed to record the revision",
+    "successRevised": "Level revision recorded",
+    "hiddenNote": "This screen — classification and plan approval — is visible only to the specialist assigned to this student."
+  },
   "StudentStatus": {
-    "title": "Request Status",
-    "subtitle": "Track your support request status and the tools enabled on your account",
+    "title": "My Dashboard",
+    "subtitle": "Your request status, enabled tools, and every file you've uploaded or received",
     "requestStatusTitle": "Your Request Status",
     "heroTag": "Current status",
     "heroDescription": "This reflects the latest decision on your support request.",
@@ -421,21 +510,34 @@
       "extra_exercises": "Extra exercises",
       "other": "Other"
     },
+    "sourceMe": "Me",
+    "filesTableTitle": "My files",
+    "filesTableSubtitle": "Documents you uploaded and files your lecturers shared with you",
+    "filterAll": "All files",
+    "filterMine": "My uploads",
+    "filterFaculty": "From a lecturer",
+    "filterButton": "Filter",
+    "noFiles": "No files yet",
+    "noFilesForFilter": "No files match this filter",
+    "tableFile": "File",
+    "tableSource": "Source",
+    "tableDate": "Date",
+    "tableStatus": "Status",
+    "tableOpen": "Open",
     "hiddenNote": "You never see your own classification, category, support level, specialist notes, or the contents of your medical reports — anywhere in the app, by design. You only ever see your request status and the tools your approved plan enables."
   },
-  "StudentDocuments": {
-    "title": "Medical Documents",
-    "subtitle": "Upload your medical reports as PDF for review by the specialist. Documents are encrypted and cannot be reopened from here once uploaded.",
-    "uploadTitle": "Upload a New Document",
+  "StudentUpload": {
+    "title": "Upload a Document",
+    "subtitle": "PDF only — it goes straight to your assigned specialist, and your lecturer never sees it.",
+    "heroTitle": "Upload your medical or assessment document",
+    "heroDescription": "It's encrypted immediately and reviewed only by your assigned specialist.",
+    "chooseFileButton": "Choose a file",
+    "formTitle": "Document details",
     "fileLabel": "Upload a medical document (PDF only)",
     "uploadButton": "Upload document",
     "uploading": "Uploading...",
     "errorUploadFailed": "Failed to upload file",
     "successUploaded": "Document uploaded successfully",
-    "myDocumentsTitle": "My Uploaded Documents",
-    "noDocuments": "No documents uploaded yet",
-    "tableFile": "File",
-    "tableUploadDate": "Upload date",
-    "tableStatus": "Status"
+    "hiddenNote": "Your document goes to your assigned specialist only. Neither you nor your lecturer will ever see the classification or support level that results from the review."
   }
 }

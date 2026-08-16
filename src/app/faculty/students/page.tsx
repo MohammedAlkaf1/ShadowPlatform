@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
@@ -6,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { EchoCard } from "@/components/ui/echo-card";
-import { ManageResourcesDialog } from "./manage-resources-dialog";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default async function FacultyStudentsPage({
   searchParams,
@@ -198,11 +200,12 @@ export default async function FacultyStudentsPage({
                               "has a manage button" vs "doesn't" become a distinguishing
                               signal. Outline-styled, not terracotta — see the header
                               comment above on this screen's primary-action rule. */}
-                          <ManageResourcesDialog
-                            studentProfileId={link.studentProfileId}
-                            courseCode={link.courseCode}
-                            studentLabel={`${link.studentProfile.user.fullName} (${link.studentProfile.studentNumber}) — ${link.studentProfile.user.email}`}
-                          />
+                          <Link
+                            href={`/faculty/upload?link=${link.id}`}
+                            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                          >
+                            {t("manageFilesButton")}
+                          </Link>
                         </TableCell>
                       )}
                     </TableRow>

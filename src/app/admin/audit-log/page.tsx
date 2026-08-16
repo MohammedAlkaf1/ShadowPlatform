@@ -5,6 +5,7 @@ import { logAudit } from "@/lib/audit";
 import { formatDateTime } from "@/lib/format-date";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -173,9 +174,15 @@ export default async function AdminAuditLogPage({
                     {formatDateTime(log.createdAt, locale)}
                   </TableCell>
                   <TableCell className="text-sm">
-                    <p>
-                      {log.actor.fullName} — <span className="text-muted-foreground">{tRoles(log.actor.role)}</span>
-                    </p>
+                    {/* Batch 6: name as the primary bold line, role as a
+                        small distinct Badge (not run together on one line
+                        with a dash) — reuses the same Badge component the
+                        rest of this app already uses for status/role
+                        chips, instead of inventing new styling. */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <p className="font-medium">{log.actor.fullName}</p>
+                      <Badge variant="secondary">{tRoles(log.actor.role)}</Badge>
+                    </div>
                     <p dir="ltr" className="text-xs text-muted-foreground">
                       {log.actor.email}
                     </p>

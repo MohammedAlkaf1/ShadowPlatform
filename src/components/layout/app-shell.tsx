@@ -68,8 +68,15 @@ export async function AppShell({
       {/* Sidebar: icon mark + tagline (top), nav (middle), user card ONLY
           (bottom) — no language/sign-out controls here, those live in the
           header now. md:w-[272px] matches the reference file's exact
-          sidebar width. */}
-      <aside className="flex w-full flex-col justify-between bg-sidebar text-sidebar-foreground md:min-h-screen md:w-[272px] md:shrink-0">
+          sidebar width.
+          Batch 6: md:sticky + md:top-0 + md:h-screen pins the sidebar to
+          the viewport on desktop instead of scrolling away with a long
+          page's main content — md:overflow-y-auto makes the sidebar's OWN
+          content scroll independently if it's ever taller than the
+          viewport, so the bottom user card stays reachable (scrolled to)
+          rather than pushed off-screen. Mobile (<md) keeps its normal
+          in-flow stacked layout, unaffected. */}
+      <aside className="flex w-full flex-col justify-between bg-sidebar text-sidebar-foreground md:sticky md:top-0 md:h-screen md:w-[272px] md:shrink-0 md:overflow-y-auto">
         <div>
           <div className="flex items-center gap-[11px] border-b border-sidebar-border px-[18px] py-[22px]">
             <BrandIcon alt={tBrand("name")} className="size-[42px] rounded-[13px] shadow-lg" />

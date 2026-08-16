@@ -132,7 +132,7 @@ export default async function AdminUsersPage() {
                 classification/support level anywhere — assignment doesn't
                 need it, matching the mockup's own note for this screen. */}
             <p className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-muted-foreground" />
+              <span aria-hidden="true" className="size-[7px] shrink-0 rounded-full bg-muted-foreground" />
               {t("hiddenNote")}
             </p>
           </CardContent>

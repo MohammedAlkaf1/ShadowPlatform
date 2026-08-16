@@ -80,7 +80,9 @@ export function AssignSpecialistForm({ specialists, students }: { specialists: O
           "عيّن المختص" button. Nothing else on /admin/users is accent
           (create-user/role/activate controls are all default/outline,
           tucked behind the "manage users" disclosure). */}
-      <Button type="submit" variant="accent" disabled={loading} className="min-h-11">
+      {/* min-h-[52px]: matches the reference file's assign-button height
+          exactly (min-height:52px), rather than the generic 44px minimum. */}
+      <Button type="submit" variant="accent" disabled={loading} className="min-h-[52px]">
         {loading ? t("assigning") : t("assignButton")}
       </Button>
     </form>

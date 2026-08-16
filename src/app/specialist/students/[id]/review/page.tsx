@@ -121,9 +121,12 @@ export default async function ReviewStudentPage({ params }: { params: Promise<{ 
       </div>
 
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
-        {/* Document-info panel: the one EchoCard on this screen. */}
-        <EchoCard className="lg:flex-[1.6]">
-          <Card className="h-full">
+        {/* Document-info panel: the one EchoCard on this screen. flex-[1.7]
+            matches the reference file's isDoc layout ratio exactly (its
+            hero-row dashboard cards use 1.6; this document-review screen
+            uses 1.7 for its doc-info panel specifically). */}
+        <EchoCard className="lg:flex-[1.7]">
+          <Card className="h-full rounded-[24px]">
             <CardHeader>
               <CardTitle className="text-base">{t("documentsTitle")}</CardTitle>
             </CardHeader>
@@ -134,7 +137,13 @@ export default async function ReviewStudentPage({ params }: { params: Promise<{ 
                   actual open/download affordance below each row already
                   reuses the real GET /api/documents/:id route (commit
                   fac6a48), so nothing about document access regresses. */}
-              <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 text-center text-xs text-muted-foreground">
+              {/* h-[220px]: closer to the reference file's 280px preview
+                  box height (kept full-width rather than a fixed 216px, so
+                  it reads correctly at any card width instead of just the
+                  mock's fixed 1440px canvas). rounded-[16px] rather than
+                  the default rounded-lg to match the reference's document-
+                  facts card corner treatment. */}
+              <div className="flex h-[220px] items-center justify-center rounded-[16px] border border-dashed border-border bg-muted/40 text-center text-xs text-muted-foreground">
                 {t("previewPlaceholder")}
               </div>
               {documents.length === 0 ? (
@@ -191,7 +200,7 @@ export default async function ReviewStudentPage({ params }: { params: Promise<{ 
           student (or an admin, who has university-wide access but no
           classify/approve UI of their own elsewhere). */}
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-muted-foreground" />
+        <span aria-hidden="true" className="size-[7px] shrink-0 rounded-full bg-muted-foreground" />
         {t("hiddenNote")}
       </p>
     </div>

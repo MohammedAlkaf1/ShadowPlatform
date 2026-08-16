@@ -147,7 +147,7 @@ export default async function AdminStatsPage({
           students hero card. The 3 side stats are plain cards, no echo. */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
         <EchoCard className="lg:flex-[1.6]">
-          <Card className="h-full justify-between">
+          <Card className="h-full justify-between rounded-[24px]">
             <CardHeader>
               <p className="text-xs font-semibold tracking-wide text-accent uppercase">{t("heroTag")}</p>
               <CardTitle className="text-base font-medium text-muted-foreground">{t("totalStudents")}</CardTitle>
@@ -303,7 +303,7 @@ export default async function AdminStatsPage({
           bypasses the assignment check for role==admin), so the one real
           thing they never see is another university's data. */}
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-muted-foreground" />
+        <span aria-hidden="true" className="size-[7px] shrink-0 rounded-full bg-muted-foreground" />
         {t("hiddenNote")}
       </p>
     </div>

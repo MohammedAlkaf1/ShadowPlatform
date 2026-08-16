@@ -41,7 +41,7 @@ export function UploadForm() {
     <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
       {/* Hero panel: the one EchoCard on this screen. */}
       <EchoCard className="lg:flex-[1.4]">
-        <Card className="items-center bg-primary py-9 text-center text-primary-foreground">
+        <Card className="items-center rounded-[24px] bg-primary py-9 text-center text-primary-foreground">
           <CardContent className="flex flex-col items-center gap-1">
             <UploadCloud className="size-10" />
             <p className="mt-3 text-xl font-bold">{t("heroTitle")}</p>

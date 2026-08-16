@@ -115,8 +115,8 @@ function LoginForm() {
         <div className="mx-auto w-full max-w-md">
           <BrandMark className="text-xl font-extrabold text-foreground">{tBrand("name")}</BrandMark>
 
-          <h1 className="mt-8 text-3xl font-bold text-foreground">{t("title")}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
+          <h1 className="mt-8 text-[34px] leading-[1.35] font-extrabold text-foreground">{t("title")}</h1>
+          <p className="mt-2 text-[15px] leading-[1.8] text-muted-foreground">{t("subtitle")}</p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             <div className="space-y-2">
@@ -151,7 +151,7 @@ function LoginForm() {
               type="submit"
               variant="accent"
               size="cta"
-              className="w-full rounded-2xl"
+              className="w-full rounded-[16px]"
               disabled={loading}
             >
               {loading ? t("submitButtonLoading") : t("submitButton")}
@@ -177,27 +177,29 @@ function LoginForm() {
           via the sidebar tokens (matches the sidebar's own navy elsewhere
           in the app) regardless of light/dark theme — this panel is
           intentionally always navy-on-cream-text, like the sidebar. */}
-      <div className="w-full shrink-0 bg-sidebar px-6 py-12 text-sidebar-foreground sm:px-10 md:w-[540px] md:px-10">
+      <div className="w-full shrink-0 bg-sidebar px-6 py-[52px] text-sidebar-foreground sm:px-10 md:w-[540px] md:px-10">
         <div className="mx-auto w-full max-w-sm">
-          <h2 className="text-lg font-bold text-sidebar-foreground">{t("demoAccountsTitle")}</h2>
-          <p className="mt-1 text-sm text-sidebar-foreground/70">{t("demoAccountsSubtitle")}</p>
+          <h2 className="text-[13px] font-bold text-sidebar-foreground">{t("demoAccountsTitle")}</h2>
+          <p className="mt-1.5 text-[13.5px] leading-[1.8] text-sidebar-foreground/70">{t("demoAccountsSubtitle")}</p>
 
-          <ul className="mt-6 space-y-3">
+          <ul className="mt-[18px] space-y-2.5">
             {DEMO_ACCOUNTS.map((account) => (
               <li key={account.email}>
                 <button
                   type="button"
                   onClick={() => fillDemoEmail(account.email)}
-                  className="w-full rounded-[18px] border border-sidebar-border bg-sidebar-accent/40 p-4 text-start transition-colors hover:bg-sidebar-accent"
+                  className="w-full rounded-[18px] border border-sidebar-border bg-sidebar-accent/40 px-[18px] py-4 text-start transition-colors hover:bg-sidebar-accent"
                 >
-                  <div className="flex items-center gap-2">
-                    <span aria-hidden="true" className={`size-2.5 shrink-0 rounded-full ${account.dotClassName}`} />
-                    <span className="font-semibold text-sidebar-foreground">{tRoles(account.role)}</span>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-semibold text-[15.5px] leading-[1.45] text-sidebar-foreground">
+                      {tRoles(account.role)}
+                    </span>
+                    <span aria-hidden="true" className={`size-[9px] shrink-0 rounded-full ${account.dotClassName}`} />
                   </div>
-                  <p className="mt-1 text-sm break-words text-sidebar-foreground/80" dir="ltr">
+                  <p className="mt-[3px] text-[12.5px] leading-[1.65] break-words text-sidebar-foreground/80" dir="ltr">
                     {t(account.nameKey)} · {account.email}
                   </p>
-                  <p className="mt-1.5 text-xs break-words text-sidebar-foreground/60">
+                  <p className="mt-[5px] text-[12.5px] leading-[1.75] break-words text-sidebar-foreground/60">
                     {t(account.descriptionKey)}
                   </p>
                 </button>

@@ -69,13 +69,13 @@
     "demoAccountsSubtitle": "For local testing — click a card to fill in its email (you still need the real password).",
     "demoAccountsFilled": "Email filled in — enter the password to continue.",
     "demoStudentName": "Ahmad Mohammed",
-    "demoStudentDescription": "Sees only their own request status, approved tools, and files they upload — never their classification, diagnosis, or specialist notes.",
+    "demoStudentDescription": "Uploads their own medical and assessment documents and receives files from their lecturers — never sees their own classification or support level.",
     "demoFacultyName": "Sarah Abdullah",
-    "demoFacultyDescription": "Sees students in their own courses and only approved accommodations — never medical or diagnostic details.",
+    "demoFacultyDescription": "Sees students in their own courses and uploads custom files for them — never sees their medical documents or classification.",
     "demoSpecialistName": "Noura Saeed",
-    "demoSpecialistDescription": "Reviews only students an admin has assigned to them — full assessments, plans, and documents for their caseload.",
+    "demoSpecialistDescription": "Reviews and classifies documents and approves support plans — for assigned students only.",
     "demoAdminName": "Khalid Ibrahim",
-    "demoAdminDescription": "Manages users, role assignments, and tenant-wide reports — never opens a student's medical documents directly."
+    "demoAdminDescription": "Manages users and roles, assigns specialists manually, exports CSV, and reads the audit log — never sees a student's classification."
   },
   "LanguageSwitcher": {
     "label": "Language",

@@ -72,8 +72,8 @@
   --accent: var(--shadow-orange);
   --accent-foreground: #ffffff;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #d9d2c2;
-  --input: #d9d2c2;
+  --border: #d9d2c4;
+  --input: #d9d2c4;
   --ring: var(--shadow-orange);
   --chart-1: var(--shadow-navy);
   --chart-2: var(--shadow-orange);
@@ -92,22 +92,25 @@
 }
 
 .dark {
-  --background: #14202e;
+  /* Exact hex values from the reference file's T.dark token object:
+     bg:#12181F, surface:#1C2632, border:#33404F, sidebar:#0D131A —
+     previously approximated (see git history) rather than matched. */
+  --background: #12181f;
   --foreground: var(--shadow-cream-light);
-  --card: #1e2a3a;
+  --card: #1c2632;
   --card-foreground: var(--shadow-cream-light);
-  --popover: #1e2a3a;
+  --popover: #1c2632;
   --popover-foreground: var(--shadow-cream-light);
   --primary: var(--shadow-cream-light);
   --primary-foreground: var(--shadow-navy);
   --secondary: #2c3e54;
   --secondary-foreground: var(--shadow-cream-light);
   --muted: #2c3e54;
-  --muted-foreground: #a9b4bf;
+  --muted-foreground: #a8b0bc;
   --accent: var(--shadow-orange);
   --accent-foreground: #ffffff;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: rgba(245, 241, 233, 0.12);
+  --border: #33404f;
   --input: rgba(245, 241, 233, 0.15);
   --ring: var(--shadow-orange);
   --chart-1: var(--shadow-cream);
@@ -115,13 +118,13 @@
   --chart-3: oklch(0.556 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: #14202e;
+  --sidebar: #0d131a;
   --sidebar-foreground: var(--shadow-cream-light);
   --sidebar-primary: var(--shadow-orange);
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #2c3e54;
   --sidebar-accent-foreground: var(--shadow-cream-light);
-  --sidebar-border: rgba(245, 241, 233, 0.12);
+  --sidebar-border: #33404f;
   --sidebar-ring: var(--shadow-orange);
 }
 

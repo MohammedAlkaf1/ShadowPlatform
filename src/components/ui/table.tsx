@@ -78,7 +78,10 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
         // column in RTL. `text-start` is the logical-property equivalent —
         // it resolves to "left" in LTR and "right" in RTL, matching
         // whichever direction TableCell also now explicitly uses.
-        "h-10 px-2 text-start align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pe-0",
+        // py-[14px] px-5: matches the reference file's table header cell
+        // padding (14px 20px) — was h-10/px-2 (a much denser, pre-fidelity-
+        // pass approximation).
+        "py-[14px] px-5 text-start align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pe-0",
         className
       )}
       {...props}
@@ -120,7 +123,9 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
         // wrapping element around just that text, e.g.
         // `<TableCell><span dir="ltr">{email}</span></TableCell>`. See
         // admin/users/page.tsx's user table for a real example.
-        "p-2 align-middle text-start whitespace-nowrap [&:has([role=checkbox])]:pe-0",
+        // py-[15px] px-5: matches the reference file's table row cell
+        // padding (15px 20px) — was p-2.
+        "py-[15px] px-5 align-middle text-start whitespace-nowrap [&:has([role=checkbox])]:pe-0",
         className
       )}
       {...props}

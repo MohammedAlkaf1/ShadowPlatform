@@ -19,11 +19,17 @@ import { cn } from "@/lib/utils";
 export function Sparkline({ values, className }: { values: number[]; className?: string }) {
   const max = Math.max(1, ...values);
   return (
-    <div dir="ltr" className={cn("flex h-10 items-end gap-1", className)} role="img">
+    // h-11 (44px) + gap-[5px] + rounded-[4px]: the reference file's exact
+    // chart-row height/gap/bar-corner values. Bar width stays flexible
+    // (flex-1, min 3px) rather than the reference's fixed 12px — a real
+    // hero card's width varies by viewport/locale, unlike the mock's fixed
+    // 1440px canvas, so a hardcoded bar width would either overflow or
+    // leave dead space instead of filling the row.
+    <div dir="ltr" className={cn("flex h-11 items-end gap-[5px]", className)} role="img">
       {values.map((v, i) => (
         <div
           key={i}
-          className="min-w-[3px] flex-1 rounded-sm bg-current opacity-70"
+          className="min-w-[3px] flex-1 rounded-[4px] bg-current opacity-70"
           style={{ height: `${Math.max(6, (v / max) * 100)}%` }}
         />
       ))}

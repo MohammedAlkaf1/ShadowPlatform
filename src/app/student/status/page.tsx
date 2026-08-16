@@ -5,6 +5,7 @@ import { formatDate } from "@/lib/format-date";
 import { TOOL_CODE_LABELS, type ToolCodeValue } from "@/lib/tool-codes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { EchoCard } from "@/components/ui/echo-card";
 import { CheckCircle2, Download, FileText } from "lucide-react";
 
 const STATUS_TONE: Record<string, string> = {
@@ -91,19 +92,45 @@ export default async function StudentStatusPage() {
         <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("requestStatusTitle")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Badge className={statusTone} variant="secondary">
-            {tRequestStatus(requestStatus)}
-          </Badge>
-          {!studentProfile?.verified && (
-            <p className="mt-3 text-sm text-muted-foreground">{t("verificationPending")}</p>
-          )}
-        </CardContent>
-      </Card>
+      {/* Hero row: the one EchoCard on this page wraps the request-status
+          card — the single most relevant card here. No forced bento "huge
+          number" — a request status is not a genuine metric, and inventing
+          one (e.g. a fake "days waiting" counter) would be exactly the
+          hollow-stat pattern we were told to avoid. When an approved plan
+          exists, a small plain (non-echo) side card shows the one real
+          number available on this page: the count of enabled tools. */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
+        <EchoCard className="sm:flex-[1.6]">
+          <Card className="h-full justify-between">
+            <CardHeader>
+              <p className="text-xs font-semibold tracking-wide text-accent uppercase">{t("heroTag")}</p>
+              <CardTitle className="text-base font-medium text-muted-foreground">
+                {t("requestStatusTitle")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Badge className={statusTone} variant="secondary">
+                {tRequestStatus(requestStatus)}
+              </Badge>
+              <p className="text-sm text-muted-foreground">{t("heroDescription")}</p>
+              {!studentProfile?.verified && (
+                <p className="text-sm text-muted-foreground">{t("verificationPending")}</p>
+              )}
+            </CardContent>
+          </Card>
+        </EchoCard>
+
+        {approvedPlan && (
+          <Card className="sm:w-56 sm:shrink-0">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t("toolsCountStat")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-primary">{approvedPlan.toolActivations.length}</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <Card>
         <CardHeader>
@@ -202,6 +229,15 @@ export default async function StudentStatusPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Hidden note: reuses the exact reasoning already documented above
+          the approvedPlan query — students never see their own
+          classification/category, support level, specialist notes, or
+          medical report contents, anywhere on this page or elsewhere. */}
+      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-muted-foreground" />
+        {t("hiddenNote")}
+      </p>
     </div>
   );
 }

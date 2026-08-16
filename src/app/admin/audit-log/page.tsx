@@ -11,6 +11,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Download } from "lucide-react";
 import type { Prisma } from "@prisma/client";
+import { AppShell } from "@/components/layout/app-shell";
+import { getAdminNavItems } from "@/components/layout/nav-items";
 
 interface SearchParams {
   actorUserId?: string;
@@ -73,13 +75,19 @@ export default async function AdminAuditLogPage({
     resourceType: "AuditLog",
   });
 
+  const navItems = await getAdminNavItems();
+
   return (
+    <AppShell
+      navItems={navItems}
+      role={ctx.role}
+      userEmail={ctx.userEmail ?? ""}
+      tenantName={ctx.tenantName ?? ""}
+      title={t("title")}
+      subtitle={t("subtitle")}
+    >
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-3">
         {/* The one terracotta action on this screen. */}
         <a
           href="/api/admin/export/students"
@@ -194,5 +202,6 @@ export default async function AdminAuditLogPage({
         {t("readOnlyNote")}
       </p>
     </div>
+    </AppShell>
   );
 }

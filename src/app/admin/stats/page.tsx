@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { Users } from "lucide-react";
 import { CategoryChart } from "./category-chart";
 import type { RequestStatus } from "@prisma/client";
+import { AppShell } from "@/components/layout/app-shell";
+import { getAdminNavItems } from "@/components/layout/nav-items";
 
 const REQUEST_STATUS_VALUES: RequestStatus[] = ["pending", "under_review", "approved", "rejected"];
 
@@ -136,13 +138,18 @@ export default async function AdminStatsPage({
     12
   );
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
-      </div>
+  const navItems = await getAdminNavItems();
 
+  return (
+    <AppShell
+      navItems={navItems}
+      role={ctx.role}
+      userEmail={ctx.userEmail ?? ""}
+      tenantName={ctx.tenantName ?? ""}
+      title={t("title")}
+      subtitle={t("subtitle")}
+    >
+    <div className="space-y-6">
       {/* Hero row: the one EchoCard on this screen wraps ONLY the total-
           students hero card. The 3 side stats are plain cards, no echo. */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
@@ -307,5 +314,6 @@ export default async function AdminStatsPage({
         {t("hiddenNote")}
       </p>
     </div>
+    </AppShell>
   );
 }

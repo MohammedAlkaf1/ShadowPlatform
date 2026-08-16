@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { AlertRowActions } from "./alert-row-actions";
+import { AppShell } from "@/components/layout/app-shell";
+import { getSpecialistNavItems } from "@/components/layout/nav-items";
 
 const SEVERITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
 const SEVERITY_TONE: Record<string, string> = {
@@ -32,13 +34,18 @@ export default async function SpecialistAlertsPage() {
     return b.createdAt.getTime() - a.createdAt.getTime();
   });
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
-      </div>
+  const navItems = await getSpecialistNavItems();
 
+  return (
+    <AppShell
+      navItems={navItems}
+      role={ctx.role}
+      userEmail={ctx.userEmail ?? ""}
+      tenantName={ctx.tenantName ?? ""}
+      title={t("title")}
+      subtitle={t("subtitle")}
+    >
+    <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
@@ -96,5 +103,6 @@ export default async function SpecialistAlertsPage() {
         </CardContent>
       </Card>
     </div>
+    </AppShell>
   );
 }

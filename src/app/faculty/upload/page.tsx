@@ -2,6 +2,8 @@ import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { FacultyUploadPanel } from "./upload-panel";
+import { AppShell } from "@/components/layout/app-shell";
+import { getFacultyNavItems } from "@/components/layout/nav-items";
 
 /**
  * Dedicated full-page upload flow (batch 3), replacing the per-row
@@ -39,13 +41,18 @@ export default async function FacultyUploadPage({
   const initialLinkId =
     params.link && linkOptions.some((o) => o.id === params.link) ? params.link : (linkOptions[0]?.id ?? null);
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
-      </div>
+  const navItems = await getFacultyNavItems();
 
+  return (
+    <AppShell
+      navItems={navItems}
+      role={ctx.role}
+      userEmail={ctx.userEmail ?? ""}
+      tenantName={ctx.tenantName ?? ""}
+      title={t("title")}
+      subtitle={t("subtitle")}
+    >
+    <div className="space-y-6">
       <FacultyUploadPanel links={linkOptions} initialLinkId={initialLinkId} />
 
       {/* Hidden note: same real boundary as /faculty/students — see that
@@ -56,5 +63,6 @@ export default async function FacultyUploadPage({
         {t("hiddenNote")}
       </p>
     </div>
+    </AppShell>
   );
 }

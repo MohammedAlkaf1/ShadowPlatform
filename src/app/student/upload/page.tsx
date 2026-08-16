@@ -1,6 +1,8 @@
 import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { UploadForm } from "./upload-form";
+import { AppShell } from "@/components/layout/app-shell";
+import { getStudentNavItems } from "@/components/layout/nav-items";
 
 /**
  * Dedicated full-page upload flow (batch 3), replacing the inline form that
@@ -15,26 +17,31 @@ import { UploadForm } from "./upload-form";
  * actually collected today: the file itself. Flagged in the batch report.
  */
 export default async function StudentUploadPage() {
-  await requireRole("student");
+  const ctx = await requireRole("student");
   const t = await getTranslations("StudentUpload");
+  const navItems = await getStudentNavItems();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
+    <AppShell
+      navItems={navItems}
+      role={ctx.role}
+      userEmail={ctx.userEmail ?? ""}
+      tenantName={ctx.tenantName ?? ""}
+      title={t("title")}
+      subtitle={t("subtitle")}
+    >
+      <div className="space-y-6">
+        <UploadForm />
+
+        {/* Hidden note: real boundary — the document goes to the assigned
+            specialist only; neither the student nor their faculty ever see
+            the classification/support level that results from the review
+            (see /student/status's own hidden note for the fuller reasoning). */}
+        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span aria-hidden="true" className="size-[7px] shrink-0 rounded-full bg-muted-foreground" />
+          {t("hiddenNote")}
+        </p>
       </div>
-
-      <UploadForm />
-
-      {/* Hidden note: real boundary — the document goes to the assigned
-          specialist only; neither the student nor their faculty ever see
-          the classification/support level that results from the review
-          (see /student/status's own hidden note for the fuller reasoning). */}
-      <p className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span aria-hidden="true" className="size-[7px] shrink-0 rounded-full bg-muted-foreground" />
-        {t("hiddenNote")}
-      </p>
-    </div>
+    </AppShell>
   );
 }

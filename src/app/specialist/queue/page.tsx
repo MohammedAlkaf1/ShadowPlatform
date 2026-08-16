@@ -12,6 +12,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AlertTriangle } from "lucide-react";
 import type { SupportLevel } from "@prisma/client";
+import { AppShell } from "@/components/layout/app-shell";
+import { getSpecialistNavItems } from "@/components/layout/nav-items";
 
 /** Module-level (not inline in the component body) specifically so the
  * Date.now() call doesn't trip the "impure function during render" lint
@@ -102,13 +104,18 @@ export default async function SpecialistQueuePage({
     ? assignments.filter((a) => a.studentProfile.assessments[0]?.supportLevel.order === Number(params.level))
     : assignments;
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
-      </div>
+  const navItems = await getSpecialistNavItems();
 
+  return (
+    <AppShell
+      navItems={navItems}
+      role={ctx.role}
+      userEmail={ctx.userEmail ?? ""}
+      tenantName={ctx.tenantName ?? ""}
+      title={t("title")}
+      subtitle={t("subtitle")}
+    >
+    <div className="space-y-6">
       {/* Hero row: the one EchoCard on this screen wraps ONLY the
           needs-attention hero card. */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
@@ -314,5 +321,6 @@ export default async function SpecialistQueuePage({
         {t("hiddenNote")}
       </p>
     </div>
+    </AppShell>
   );
 }

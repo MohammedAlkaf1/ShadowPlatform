@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { CreateUserForm } from "./create-user-form";
 import { UserRowActions } from "./user-row-actions";
 import { AssignSpecialistForm } from "./assign-specialist-form";
+import { AppShell } from "@/components/layout/app-shell";
+import { getAdminNavItems } from "@/components/layout/nav-items";
 
 /**
  * Batch 3: restructured to match the mockup's "تعيين مختص" screen — a
@@ -72,13 +74,18 @@ export default async function AdminUsersPage() {
       .map((u) => u.studentProfile!.id)
   );
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
-      </div>
+  const navItems = await getAdminNavItems();
 
+  return (
+    <AppShell
+      navItems={navItems}
+      role={ctx.role}
+      userEmail={ctx.userEmail ?? ""}
+      tenantName={ctx.tenantName ?? ""}
+      title={t("title")}
+      subtitle={t("subtitle")}
+    >
+    <div className="space-y-6">
       {needsAssignmentStudentProfileIds.size > 0 && (
         <Badge variant="destructive" className="text-sm">
           {t("needsAssignmentCount", { count: needsAssignmentStudentProfileIds.size })}
@@ -221,5 +228,6 @@ export default async function AdminUsersPage() {
         </Card>
       </div>
     </div>
+    </AppShell>
   );
 }

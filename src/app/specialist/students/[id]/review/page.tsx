@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { FileText } from "lucide-react";
 import { ReviewForm } from "./review-form";
 import type { ToolCodeValue } from "@/lib/tool-codes";
+import { AppShell } from "@/components/layout/app-shell";
+import { getSpecialistNavItems } from "@/components/layout/nav-items";
 
 /**
  * Batch 3: the assess and plan screens merged into ONE "مراجعة وثيقة"
@@ -105,12 +107,21 @@ export default async function ReviewStudentPage({ params }: { params: Promise<{ 
       }
     : null;
 
+  const navItems = await getSpecialistNavItems();
+
   return (
+    <AppShell
+      navItems={navItems}
+      role={ctx.role}
+      userEmail={ctx.userEmail ?? ""}
+      tenantName={ctx.tenantName ?? ""}
+      title={t("title")}
+      subtitle={student.user.fullName}
+    >
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
-          <p className="mt-1 text-base font-semibold text-foreground">{student.user.fullName}</p>
+          <p className="text-base font-semibold text-foreground">{student.user.fullName}</p>
           <p className="text-sm text-muted-foreground" dir="ltr">
             {student.user.email}
           </p>
@@ -204,5 +215,6 @@ export default async function ReviewStudentPage({ params }: { params: Promise<{ 
         {t("hiddenNote")}
       </p>
     </div>
+    </AppShell>
   );
 }

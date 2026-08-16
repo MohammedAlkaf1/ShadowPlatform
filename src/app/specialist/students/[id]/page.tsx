@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { FileText } from "lucide-react";
+import { AppShell } from "@/components/layout/app-shell";
+import { getSpecialistNavItems } from "@/components/layout/nav-items";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: studentProfileId } = await params;
@@ -88,12 +90,21 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     return acc;
   }, {});
 
+  const navItems = await getSpecialistNavItems();
+
   return (
+    <AppShell
+      navItems={navItems}
+      role={ctx.role}
+      userEmail={ctx.userEmail ?? ""}
+      tenantName={ctx.tenantName ?? ""}
+      title={t("title")}
+      subtitle={`${student.user.fullName} — ${student.studentNumber}`}
+    >
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
-          <p className="mt-1 text-base font-semibold text-foreground">{student.user.fullName}</p>
+          <p className="text-base font-semibold text-foreground">{student.user.fullName}</p>
           <p className="text-sm text-muted-foreground" dir="ltr">
             {student.user.email}
           </p>
@@ -274,5 +285,6 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         </CardContent>
       </Card>
     </div>
+    </AppShell>
   );
 }

@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { EchoCard } from "@/components/ui/echo-card";
 import { CheckCircle2, Download, FileText } from "lucide-react";
+import { AppShell } from "@/components/layout/app-shell";
+import { getStudentNavItems } from "@/components/layout/nav-items";
 
 const STATUS_TONE: Record<string, string> = {
   pending: "bg-muted text-muted-foreground",
@@ -151,12 +153,18 @@ export default async function StudentStatusPage({
         ? unifiedFiles.filter((f) => f.source === "faculty")
         : unifiedFiles;
 
+  const navItems = await getStudentNavItems();
+
   return (
+    <AppShell
+      navItems={navItems}
+      role={ctx.role}
+      userEmail={ctx.userEmail ?? ""}
+      tenantName={ctx.tenantName ?? ""}
+      title={t("title")}
+      subtitle={t("subtitle")}
+    >
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
-      </div>
 
       {/* Hero row: the one EchoCard on this page wraps the request-status
           card — the single most relevant card here. No forced bento "huge
@@ -341,5 +349,6 @@ export default async function StudentStatusPage({
         {t("hiddenNote")}
       </p>
     </div>
+    </AppShell>
   );
 }

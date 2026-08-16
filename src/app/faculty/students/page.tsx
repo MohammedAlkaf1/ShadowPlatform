@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { EchoCard } from "@/components/ui/echo-card";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AppShell } from "@/components/layout/app-shell";
+import { getFacultyNavItems } from "@/components/layout/nav-items";
 
 export default async function FacultyStudentsPage({
   searchParams,
@@ -63,13 +65,18 @@ export default async function FacultyStudentsPage({
 
   const filteredLinks = params.course ? links.filter((l) => l.courseCode === params.course) : links;
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
-      </div>
+  const navItems = await getFacultyNavItems();
 
+  return (
+    <AppShell
+      navItems={navItems}
+      role={ctx.role}
+      userEmail={ctx.userEmail ?? ""}
+      tenantName={ctx.tenantName ?? ""}
+      title={t("title")}
+      subtitle={t("subtitle")}
+    >
+    <div className="space-y-6">
       {/* Hero row: the one EchoCard on this screen wraps ONLY the
           distinct-students hero card. No sparkline here — "students in my
           courses" isn't a genuine week-over-week event stream the way
@@ -227,5 +234,6 @@ export default async function FacultyStudentsPage({
         {t("hiddenNote")}
       </p>
     </div>
+    </AppShell>
   );
 }

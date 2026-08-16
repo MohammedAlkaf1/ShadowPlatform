@@ -213,14 +213,28 @@
   "AdminStats": {
     "title": "إحصائيات الجامعة",
     "subtitle": "نظرة عامة على الطلاب والطلبات على مستوى الجامعة",
+    "heroTag": "نظرة عامة على المنصة",
+    "heroDescription": "إجمالي الطلاب المسجّلين في نظام الدعم، بجميع حالات الطلب.",
     "totalStudents": "إجمالي الطلاب",
     "pending": "قيد الانتظار",
     "underReview": "قيد المراجعة",
+    "needsAssignmentStat": "بحاجة لتعيين مختص",
     "avgReviewTime": "متوسط وقت المراجعة",
     "byCategory": "توزيع الطلاب حسب الفئة",
     "bySupportLevel": "توزيع الطلاب حسب مستوى الدعم",
     "hours": "ساعة",
-    "days": "يوم"
+    "days": "يوم",
+    "requestsTableTitle": "الطلبات",
+    "requestsTableSubtitle": "صفِّ حسب حالة الطلب لمعرفة من يحتاج اهتمامًا",
+    "manageUsersButton": "إدارة المستخدمين",
+    "noMatchingRequests": "لا توجد طلبات تطابق هذا الفلتر",
+    "tableStudent": "الطالب",
+    "tableRequestStatus": "حالة الطلب",
+    "tableAssignment": "التعيين",
+    "tableRegistered": "تاريخ التسجيل",
+    "assignedLabel": "معيّن",
+    "notAssignedLabel": "غير معيّن",
+    "hiddenNote": "تعرض هذه اللوحة بيانات جامعتك فقط — لا يمكن لمسؤول في جامعة أخرى رؤية طلابك أبدًا، ولا يمكنك رؤية طلابهم."
   },
   "AdminReports": {
     "title": "التقارير",
@@ -248,20 +262,40 @@
   "FacultyStudents": {
     "title": "طلابي",
     "subtitle": "قائمة الطلاب المسجّلين في مقرراتك والتسهيلات المعتمدة لهم فقط",
+    "heroTag": "مقرراتك",
+    "heroStat": "الطلاب في مقرراتك",
+    "heroDescription": "عدد الطلاب المميزين في جميع المقررات التي تُدرّسها.",
+    "courseCountStat": "المقررات",
+    "filesUploadedStat": "الملفات التي رفعتها",
+    "accommodationsStat": "طلاب لديهم تسهيلات",
     "listTitle": "القائمة",
+    "allCourses": "جميع المقررات",
+    "filterButton": "تصفية",
     "noStudents": "لا يوجد طلاب مرتبطون بمقرراتك حالياً",
+    "noStudentsForFilter": "لا يوجد طلاب في هذا المقرر",
     "tableCourse": "المقرر",
     "tableStudentNumber": "الرقم الجامعي",
     "tableStudentName": "الطالب",
     "tableAccommodations": "التسهيلات المعتمدة",
     "tableFiles": "الملفات المخصصة",
-    "noAccommodations": "لا توجد تسهيلات مسجّلة"
+    "noAccommodations": "لا توجد تسهيلات مسجّلة",
+    "hiddenNote": "لا ترى إلا التسهيلات المعتمدة لطلابك فقط — لا ترى تقاريرهم الطبية، ولا تشخيصهم، ولا تصنيفهم، ولا مستوى الدعم، ولا ملاحظات المختص، ولا أي طالب خارج مقرراتك."
   },
   "SpecialistQueue": {
     "title": "قائمة المراجعة",
     "subtitle": "الطلاب المُحالون إليك من قِبل مسؤول النظام",
+    "heroTag": "بحاجة لاهتمامك",
+    "heroStat": "طلاب بحاجة لاهتمام",
+    "heroDescription": "الطلاب المعيّنون لك ولديهم تنبيه مفتوح أو لم يُقيَّموا بعد.",
+    "totalAssignedStat": "إجمالي المعيّنين",
+    "approvedPlansStat": "خطط معتمدة",
+    "needsRevisionStat": "خطط بحاجة لمراجعة",
     "listTitle": "الطلاب",
+    "allLevels": "جميع المستويات",
+    "filterButton": "تصفية",
+    "startReviewButton": "ابدأ المراجعة",
     "noStudents": "لا يوجد طلاب محالون إليك حالياً",
+    "noStudentsForFilter": "لا يوجد طلاب في هذا المستوى",
     "tableStudent": "الطالب",
     "tableCategory": "الفئة",
     "tableSupportLevel": "مستوى الدعم",
@@ -274,7 +308,8 @@
     "noStudentNumber": "— بلا رقم جامعي —",
     "detailsButton": "التفاصيل",
     "assessButton": "التقييم",
-    "planButton": "خطة الدعم"
+    "planButton": "خطة الدعم",
+    "hiddenNote": "لا ترى إلا الطلاب الذين عيّنهم لك مسؤول النظام صراحةً — لا ترى أبدًا قائمة طلاب الجامعة كاملةً."
   },
   "SpecialistAlerts": {
     "title": "تنبيهات المتابعة",
@@ -369,6 +404,9 @@
     "title": "حالة الطلب",
     "subtitle": "متابعة حالة طلب الدعم والأدوات المفعّلة في حسابك",
     "requestStatusTitle": "حالة طلبك",
+    "heroTag": "الحالة الحالية",
+    "heroDescription": "تعكس هذه الحالة آخر قرار بشأن طلب الدعم الخاص بك.",
+    "toolsCountStat": "الأدوات المفعّلة",
     "verificationPending": "حسابك بانتظار التحقق من تسجيلك الجامعي من قِبل الجهة المختصة.",
     "toolsTitle": "الأدوات المفعّلة في التطبيق",
     "planLastUpdated": "آخر تحديث لخطتك",
@@ -382,7 +420,8 @@
       "visual_adjustment": "تعديل بصري (ألوان/خط)",
       "extra_exercises": "تمارين إضافية",
       "other": "أخرى"
-    }
+    },
+    "hiddenNote": "لا ترى أبدًا تصنيفك أو فئتك أو مستوى الدعم الخاص بك أو ملاحظات المختص أو محتوى تقاريرك الطبية — في أي مكان بالتطبيق، بحسب التصميم. لا ترى إلا حالة طلبك والأدوات التي تفعّلها خطتك المعتمدة."
   },
   "StudentDocuments": {
     "title": "المستندات الطبية",

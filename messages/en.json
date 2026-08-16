@@ -213,14 +213,28 @@
   "AdminStats": {
     "title": "University Statistics",
     "subtitle": "A university-wide overview of students and requests",
+    "heroTag": "Platform overview",
+    "heroDescription": "Total students registered in the support system, across every request status.",
     "totalStudents": "Total students",
     "pending": "Pending",
     "underReview": "Under review",
+    "needsAssignmentStat": "Need a specialist assigned",
     "avgReviewTime": "Average review time",
     "byCategory": "Students by category",
     "bySupportLevel": "Students by support level",
     "hours": "hours",
-    "days": "days"
+    "days": "days",
+    "requestsTableTitle": "Requests",
+    "requestsTableSubtitle": "Filter by request status to see who needs attention",
+    "manageUsersButton": "Manage users",
+    "noMatchingRequests": "No requests match this filter",
+    "tableStudent": "Student",
+    "tableRequestStatus": "Request status",
+    "tableAssignment": "Assignment",
+    "tableRegistered": "Registered",
+    "assignedLabel": "Assigned",
+    "notAssignedLabel": "Not assigned",
+    "hiddenNote": "This dashboard only ever shows your own university's data — an administrator at another university can never see your students, and you can never see theirs."
   },
   "AdminReports": {
     "title": "Reports",
@@ -248,20 +262,40 @@
   "FacultyStudents": {
     "title": "My Students",
     "subtitle": "Students enrolled in your courses and their approved accommodations only",
+    "heroTag": "Your courses",
+    "heroStat": "Students in your courses",
+    "heroDescription": "Distinct students across every course you teach.",
+    "courseCountStat": "Courses",
+    "filesUploadedStat": "Files you've uploaded",
+    "accommodationsStat": "Students with accommodations",
     "listTitle": "List",
+    "allCourses": "All courses",
+    "filterButton": "Filter",
     "noStudents": "No students are currently linked to your courses",
+    "noStudentsForFilter": "No students in this course",
     "tableCourse": "Course",
     "tableStudentNumber": "Student ID",
     "tableStudentName": "Student",
     "tableAccommodations": "Approved accommodations",
     "tableFiles": "Custom files",
-    "noAccommodations": "No accommodations recorded"
+    "noAccommodations": "No accommodations recorded",
+    "hiddenNote": "You only ever see approved accommodations for your own students — never their medical reports, diagnosis, classification, support level, or specialist notes, and never students outside your own courses."
   },
   "SpecialistQueue": {
     "title": "Review Queue",
     "subtitle": "Students referred to you by the system administrator",
+    "heroTag": "Needs your attention",
+    "heroStat": "Students needing attention",
+    "heroDescription": "Assigned students with an open alert or no assessment yet.",
+    "totalAssignedStat": "Total assigned",
+    "approvedPlansStat": "Approved plans",
+    "needsRevisionStat": "Plans needing revision",
     "listTitle": "Students",
+    "allLevels": "All levels",
+    "filterButton": "Filter",
+    "startReviewButton": "Start review",
     "noStudents": "No students have been referred to you yet",
+    "noStudentsForFilter": "No students at this support level",
     "tableStudent": "Student",
     "tableCategory": "Category",
     "tableSupportLevel": "Support level",
@@ -274,7 +308,8 @@
     "noStudentNumber": "— No student number —",
     "detailsButton": "Details",
     "assessButton": "Assess",
-    "planButton": "Support plan"
+    "planButton": "Support plan",
+    "hiddenNote": "You only ever see students an administrator has explicitly assigned to you — never the university's full student roster."
   },
   "SpecialistAlerts": {
     "title": "Follow-up Alerts",
@@ -369,6 +404,9 @@
     "title": "Request Status",
     "subtitle": "Track your support request status and the tools enabled on your account",
     "requestStatusTitle": "Your Request Status",
+    "heroTag": "Current status",
+    "heroDescription": "This reflects the latest decision on your support request.",
+    "toolsCountStat": "Tools enabled",
     "verificationPending": "Your account is awaiting verification of your university enrollment by the relevant office.",
     "toolsTitle": "Tools Enabled in the App",
     "planLastUpdated": "Your plan was last updated",
@@ -382,7 +420,8 @@
       "visual_adjustment": "Visual adjustment (color/font)",
       "extra_exercises": "Extra exercises",
       "other": "Other"
-    }
+    },
+    "hiddenNote": "You never see your own classification, category, support level, specialist notes, or the contents of your medical reports — anywhere in the app, by design. You only ever see your request status and the tools your approved plan enables."
   },
   "StudentDocuments": {
     "title": "Medical Documents",

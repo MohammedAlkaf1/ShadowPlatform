@@ -146,10 +146,10 @@ export default async function AdminUsersPage() {
           <CardContent className="space-y-1">
             <ul className="divide-y divide-border">
               {users.map((u) => (
-                <li key={u.id} className="flex items-baseline justify-between gap-3 py-3">
+                <li key={u.id} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{u.fullName}</p>
-                    <p dir="ltr" className="truncate text-xs text-muted-foreground">
+                    <p className="text-sm font-semibold text-pretty">{u.fullName}</p>
+                    <p dir="ltr" className="text-xs text-muted-foreground text-pretty">
                       {u.email}
                     </p>
                   </div>

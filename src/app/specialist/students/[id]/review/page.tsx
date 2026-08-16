@@ -146,7 +146,7 @@ export default async function ReviewStudentPage({ params }: { params: Promise<{ 
                       <div className="flex min-w-0 items-start gap-2">
                         <FileText className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{doc.originalFilename}</p>
+                          <p className="text-pretty text-sm font-medium">{doc.originalFilename}</p>
                           <p dir="ltr" className="text-start text-xs text-muted-foreground">
                             {formatDate(doc.createdAt, locale)} ·{" "}
                             {tDocumentStatus(doc.status === "reviewed" ? "reviewed" : "pending")}

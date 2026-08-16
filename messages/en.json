@@ -41,11 +41,11 @@
       "auditLog": "Audit Log"
     },
     "faculty": {
-      "students": "My Students",
+      "students": "Dashboard",
       "upload": "Upload for a Student"
     },
     "specialist": {
-      "queue": "Review Queue",
+      "queue": "Dashboard",
       "alerts": "Alerts"
     },
     "student": {

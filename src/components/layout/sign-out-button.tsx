@@ -3,22 +3,23 @@
 import { signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { LogOut } from "lucide-react";
 
-export function SignOutButton() {
+export function SignOutButton({ className }: { className?: string }) {
   const t = useTranslations("Nav");
   return (
+    // Batch 5: moved from the sidebar's bottom section into the header
+    // (see app-shell.tsx) — the reference file's header shows it as a
+    // bordered, muted-text pill (min-height:44px, border, no fill), not
+    // the sidebar-styled ghost button it used to be.
     <Button
-      variant="ghost"
+      variant="outline"
       size="sm"
-      // min-h-11 (44px touch target) on top of size="sm"'s h-7 — min-height
-      // wins over the smaller explicit height, so this is persistent chrome
-      // (visible on every authenticated page, same as the nav rows) staying
-      // compliant without needing a whole new button size.
-      className="min-h-11 w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      className={cn("min-h-11 gap-2 rounded-[14px] px-4 text-muted-foreground", className)}
       onClick={() => signOut({ callbackUrl: "/login" })}
     >
-      <LogOut className="size-4 ms-2" />
+      <LogOut className="size-4" />
       {t("signOut")}
     </Button>
   );

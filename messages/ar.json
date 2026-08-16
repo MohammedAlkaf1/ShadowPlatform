@@ -41,11 +41,11 @@
       "auditLog": "سجل التدقيق"
     },
     "faculty": {
-      "students": "طلابي",
+      "students": "لوحة التحكم",
       "upload": "رفع ملف لطالب"
     },
     "specialist": {
-      "queue": "قائمة المراجعة",
+      "queue": "لوحة التحكم",
       "alerts": "التنبيهات"
     },
     "student": {

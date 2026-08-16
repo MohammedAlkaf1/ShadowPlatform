@@ -5,6 +5,14 @@ export interface RequestContext {
   userId: string;
   tenantId: string;
   role: UserRole;
+  // Optional: only populated by the web-session path (getRequestContext
+  // below), straight off the JWT session — never an extra DB round trip.
+  // The mobile-JWT path (api-auth.ts's getMobileRequestContext) leaves
+  // these undefined; it has no equivalent free source for them and no
+  // caller of that path needs them (AppShell, the only consumer, is
+  // web-only).
+  userEmail?: string;
+  tenantName?: string;
 }
 
 /**
@@ -37,6 +45,8 @@ export async function getRequestContext(): Promise<RequestContext | null> {
     userId: session.user.id,
     tenantId: session.user.tenantId,
     role: session.user.role,
+    userEmail: session.user.email ?? "",
+    tenantName: session.user.tenantName ?? "",
   };
 }
 

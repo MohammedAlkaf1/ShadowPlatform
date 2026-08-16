@@ -25,7 +25,11 @@ export type AuditAction =
   | "view_document_denied"
   | "upload_faculty_resource"
   | "view_faculty_resource"
-  | "delete_faculty_resource";
+  | "delete_faculty_resource"
+  // Batch 3: specialist review screen — "أعدها للطالب" (return to
+  // student). See specialist/students/[id]/review/actions.ts for why this
+  // sets RequestStatus.rejected rather than any SupportPlan field.
+  | "return_request_to_student";
 
 export interface AuditLogInput {
   tenantId: string;

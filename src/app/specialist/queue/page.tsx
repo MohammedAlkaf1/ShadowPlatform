@@ -187,7 +187,7 @@ export default async function SpecialistQueuePage({
                 genuinely un-assessed student to point at. */}
             {nextToReview && (
               <Link
-                href={`/specialist/students/${nextToReview.studentProfile.id}/assess`}
+                href={`/specialist/students/${nextToReview.studentProfile.id}/review`}
                 className={cn(buttonVariants({ variant: "accent" }), "min-h-11")}
               >
                 {t("startReviewButton")}
@@ -282,17 +282,15 @@ export default async function SpecialistQueuePage({
                             >
                               {t("detailsButton")}
                             </Link>
+                            {/* Batch 3: assess + plan merged into one review
+                                screen — one link now, not two, and outline
+                                (not accent/default) since the one accent
+                                action per screen is "Start review" above. */}
                             <Link
-                              href={`/specialist/students/${sp.id}/assess`}
+                              href={`/specialist/students/${sp.id}/review`}
                               className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
                             >
-                              {t("assessButton")}
-                            </Link>
-                            <Link
-                              href={`/specialist/students/${sp.id}/plan`}
-                              className={cn(buttonVariants({ size: "sm" }))}
-                            >
-                              {t("planButton")}
+                              {t("reviewButton")}
                             </Link>
                           </div>
                         </TableCell>

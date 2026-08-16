@@ -55,8 +55,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       where: { studentProfileId },
       select: { eventType: true },
     }),
-    // Same download route the student's own /student/documents page links
-    // to for viewing purposes is NOT reused here — specialists go through
+    // Students themselves have no download route for their own uploaded
+    // documents at all (that route is intentionally NOT reused here) —
+    // specialists go through
     // the specialist-only GET /api/documents/:id route below, which is
     // separately access-gated by assertSpecialistAssigned/SpecialistAssignment
     // and audit-logs every view. This page previously queried assessments/
@@ -101,17 +102,13 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           </p>
         </div>
         <div className="flex gap-2">
-          {/* Navigation links styled as buttons — see the comment in
-              specialist/queue/page.tsx for why these use buttonVariants
-              directly on <Link> instead of Button's `render` prop. */}
-          <Link
-            href={`/specialist/students/${studentProfileId}/assess`}
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
-            {t("assessButton")}
-          </Link>
-          <Link href={`/specialist/students/${studentProfileId}/plan`} className={cn(buttonVariants())}>
-            {t("planButton")}
+          {/* Batch 3: assess + plan merged into one review screen — see
+              specialist/students/[id]/review/page.tsx. Navigation link
+              styled as a button — see the comment in specialist/queue/
+              page.tsx for why this uses buttonVariants directly on
+              <Link> instead of Button's `render` prop. */}
+          <Link href={`/specialist/students/${studentProfileId}/review`} className={cn(buttonVariants())}>
+            {t("reviewButton")}
           </Link>
         </div>
       </div>

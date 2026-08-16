@@ -76,7 +76,11 @@ export function AssignSpecialistForm({ specialists, students }: { specialists: O
           </SelectContent>
         </Select>
       </div>
-      <Button type="submit" disabled={loading}>
+      {/* The one terracotta action on this screen — matches the mockup's
+          "عيّن المختص" button. Nothing else on /admin/users is accent
+          (create-user/role/activate controls are all default/outline,
+          tucked behind the "manage users" disclosure). */}
+      <Button type="submit" variant="accent" disabled={loading} className="min-h-11">
         {loading ? t("assigning") : t("assignButton")}
       </Button>
     </form>

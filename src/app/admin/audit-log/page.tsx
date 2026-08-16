@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Download } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 
 interface SearchParams {
@@ -17,6 +19,17 @@ interface SearchParams {
   to?: string;
 }
 
+/**
+ * Batch 3: redesigned to match the mockup's audit-log screen exactly —
+ * table-only, NO bento hero (the mockup's "isAudit" section has no echo
+ * card / hero row at all, unlike the dashboard screens), with ONE
+ * terracotta "تصدير السجل CSV" button above the table. That button reuses
+ * the SAME export mechanism /admin/reports already has (GET
+ * /api/admin/export/students) rather than duplicating export logic — see
+ * the report for why /admin/reports itself is no longer a separate nav
+ * item (the mockup's 3-item admin nav has no "Reports" entry; the page
+ * still exists at its old URL, just unlinked from the nav).
+ */
 export default async function AdminAuditLogPage({
   searchParams,
 }: {
@@ -27,6 +40,8 @@ export default async function AdminAuditLogPage({
   const db = getTenantScopedPrisma(ctx.tenantId);
   const t = await getTranslations("AuditLog");
   const tActions = await getTranslations("Common.actions");
+  const tAuditActions = await getTranslations("Common.auditActions");
+  const tRoles = await getTranslations("Common.roles");
   const locale = await getLocale();
 
   const where: Prisma.AuditLogWhereInput = {};
@@ -42,7 +57,7 @@ export default async function AdminAuditLogPage({
   const [logs, users] = await Promise.all([
     db.auditLog.findMany({
       where,
-      include: { actor: { select: { email: true, fullName: true } } },
+      include: { actor: { select: { email: true, fullName: true, role: true } } },
       orderBy: { createdAt: "desc" },
       take: 300,
     }),
@@ -51,8 +66,6 @@ export default async function AdminAuditLogPage({
 
   const actionOptions = Array.from(new Set(logs.map((l) => l.action))).sort();
 
-  // Viewing the audit log is itself an access worth recording, without a
-  // target student (this isn't scoped to one student's record).
   await logAudit({
     tenantId: ctx.tenantId,
     actorUserId: ctx.userId,
@@ -62,9 +75,20 @@ export default async function AdminAuditLogPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-primary">{t("title")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
+        </div>
+        {/* The one terracotta action on this screen. */}
+        <a
+          href="/api/admin/export/students"
+          download
+          className={cn(buttonVariants({ variant: "accent" }), "gap-2 min-h-11")}
+        >
+          <Download className="size-4" />
+          {t("exportCsvButton")}
+        </a>
       </div>
 
       <Card>
@@ -100,7 +124,7 @@ export default async function AdminAuditLogPage({
                 <option value="">{tActions("all")}</option>
                 {actionOptions.map((a) => (
                   <option key={a} value={a}>
-                    {a}
+                    {tAuditActions.has(a) ? tAuditActions(a) : a}
                   </option>
                 ))}
               </select>
@@ -118,63 +142,57 @@ export default async function AdminAuditLogPage({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            {t("resultsTitle")} ({logs.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("tableDate")}</TableHead>
-                  <TableHead>{t("tableUser")}</TableHead>
-                  <TableHead>{t("tableAction")}</TableHead>
-                  <TableHead>{t("tableResourceType")}</TableHead>
-                  <TableHead>{t("tableTargetStudent")}</TableHead>
+      <div className="overflow-hidden rounded-lg border border-border">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("tableDate")}</TableHead>
+                <TableHead>{t("tableUser")}</TableHead>
+                <TableHead>{t("tableAction")}</TableHead>
+                <TableHead>{t("tableTargetStudent")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {logs.map((log) => (
+                <TableRow key={log.id}>
+                  {/* dir="ltr" + text-start — see the long-standing comment
+                      this used to carry here: text-align:start resolves
+                      against THIS element's own dir="ltr", so it always
+                      computes to physical left, which is simultaneously
+                      correct in both RTL and LTR page contexts. */}
+                  <TableCell dir="ltr" className="text-start text-xs text-muted-foreground">
+                    {formatDateTime(log.createdAt, locale)}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    <p>
+                      {log.actor.fullName} — <span className="text-muted-foreground">{tRoles(log.actor.role)}</span>
+                    </p>
+                    <p dir="ltr" className="text-xs text-muted-foreground">
+                      {log.actor.email}
+                    </p>
+                  </TableCell>
+                  <TableCell className="text-sm">{tAuditActions.has(log.action) ? tAuditActions(log.action) : log.action}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {log.targetStudentProfileId ?? "—"}
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {logs.map((log) => (
-                  <TableRow key={log.id}>
-                    {/* dir="ltr" forces these to always render left-to-right (dates/
-                        emails shouldn't get bidi-mirrored in an RTL page), and
-                        text-start (not text-end) is deliberate: text-align:start
-                        resolves against THIS element's own dir="ltr", so it always
-                        computes to physical left — which is simultaneously "the end
-                        edge" in an RTL page (matching the rest of the RTL table's
-                        visual flow) and "the start edge" in an LTR page (matching
-                        every other left-aligned column in English). text-end here
-                        would instead always resolve to physical right, which is only
-                        coincidentally correct in RTL and visibly wrong in LTR — that
-                        was the actual cause of English-mode date columns still
-                        looking RTL-aligned. */}
-                    <TableCell dir="ltr" className="text-start text-xs text-muted-foreground">
-                      {formatDateTime(log.createdAt, locale)}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      <p>{log.actor.fullName}</p>
-                      <p dir="ltr" className="text-xs text-muted-foreground">
-                        {log.actor.email}
-                      </p>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">{log.action}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{log.resourceType}</TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {log.targetStudentProfileId ?? "—"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            {logs.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted-foreground">{t("noResults")}</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </TableBody>
+          </Table>
+          {logs.length === 0 && (
+            <p className="py-8 text-center text-sm text-muted-foreground">{t("noResults")}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Hidden note: matches the mockup's exact framing for this screen —
+          the log is genuinely append-only (no delete path exists anywhere
+          in this codebase for AuditLog), and it is admin-only. */}
+      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-muted-foreground" />
+        {t("readOnlyNote")}
+      </p>
     </div>
   );
 }

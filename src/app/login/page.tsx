@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { BrandMark } from "@/components/layout/brand-mark";
+import { BrandWordmark } from "@/components/layout/brand-mark";
 
 /**
  * Known local/demo accounts (must match prisma/seed.ts's upsertUser calls —
@@ -113,7 +113,7 @@ function LoginForm() {
         </div>
 
         <div className="mx-auto w-full max-w-md">
-          <BrandMark className="text-xl font-extrabold text-foreground">{tBrand("name")}</BrandMark>
+          <BrandWordmark alt={tBrand("name")} className="h-9" />
 
           <h1 className="mt-8 text-[34px] leading-[1.35] font-extrabold text-foreground">{t("title")}</h1>
           <p className="mt-2 text-[15px] leading-[1.8] text-muted-foreground">{t("subtitle")}</p>

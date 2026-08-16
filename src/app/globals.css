@@ -57,11 +57,23 @@
   --shadow-orange: #b5623a;
   --shadow-orange-light: #c97a52;
 
-  --background: var(--shadow-cream-light);
+  /* Batch 6: --background was ALSO var(--shadow-cream-light) (#F5F1E9) —
+     the reference file's own light-mode tokens use TWO distinct shades:
+     bg:#ECE7DC (--shadow-cream, the page) vs surface:#F5F1E9
+     (--shadow-cream-light, cards) — so the page and its cards read as
+     visibly different tones. --card was #ffffff (reported as looking
+     "pure white" against the cream page — the requested fix), but fixing
+     ONLY --card to the same value already on --background would leave
+     zero contrast between a card and the page behind it (both F5F1E9),
+     which is not what "cream card on a cream page" is supposed to look
+     like. Corrected --background to the mock's actual bg token
+     (--shadow-cream) to restore that contrast, matching the reference
+     exactly instead of just half of it. Dark mode is untouched. */
+  --background: var(--shadow-cream);
   --foreground: var(--shadow-navy);
-  --card: #ffffff;
+  --card: var(--shadow-cream-light);
   --card-foreground: var(--shadow-navy);
-  --popover: #ffffff;
+  --popover: var(--shadow-cream-light);
   --popover-foreground: var(--shadow-navy);
   --primary: var(--shadow-navy);
   --primary-foreground: #ffffff;

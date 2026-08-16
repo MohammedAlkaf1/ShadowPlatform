@@ -213,10 +213,10 @@ export function ManageResourcesDialog({
                   key={r.id}
                   className="flex items-center justify-between gap-2 rounded-md border border-border bg-secondary/40 p-2"
                 >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <FileText className="size-4 shrink-0 text-muted-foreground" />
+                  <div className="flex min-w-0 items-start gap-2">
+                    <FileText className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{r.title}</p>
+                      <p className="text-sm font-medium break-words">{r.title}</p>
                       <p className="text-xs text-muted-foreground" dir="ltr">
                         {formatDate(new Date(r.createdAt), locale)}
                       </p>

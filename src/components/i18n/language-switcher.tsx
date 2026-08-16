@@ -47,11 +47,15 @@ export function LanguageSwitcher({ className }: { className?: string }) {
       role="group"
       aria-label={t("label")}
     >
+      {/* min-h-11 (44px touch target) — this switcher is persistent chrome,
+          rendered on every authenticated page plus /login, same as the nav
+          rows. variant="default" here is navy (--primary), never
+          accent/terracotta — see button.tsx's variant comment. */}
       <Button
         type="button"
         size="sm"
         variant={locale === "ar" ? "default" : "ghost"}
-        className="rounded-full px-3"
+        className="min-h-11 flex-1 rounded-full px-3"
         disabled={isPending}
         onClick={() => switchTo("ar")}
       >
@@ -61,7 +65,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
         type="button"
         size="sm"
         variant={locale === "en" ? "default" : "ghost"}
-        className="rounded-full px-3"
+        className="min-h-11 flex-1 rounded-full px-3"
         disabled={isPending}
         onClick={() => switchTo("en")}
       >

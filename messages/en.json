@@ -198,7 +198,9 @@
   "AdminUsers": {
     "title": "Assign a Specialist",
     "subtitle": "Manually link a specialist to a student, and manage users when you need to",
-    "usersListSub": "For reference — expand below to add a user or change a role/status",
+    "usersListSub": "For reference — search by name or email",
+    "searchUsersPlaceholder": "Search by name or email",
+    "noUsersForSearch": "No users match this search",
     "manageUsersToggle": "Manage users",
     "hiddenNote": "This screen never shows a student's classification or support level — assignment doesn't need it.",
     "addUserTitle": "Add New User",

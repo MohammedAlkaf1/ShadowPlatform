@@ -10,7 +10,7 @@ const MAX_UPLOAD_SIZE_BYTES = Number(process.env.MAX_UPLOAD_SIZE_BYTES ?? 15_728
 
 /**
  * POST /api/documents/upload — student uploads a medical PDF from the
- * mobile app. Mirrors the web /student/documents flow exactly: validate
+ * mobile app. Mirrors the web /student/upload flow exactly: validate
  * type/size -> AES-256-GCM encrypt server-side -> write to MinIO/S3 ->
  * Document row (metadata only, no binary in DB) -> audit log. No
  * client-side presigned URLs — everything goes through this API so nothing

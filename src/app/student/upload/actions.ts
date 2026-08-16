@@ -8,6 +8,13 @@ import { putEncryptedObject, buildDocumentObjectKey } from "@/lib/s3";
 import { logAudit } from "@/lib/audit";
 import { randomUUID } from "crypto";
 
+// Moved verbatim from the old src/app/student/documents/actions.ts (batch 3
+// restructuring — the inline upload flow became this dedicated page). Same
+// validation, same encryption/storage calls, same audit action name — only
+// the revalidatePath targets changed to match the new unified dashboard
+// route (/student/status now shows the file list that /student/documents
+// used to own).
+
 const MAX_UPLOAD_SIZE_BYTES = Number(process.env.MAX_UPLOAD_SIZE_BYTES ?? 15_728_640);
 
 export interface UploadResult {
@@ -78,7 +85,7 @@ export async function uploadDocument(formData: FormData): Promise<UploadResult> 
     });
   }
 
-  revalidatePath("/student/documents");
+  revalidatePath("/student/upload");
   revalidatePath("/student/status");
 
   return { ok: true };

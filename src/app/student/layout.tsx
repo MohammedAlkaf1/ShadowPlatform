@@ -8,7 +8,7 @@ export default async function StudentLayout({ children }: { children: ReactNode 
   const t = await getTranslations("Nav.student");
   const navItems: NavItem[] = [
     { href: "/student/status", label: t("status") },
-    { href: "/student/documents", label: t("documents") },
+    { href: "/student/upload", label: t("upload") },
   ];
   return (
     <AppShell navItems={navItems} role={ctx.role} userEmail={ctx.userEmail} tenantName={ctx.tenantName}>

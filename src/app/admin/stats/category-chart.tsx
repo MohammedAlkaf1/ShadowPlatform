@@ -32,7 +32,10 @@ export function CategoryChart({ data }: { data: CategoryDatum[] }) {
               fontSize: 13,
             }}
           />
-          <Bar dataKey="count" fill="var(--shadow-navy, #1E2A3A)" radius={[4, 4, 0, 0]} />
+          {/* --chart-1 (not the static --shadow-navy) — it's theme-aware:
+              navy in light mode, cream in dark mode, so the bars stay
+              legible against the card background in both themes. */}
+          <Bar dataKey="count" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

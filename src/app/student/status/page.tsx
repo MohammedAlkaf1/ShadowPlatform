@@ -10,7 +10,7 @@ import { CheckCircle2, Download, FileText } from "lucide-react";
 const STATUS_TONE: Record<string, string> = {
   pending: "bg-muted text-muted-foreground",
   under_review: "bg-accent/15 text-accent",
-  approved: "bg-emerald-100 text-emerald-800",
+  approved: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400",
   rejected: "bg-destructive/15 text-destructive",
 };
 

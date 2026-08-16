@@ -52,20 +52,37 @@
     }
   },
   "Login": {
-    "title": "Shadow Platform",
-    "subtitle": "Sign in to manage disability support services",
+    "title": "Sign in",
+    "subtitle": "One account for everyone on the platform — what you can see and do is limited to exactly what your role needs, nothing more.",
     "emailLabel": "Email address",
     "passwordLabel": "Password",
     "submitButton": "Sign in",
     "submitButtonLoading": "Signing in...",
     "errorInvalidCredentials": "Incorrect email or password",
     "noAccountText": "Don't have an account?",
-    "registerLink": "Register as a new student"
+    "registerLink": "Register as a new student",
+    "forgotPassword": "Forgot password?",
+    "demoAccountsTitle": "Demo accounts",
+    "demoAccountsSubtitle": "For local testing — click a card to fill in its email (you still need the real password).",
+    "demoAccountsFilled": "Email filled in — enter the password to continue.",
+    "demoStudentName": "Ahmad Mohammed",
+    "demoStudentDescription": "Sees only their own request status, approved tools, and files they upload — never their classification, diagnosis, or specialist notes.",
+    "demoFacultyName": "Sarah Abdullah",
+    "demoFacultyDescription": "Sees students in their own courses and only approved accommodations — never medical or diagnostic details.",
+    "demoSpecialistName": "Noura Saeed",
+    "demoSpecialistDescription": "Reviews only students an admin has assigned to them — full assessments, plans, and documents for their caseload.",
+    "demoAdminName": "Khalid Ibrahim",
+    "demoAdminDescription": "Manages users, role assignments, and tenant-wide reports — never opens a student's medical documents directly."
   },
   "LanguageSwitcher": {
     "label": "Language",
     "arabic": "العربية",
     "english": "English"
+  },
+  "ThemeToggle": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark"
   },
   "FacultyResources": {
     "manageButton": "Manage custom files",

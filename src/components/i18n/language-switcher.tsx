@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LOCALE_COOKIE_NAME, type AppLocale } from "@/lib/locale";
 import { cn } from "@/lib/utils";
@@ -45,11 +46,21 @@ export function LanguageSwitcher({ className }: { className?: string }) {
       type="button"
       variant="outline"
       size="sm"
-      className={cn("min-h-11 rounded-full px-4", className)}
+      className={cn("min-h-11 gap-1.5 rounded-full px-4 transition-opacity", isPending && "opacity-60", className)}
       disabled={isPending}
       onClick={handleClick}
       aria-label={t("label")}
+      aria-busy={isPending}
     >
+      {/* Batch 7 (issue H): the switch itself calls a single cheap
+          User.locale write (setLocalePreference) then router.refresh() —
+          no obvious inefficiency there; the latency is the inherent cost
+          of router.refresh() re-running every Server Component on the
+          current route (real work for data-heavy pages, not wasted
+          work). No genuine speed fix found — this spinner + dimmed
+          opacity is a perceived-responsiveness improvement only, so the
+          delay reads as "working" instead of "unresponsive". */}
+      {isPending && <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />}
       {t(nextLocale === "en" ? "english" : "arabic")}
     </Button>
   );

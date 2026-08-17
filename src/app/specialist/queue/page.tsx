@@ -120,7 +120,10 @@ export default async function SpecialistQueuePage({
           needs-attention hero card. */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
         <EchoCard className="lg:flex-[1.6]">
-          <Card className="h-full justify-between rounded-[24px]">
+          {/* Batch 8: was "h-full justify-between" — see admin/stats's
+              comment for why this now-splitting-content-apart class was
+              removed in favor of top-down stacking. */}
+          <Card className="h-full rounded-[24px]">
             <CardHeader>
               <p className="text-xs font-semibold tracking-wide text-accent uppercase">{t("heroTag")}</p>
               <CardTitle className="text-base font-medium text-muted-foreground">{t("heroStat")}</CardTitle>
@@ -230,12 +233,14 @@ export default async function SpecialistQueuePage({
                     return (
                       <TableRow key={a.id}>
                         <TableCell>
+                          {/* Batch 8: dir="ltr" on an inline span, not the
+                              block <p> — see admin/audit-log/page.tsx. */}
                           <p className="font-medium">{sp.user.fullName}</p>
                           <p className="text-xs text-muted-foreground">
                             {sp.studentNumber?.trim() ? sp.studentNumber : t("noStudentNumber")}
                           </p>
-                          <p dir="ltr" className="text-xs text-muted-foreground">
-                            {sp.user.email}
+                          <p className="text-xs text-muted-foreground">
+                            <span dir="ltr">{sp.user.email}</span>
                           </p>
                         </TableCell>
                         <TableCell className="text-sm">

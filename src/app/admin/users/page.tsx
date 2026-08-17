@@ -4,36 +4,33 @@ import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CreateUserForm } from "./create-user-form";
-import { UserRowActions } from "./user-row-actions";
 import { AssignSpecialistForm } from "./assign-specialist-form";
-import { UsersListPanel } from "./users-list-panel";
+import { ManageUsersPanel } from "./manage-users-panel";
 import { AppShell } from "@/components/layout/app-shell";
 import { getAdminNavItems } from "@/components/layout/nav-items";
 
 /**
  * Batch 3: restructured to match the mockup's "تعيين مختص" screen — a
- * two-panel layout (assign form + a compact users reference list) instead
- * of the old stacked create-user / full-table / assign-form page. Same
- * route (/admin/users) and same server actions (actions.ts, untouched);
- * only the presentation changed. The nav label moved from "User Management"
- * to "Assign specialist" to match the mockup's 3-item admin nav (see
- * admin/layout.tsx).
+ * two-panel layout instead of the old stacked create-user / full-table /
+ * assign-form page. Same route (/admin/users) and same server actions
+ * (actions.ts, untouched); only the presentation changed. The nav label
+ * moved from "User Management" to "Assign specialist" to match the
+ * mockup's 3-item admin nav (see admin/layout.tsx).
  *
- * Batch 6: the collapsible "إدارة المستخدمين" block (create user, change
- * role, activate/deactivate) moved OUT of the right-side users-list card
- * into its own separate card in the LEFT column, stacked below the
- * assign-specialist form card — it was visually competing for space
- * inside the same card as the list. The right column is now just the
- * users-list card, which also gained a client-side name/email search
- * filter (UsersListPanel) — no functionality lost, just relocated.
+ * Batch 7 (issues D/E/F): batch 6 had briefly split this into a
+ * collapsible "إدارة المستخدمين" card PLUS a separate compact
+ * "المستخدمون" read-only list card with its own search filter — two
+ * places showing overlapping user data. Collapsed back into ONE always-
+ * expanded "إدارة المستخدمين" card (left column, below the assign form),
+ * with the search filter now filtering that real management table
+ * directly (ManageUsersPanel) instead of a separate read-only copy. The
+ * right column is gone entirely.
  */
 export default async function AdminUsersPage() {
   const ctx = await requireRole("admin");
   const db = getTenantScopedPrisma(ctx.tenantId);
   const t = await getTranslations("AdminUsers");
   const tRoles = await getTranslations("Common.roles");
-  const tActions = await getTranslations("Common.actions");
 
   const users = await db.user.findMany({
     orderBy: { createdAt: "asc" },
@@ -99,149 +96,95 @@ export default async function AdminUsersPage() {
 
       {/* No EchoCard on this screen — the mockup's "تعيين مختص" view has no
           bento hero card at all (no stat number makes sense here), same as
-          the audit-log screen. */}
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
-        <div className="flex flex-col gap-5 lg:flex-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">{t("assignSpecialistTitle")}</CardTitle>
-              <p className="text-xs text-muted-foreground">{t("assignSpecialistNote")}</p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <AssignSpecialistForm specialists={specialists} students={students} />
-
-              {assignments.length > 0 && (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t("tableSpecialist")}</TableHead>
-                        <TableHead>{t("tableStudent")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {assignments.map((a) => (
-                        <TableRow key={a.id}>
-                          {/* whitespace-normal + break-words: TableCell's
-                              default is whitespace-nowrap, which is fine
-                              for normal names/emails but this table can
-                              show a long unbroken placeholder identifier
-                              (e.g. seed data's "unlinked-student-<uuid>"
-                              fallback name) that would otherwise force this
-                              single cell's column to expand without bound,
-                              squeezing the whole row and reading as
-                              misaligned/jumbled — reported as "مخبص". This
-                              wraps long content within the column instead,
-                              same stacked name/email <p><p> pattern used
-                              elsewhere (e.g. specialist/queue/page.tsx). */}
-                          <TableCell className="whitespace-normal break-words">
-                            <p>{a.specialist.fullName}</p>
-                            <p dir="ltr" className="text-xs text-muted-foreground">
-                              {a.specialist.email}
-                            </p>
-                          </TableCell>
-                          <TableCell className="whitespace-normal break-words">
-                            <p>{a.studentProfile.user.fullName}</p>
-                            <p dir="ltr" className="text-xs text-muted-foreground">
-                              {a.studentProfile.user.email}
-                            </p>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-
-              {/* Hidden note: this screen never reads a student's
-                  classification/support level anywhere — assignment doesn't
-                  need it, matching the mockup's own note for this screen. */}
-              <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span aria-hidden="true" className="size-[7px] shrink-0 rounded-full bg-muted-foreground" />
-                {t("hiddenNote")}
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Batch 6: moved here from inside the users-list card (was
-              competing for space with the list there) — full user
-              management (create user, change role, activate/deactivate),
-              real functionality preserved, still tucked behind a native
-              <details> disclosure. No JS needed for the toggle itself. */}
-          <Card>
-            <CardContent>
-              <details className="rounded-lg border border-border">
-                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted">
-                  {t("manageUsersToggle")}
-                  <span aria-hidden="true">+</span>
-                </summary>
-                <div className="space-y-6 border-t border-border p-3">
-                  <div>
-                    <p className="mb-2 text-sm font-semibold">{t("addUserTitle")}</p>
-                    <CreateUserForm />
-                  </div>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t("tableUser")}</TableHead>
-                          <TableHead>{t("tableRole")}</TableHead>
-                          <TableHead>{t("tableStatus")}</TableHead>
-                          <TableHead className="w-56">{t("tableActions")}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {users.map((u) => {
-                          const needsAssignment =
-                            u.studentProfile != null && needsAssignmentStudentProfileIds.has(u.studentProfile.id);
-                          return (
-                            <TableRow key={u.id} className={needsAssignment ? "bg-destructive/5" : undefined}>
-                              <TableCell className="font-medium">
-                                <p>{u.fullName}</p>
-                                <p dir="ltr" className="text-xs font-normal text-muted-foreground">
-                                  {u.email}
-                                </p>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="secondary">{tRoles(u.role)}</Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                  <Badge variant={u.active ? "secondary" : "destructive"}>
-                                    {u.active ? tActions("active") : tActions("disabled")}
-                                  </Badge>
-                                  {needsAssignment && (
-                                    <Badge variant="destructive">{t("needsAssignmentBadge")}</Badge>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <UserRowActions userId={u.id} role={u.role} active={u.active} />
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              </details>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="lg:w-[420px] lg:shrink-0">
+          the audit-log screen. Batch 7: single column now — the separate
+          right-side users-list card is gone (issue E), merged into the
+          "إدارة المستخدمين" card below. */}
+      <div className="flex flex-col gap-5">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-base">{t("usersListTitle")}</CardTitle>
-            <p className="text-xs text-muted-foreground">{t("usersListSub")}</p>
+            <CardTitle className="text-lg">{t("assignSpecialistTitle")}</CardTitle>
+            <p className="text-xs text-muted-foreground">{t("assignSpecialistNote")}</p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <AssignSpecialistForm specialists={specialists} students={students} />
+
+            {assignments.length > 0 && (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("tableSpecialist")}</TableHead>
+                      <TableHead>{t("tableStudent")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {assignments.map((a) => (
+                      <TableRow key={a.id}>
+                        {/* whitespace-normal + break-words: TableCell's
+                            default is whitespace-nowrap, which is fine
+                            for normal names/emails but this table can
+                            show a long unbroken placeholder identifier
+                            (e.g. a stray fixture's fallback name) that
+                            would otherwise force this single cell's
+                            column to expand without bound, squeezing the
+                            whole row and reading as misaligned/jumbled —
+                            reported as "مخبص". This wraps long content
+                            within the column instead. Email stacks
+                            directly below the name in the SAME cell (not
+                            beside it) via separate block-level <p> tags —
+                            re-verified per issue G, this was already
+                            correct; the earlier report was almost
+                            certainly the pre-cleanup stray fixture rows'
+                            very long placeholder identifiers (issue C)
+                            visually distorting the row, not a real
+                            alignment bug. */}
+                        <TableCell className="whitespace-normal break-words">
+                          <p>{a.specialist.fullName}</p>
+                          <p dir="ltr" className="text-xs text-muted-foreground">
+                            {a.specialist.email}
+                          </p>
+                        </TableCell>
+                        <TableCell className="whitespace-normal break-words">
+                          <p>{a.studentProfile.user.fullName}</p>
+                          <p dir="ltr" className="text-xs text-muted-foreground">
+                            {a.studentProfile.user.email}
+                          </p>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+
+            {/* Hidden note: this screen never reads a student's
+                classification/support level anywhere — assignment doesn't
+                need it, matching the mockup's own note for this screen. */}
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span aria-hidden="true" className="size-[7px] shrink-0 rounded-full bg-muted-foreground" />
+              {t("hiddenNote")}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Batch 7 (issues D/E/F): always-expanded now (no <details>
+            disclosure), and the ONLY user list on this page — the search
+            filter that used to live in a separate compact list card now
+            filters this real management table directly. */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("manageUsersTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <UsersListPanel
+            <ManageUsersPanel
               users={users.map((u) => ({
                 id: u.id,
                 fullName: u.fullName,
                 email: u.email,
+                role: u.role,
                 roleLabel: tRoles(u.role),
+                active: u.active,
+                needsAssignment: u.studentProfile != null && needsAssignmentStudentProfileIds.has(u.studentProfile.id),
               }))}
             />
           </CardContent>

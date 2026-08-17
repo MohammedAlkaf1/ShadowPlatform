@@ -36,7 +36,23 @@ export function EchoCard({ children, className }: { children: ReactNode; classNa
           insetInlineStart: "18px",
         }}
       />
-      <div className="relative z-10">{children}</div>
+      {/* Batch 8 (issues 3/4): h-full added here — without it, this
+          wrapper sizes to its own content (shrink-to-fit) even when the
+          OUTER div above is stretched to match a taller sibling (e.g. the
+          3-stacked side-stat column) via the row's items-stretch. The
+          front <Card> inside (itself h-full against THIS div) would then
+          resolve against a non-definite/auto height and just size to its
+          own content too — leaving the front card much shorter than the
+          echo layer behind it (which DOES stretch, since it's absolutely
+          positioned with top+bottom insets against the outer stretched
+          div). The result: instead of peeking out 9-11px as intended, the
+          echo layer's translucent fill was exposed for the ENTIRE height
+          difference — a large stray rectangle of color below the card's
+          real content, which is what was actually behind the "cards look
+          messy/disorganized" report on pages whose hero card has no
+          sparkline to fill that space (faculty/students, student/status)
+          or whose sparkline is short (admin/stats, specialist/queue). */}
+      <div className="relative z-10 h-full">{children}</div>
     </div>
   );
 }

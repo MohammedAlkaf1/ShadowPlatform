@@ -305,7 +305,13 @@ export function ReviewForm({
             <p className="rounded-md bg-secondary/60 p-3 text-sm text-muted-foreground">{t("toolsLockedNotice")}</p>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          {/* Batch 8 (new issue 1): was sm:grid-cols-2 — 8 tool checkboxes
+              in 2 columns inside this card's actual available width (the
+              document panel takes flex-[1.7] of the row, leaving this
+              card comparatively narrow) forced multi-line label wrapping
+              and a cramped, "messy" look. Single column gives each row
+              the full card width to breathe. */}
+          <div className="grid gap-3">
             {TOOL_CODES.map((code) => {
               const meta = TOOL_CODE_LABELS[code];
               return (

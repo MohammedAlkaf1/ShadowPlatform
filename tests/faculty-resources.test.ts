@@ -1,5 +1,5 @@
 import "./setup";
-import { describe, it, expect, vi, beforeAll } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { tokenFor, authedRequest } from "./helpers";
@@ -84,6 +84,21 @@ describe("FacultyResource permissions (faculty custom per-student uploads)", () 
         active: true,
       },
     });
+  });
+
+  // These two throwaway User rows (and, via schema's onDelete: Cascade on
+  // StudentProfile.user, otherStudentUser's StudentProfile too) used to be
+  // left in the dev database permanently after every test run — visible as
+  // garbage rows in /admin/users. Deleting the User is enough; nothing else
+  // this fixture created needs separate cleanup (no FacultyCourseLink/
+  // SpecialistAssignment/etc. was ever created FOR these two users — only
+  // BY the real seeded `faculty` user, targeting the real seeded student,
+  // which isn't test-fixture data and is left alone).
+  afterAll(async () => {
+    for (const id of [otherStudentUser?.id, secondFaculty?.id]) {
+      if (!id) continue;
+      await prisma.user.delete({ where: { id } }).catch(() => undefined);
+    }
   });
 
   it("(a) a faculty member CANNOT upload a resource for a student not in their course -> 403", async () => {

@@ -136,15 +136,21 @@ async function main() {
     });
   }
 
-  const studentUser = await upsertUser("student@demo.shadow.sa", "student", "أحمد محمد الطالب");
-  const facultyUser = await upsertUser("faculty@demo.shadow.sa", "faculty", "سارة عبدالله الأستاذة");
-  const specialistUser = await upsertUser("specialist@demo.shadow.sa", "specialist", "نورة سعيد المختصة");
-  const adminUser = await upsertUser("admin@demo.shadow.sa", "admin", "خالد إبراهيم المسؤول");
+  // Batch 7: dropped the trailing role-descriptor word ("الطالب"/"الأستاذة"/
+  // etc.) that used to be baked into these names — now redundant now that
+  // the role is ALSO shown as its own badge next to the name wherever
+  // fullName is displayed, which produced duplicated, differently-worded
+  // role info (e.g. "سارة عبدالله الأستاذة" next to a badge reading "عضو
+  // هيئة تدريس").
+  const studentUser = await upsertUser("student@demo.shadow.sa", "student", "أحمد محمد");
+  const facultyUser = await upsertUser("faculty@demo.shadow.sa", "faculty", "سارة عبدالله");
+  const specialistUser = await upsertUser("specialist@demo.shadow.sa", "specialist", "نورة سعيد");
+  const adminUser = await upsertUser("admin@demo.shadow.sa", "admin", "خالد إبراهيم");
 
   // A second student, unassigned to any specialist yet, to show the
   // "assignment is manual" boundary — not enough on its own to prove it in
   // seed data, but keeps /specialist/queue from looking like a single-row demo.
-  const secondStudentUser = await upsertUser("student2@demo.shadow.sa", "student", "منى فهد الطالبة");
+  const secondStudentUser = await upsertUser("student2@demo.shadow.sa", "student", "منى فهد");
 
   const studentProfile = await prisma.studentProfile.upsert({
     where: { userId: studentUser.id },

@@ -167,8 +167,14 @@ export default async function ReviewStudentPage({ params }: { params: Promise<{ 
                         <FileText className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                         <div className="min-w-0">
                           <p className="text-pretty text-sm font-medium">{doc.originalFilename}</p>
-                          <p dir="ltr" className="text-start text-xs text-muted-foreground">
-                            {formatDate(doc.createdAt, locale)} ·{" "}
+                          {/* Batch 7: not a table cell (no TableHead to
+                              misalign against), but the same anti-pattern
+                              — only the date portion needs LTR ordering;
+                              the translated status word should follow the
+                              page's natural direction, not be forced
+                              left. */}
+                          <p className="text-xs text-muted-foreground">
+                            <span dir="ltr">{formatDate(doc.createdAt, locale)}</span> ·{" "}
                             {tDocumentStatus(doc.status === "reviewed" ? "reviewed" : "pending")}
                           </p>
                         </div>

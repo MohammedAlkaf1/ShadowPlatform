@@ -253,9 +253,13 @@ export default async function SpecialistQueuePage({
                         <TableCell className="text-sm">
                           {lastAssessment ? tSupportLevel(String(lastAssessment.supportLevel.order)) : "—"}
                         </TableCell>
-                        {/* text-start with dir="ltr" — see admin/audit-log/page.tsx. */}
-                        <TableCell dir="ltr" className="text-start text-sm text-muted-foreground">
-                          {lastAssessment ? formatDate(lastAssessment.assessedAt, locale) : "—"}
+                        {/* Batch 7: see table.tsx's updated comment — the
+                            cell itself must not force dir="ltr"; only the
+                            date text gets the narrow wrap. */}
+                        <TableCell className="text-sm text-muted-foreground">
+                          <span dir="ltr">
+                            {lastAssessment ? formatDate(lastAssessment.assessedAt, locale) : "—"}
+                          </span>
                         </TableCell>
                         <TableCell>
                           {lastPlan ? (

@@ -292,8 +292,12 @@ export default async function AdminStatsPage({
                           <Badge variant="destructive">{t("notAssignedLabel")}</Badge>
                         )}
                       </TableCell>
-                      <TableCell dir="ltr" className="text-start text-muted-foreground">
-                        {formatDate(s.createdAt, locale)}
+                      {/* Batch 7: see table.tsx's updated comment — the
+                          cell itself must not force dir="ltr" (desyncs
+                          alignment from TableHead in RTL); only the date
+                          text gets the narrow dir="ltr" wrap. */}
+                      <TableCell className="text-muted-foreground">
+                        <span dir="ltr">{formatDate(s.createdAt, locale)}</span>
                       </TableCell>
                     </TableRow>
                   ))}

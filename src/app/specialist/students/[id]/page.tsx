@@ -150,9 +150,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                       <FileText className="size-4 text-muted-foreground" />
                       {doc.originalFilename}
                     </TableCell>
-                    {/* text-start with dir="ltr" — see admin/audit-log/page.tsx. */}
-                    <TableCell dir="ltr" className="text-start text-muted-foreground">
-                      {formatDate(doc.createdAt, locale)}
+                    {/* Batch 7: see table.tsx's updated comment — the cell
+                        itself must not force dir="ltr"; only the date text
+                        gets the narrow wrap. */}
+                    <TableCell className="text-muted-foreground">
+                      <span dir="ltr">{formatDate(doc.createdAt, locale)}</span>
                     </TableCell>
                     <TableCell>{tDocumentStatus(doc.status === "reviewed" ? "reviewed" : "pending")}</TableCell>
                     <TableCell>

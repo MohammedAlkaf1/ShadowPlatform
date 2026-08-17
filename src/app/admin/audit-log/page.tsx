@@ -165,13 +165,13 @@ export default async function AdminAuditLogPage({
             <TableBody>
               {logs.map((log) => (
                 <TableRow key={log.id}>
-                  {/* dir="ltr" + text-start — see the long-standing comment
-                      this used to carry here: text-align:start resolves
-                      against THIS element's own dir="ltr", so it always
-                      computes to physical left, which is simultaneously
-                      correct in both RTL and LTR page contexts. */}
-                  <TableCell dir="ltr" className="text-start text-xs text-muted-foreground">
-                    {formatDateTime(log.createdAt, locale)}
+                  {/* Batch 7: cell itself no longer forces dir="ltr" (that
+                      desynced its alignment from TableHead in RTL — see
+                      table.tsx's updated comment). Only the date text
+                      itself gets the narrow dir="ltr" wrap it needs for
+                      correct character/digit ordering. */}
+                  <TableCell className="text-xs text-muted-foreground">
+                    <span dir="ltr">{formatDateTime(log.createdAt, locale)}</span>
                   </TableCell>
                   <TableCell className="text-sm">
                     {/* Batch 6: name as the primary bold line, role as a

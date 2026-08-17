@@ -129,7 +129,7 @@ function LoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="min-h-[52px] rounded-[14px] text-base"
+                className="min-h-[52px] rounded-[14px] bg-card text-base"
               />
             </div>
             <div className="space-y-2">
@@ -142,7 +142,7 @@ function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="min-h-[52px] rounded-[14px] text-base"
+                className="min-h-[52px] rounded-[14px] bg-card text-base"
               />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
@@ -196,8 +196,15 @@ function LoginForm() {
                     </span>
                     <span aria-hidden="true" className={`size-[9px] shrink-0 rounded-full ${account.dotClassName}`} />
                   </div>
-                  <p className="mt-[3px] text-[12.5px] leading-[1.65] break-words text-sidebar-foreground/80" dir="ltr">
-                    {t(account.nameKey)} · {account.email}
+                  {/* Batch 8: dir="ltr" on an inline span, not the block
+                      <p> — see admin/audit-log/page.tsx's comment for why
+                      dir="ltr" directly on a block-level element breaks
+                      RTL alignment against its siblings (the role line
+                      above, the description line below). */}
+                  <p className="mt-[3px] text-[12.5px] leading-[1.65] break-words text-sidebar-foreground/80">
+                    <span dir="ltr">
+                      {t(account.nameKey)} · {account.email}
+                    </span>
                   </p>
                   <p className="mt-[5px] text-[12.5px] leading-[1.75] break-words text-sidebar-foreground/60">
                     {t(account.descriptionKey)}

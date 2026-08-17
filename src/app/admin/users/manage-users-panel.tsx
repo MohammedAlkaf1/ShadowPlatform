@@ -75,17 +75,26 @@ export function ManageUsersPanel({ users }: { users: ManageUserRow[] }) {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {/* Batch 8: row tint switched from destructive/red to accent,
+                  matching the badge fix below (same concept, same color
+                  family now). */}
               {filtered.map((u) => (
-                <TableRow key={u.id} className={u.needsAssignment ? "bg-destructive/5" : undefined}>
+                <TableRow key={u.id} className={u.needsAssignment ? "bg-accent/5" : undefined}>
                   {/* Name on top, email stacked directly below in the same
-                      cell — dir="ltr" only on the email line, not the
-                      cell itself (see table.tsx's comment on why). Role
-                      shown ONCE, as its own Badge — never duplicated into
-                      the name text (see prisma/seed.ts's batch-7 fix). */}
+                      cell. Role shown ONCE, as its own Badge — never
+                      duplicated into the name text (see prisma/seed.ts's
+                      batch-7 fix). Batch 8: dir="ltr" is on an inline span
+                      nested inside the email <p>, NOT on the <p> itself —
+                      see admin/audit-log/page.tsx's comment for why a
+                      dir="ltr" block-level <p> breaks RTL alignment
+                      against its sibling <p> (this was the actual,
+                      screenshot-confirmed root cause of the "email on the
+                      wrong side" bug, invisible to class-string
+                      comparison). */}
                   <TableCell className="font-medium">
                     <p>{u.fullName}</p>
-                    <p dir="ltr" className="text-xs font-normal text-muted-foreground">
-                      {u.email}
+                    <p className="text-xs font-normal text-muted-foreground">
+                      <span dir="ltr">{u.email}</span>
                     </p>
                   </TableCell>
                   <TableCell>
@@ -96,7 +105,13 @@ export function ManageUsersPanel({ users }: { users: ManageUserRow[] }) {
                       <Badge variant={u.active ? "secondary" : "destructive"}>
                         {u.active ? tActions("active") : tActions("disabled")}
                       </Badge>
-                      {u.needsAssignment && <Badge variant="destructive">{t("needsAssignmentBadge")}</Badge>}
+                      {/* Batch 8 (new issue 2): was variant="destructive"
+                          (red) — see admin/stats/page.tsx's comment. */}
+                      {u.needsAssignment && (
+                        <Badge variant="secondary" className="bg-accent/15 text-accent">
+                          {t("needsAssignmentBadge")}
+                        </Badge>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>

@@ -154,7 +154,17 @@ export default async function AdminStatsPage({
           students hero card. The 3 side stats are plain cards, no echo. */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
         <EchoCard className="lg:flex-[1.6]">
-          <Card className="h-full justify-between rounded-[24px]">
+          {/* Batch 8: was "h-full justify-between" — now that EchoCard's
+              inner wrapper correctly stretches (see echo-card.tsx), h-full
+              alone is enough to make this card's own background fill the
+              row's full height; justify-between used to additionally
+              spread CardHeader (tag+title) away from CardContent
+              (value+description+chart) into a top/bottom split that
+              doesn't match the reference's continuous top-down stacking
+              (tag, value, description, chart all grouped together
+              starting from the card's own top padding). Default
+              justify-start (i.e. no justify class) keeps that grouping. */}
+          <Card className="h-full rounded-[24px]">
             <CardHeader>
               <p className="text-xs font-semibold tracking-wide text-accent uppercase">{t("heroTag")}</p>
               <CardTitle className="text-base font-medium text-muted-foreground">{t("totalStudents")}</CardTitle>
@@ -277,9 +287,13 @@ export default async function AdminStatsPage({
                   {requestsList.map((s) => (
                     <TableRow key={s.id}>
                       <TableCell>
+                        {/* Batch 8: dir="ltr" moved onto an inline span —
+                            see admin/audit-log/page.tsx's comment for why
+                            dir="ltr" on the block-level <p> itself breaks
+                            RTL alignment against its sibling. */}
                         <p>{s.user.fullName}</p>
-                        <p dir="ltr" className="text-xs text-muted-foreground">
-                          {s.user.email}
+                        <p className="text-xs text-muted-foreground">
+                          <span dir="ltr">{s.user.email}</span>
                         </p>
                       </TableCell>
                       <TableCell>
@@ -289,7 +303,20 @@ export default async function AdminStatsPage({
                         {assignedStudentIds.has(s.id) ? (
                           <Badge variant="secondary">{t("assignedLabel")}</Badge>
                         ) : (
-                          <Badge variant="destructive">{t("notAssignedLabel")}</Badge>
+                          // Batch 8 (new issue 2): was variant="destructive"
+                          // (red) — the reference file's palette has no red
+                          // anywhere at all (checked docs/Shadow Platform.dc.html
+                          // directly); its own "pending"-type states use a
+                          // soft accent tint, not alarm-red. This isn't an
+                          // error state, it's an admin action item, so it
+                          // gets the same soft terracotta tint already
+                          // established for "under review"-type states
+                          // elsewhere (e.g. student/status's STATUS_TONE) —
+                          // visible without competing with the one full-
+                          // strength accent button per screen.
+                          <Badge variant="secondary" className="bg-accent/15 text-accent">
+                            {t("notAssignedLabel")}
+                          </Badge>
                         )}
                       </TableCell>
                       {/* Batch 7: see table.tsx's updated comment — the

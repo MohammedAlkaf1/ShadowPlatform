@@ -121,9 +121,11 @@ export default async function ReviewStudentPage({ params }: { params: Promise<{ 
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
+          {/* Batch 8: dir="ltr" on an inline span, not the block <p> —
+              see admin/audit-log/page.tsx. */}
           <p className="text-base font-semibold text-foreground">{student.user.fullName}</p>
-          <p className="text-sm text-muted-foreground" dir="ltr">
-            {student.user.email}
+          <p className="text-sm text-muted-foreground">
+            <span dir="ltr">{student.user.email}</span>
           </p>
         </div>
         <Link href={`/specialist/students/${studentProfileId}`} className={cn(buttonVariants({ variant: "outline" }))}>

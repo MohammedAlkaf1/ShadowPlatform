@@ -88,8 +88,11 @@ export default async function AdminUsersPage() {
       subtitle={t("subtitle")}
     >
     <div className="space-y-6">
+      {/* Batch 8 (new issue 2): was variant="destructive" (red) — see
+          admin/stats/page.tsx's comment for why: the reference palette has
+          no red at all, and this is an action item, not an error. */}
       {needsAssignmentStudentProfileIds.size > 0 && (
-        <Badge variant="destructive" className="text-sm">
+        <Badge variant="secondary" className="bg-accent/15 text-sm text-accent">
           {t("needsAssignmentCount", { count: needsAssignmentStudentProfileIds.size })}
         </Badge>
       )}
@@ -129,25 +132,33 @@ export default async function AdminUsersPage() {
                             column to expand without bound, squeezing the
                             whole row and reading as misaligned/jumbled —
                             reported as "مخبص". This wraps long content
-                            within the column instead. Email stacks
-                            directly below the name in the SAME cell (not
-                            beside it) via separate block-level <p> tags —
-                            re-verified per issue G, this was already
-                            correct; the earlier report was almost
-                            certainly the pre-cleanup stray fixture rows'
-                            very long placeholder identifiers (issue C)
-                            visually distorting the row, not a real
-                            alignment bug. */}
+                            within the column instead.
+                            Batch 8 CORRECTION: the earlier "already
+                            correct, must be the stray-fixture-rows issue"
+                            note here was WRONG — there was a genuine,
+                            screenshot-confirmed RTL bug: dir="ltr" directly
+                            on the block-level email <p> resolves
+                            text-align:start against ITS OWN direction,
+                            independent of its sibling <p>{name}</p>, which
+                            resolves against the page's real RTL direction
+                            — so under Arabic the two <p> lines land on
+                            OPPOSITE physical sides instead of stacking.
+                            English masked this by coincidence (dir="ltr"
+                            happens to match the page's own LTR direction
+                            there). Fixed by moving dir="ltr" onto an
+                            inline <span> nested inside a dir-less <p>, so
+                            the <p>'s own alignment always matches its
+                            sibling regardless of language. */}
                         <TableCell className="whitespace-normal break-words">
                           <p>{a.specialist.fullName}</p>
-                          <p dir="ltr" className="text-xs text-muted-foreground">
-                            {a.specialist.email}
+                          <p className="text-xs text-muted-foreground">
+                            <span dir="ltr">{a.specialist.email}</span>
                           </p>
                         </TableCell>
                         <TableCell className="whitespace-normal break-words">
                           <p>{a.studentProfile.user.fullName}</p>
-                          <p dir="ltr" className="text-xs text-muted-foreground">
-                            {a.studentProfile.user.email}
+                          <p className="text-xs text-muted-foreground">
+                            <span dir="ltr">{a.studentProfile.user.email}</span>
                           </p>
                         </TableCell>
                       </TableRow>

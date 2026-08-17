@@ -88,8 +88,12 @@ export async function AppShell({
           <p className="text-sm font-bold break-words text-sidebar-foreground">
             {tRoles.has(role) ? tRoles(role) : role}
           </p>
-          <p className="mt-0.5 text-[11.5px] break-words text-sidebar-foreground/70" dir="ltr">
-            {userEmail}
+          {/* Batch 8: dir="ltr" on an inline span, not the block <p> — see
+              admin/audit-log/page.tsx's comment for why dir="ltr"
+              directly on a block-level element breaks RTL alignment
+              against its sibling (the role line above). */}
+          <p className="mt-0.5 text-[11.5px] break-words text-sidebar-foreground/70">
+            <span dir="ltr">{userEmail}</span>
           </p>
         </div>
       </aside>

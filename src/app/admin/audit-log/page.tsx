@@ -183,8 +183,22 @@ export default async function AdminAuditLogPage({
                       <p className="font-medium">{log.actor.fullName}</p>
                       <Badge variant="secondary">{tRoles(log.actor.role)}</Badge>
                     </div>
-                    <p dir="ltr" className="text-xs text-muted-foreground">
-                      {log.actor.email}
+                    {/* Batch 8: dir="ltr" moved from the block-level <p>
+                        onto an inline <span> nested inside it. text-align
+                        (even the inherited "start" keyword) resolves
+                        against EACH element's own `direction`, not an
+                        ancestor's — a <p dir="ltr"> sitting next to a
+                        sibling <p> with no dir override resolves to
+                        physically LEFT for itself while the sibling
+                        resolves to RIGHT under the page's real RTL
+                        direction, visually splitting them apart. This was
+                        invisible in English (LTR) purely by coincidence:
+                        forcing dir="ltr" there matches the ambient
+                        direction anyway. Wrapping only the inline text
+                        keeps the <p> itself dir-less, so its text-align
+                        resolves the same way as its sibling. */}
+                    <p className="text-xs text-muted-foreground">
+                      <span dir="ltr">{log.actor.email}</span>
                     </p>
                   </TableCell>
                   <TableCell className="text-sm">{tAuditActions.has(log.action) ? tAuditActions(log.action) : log.action}</TableCell>

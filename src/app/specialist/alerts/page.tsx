@@ -77,10 +77,12 @@ export default async function SpecialistAlertsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
+                        {/* Batch 8: dir="ltr" on an inline span, not the
+                            block <p> — see admin/audit-log/page.tsx. */}
                         <p className="text-sm font-medium">{alert.studentProfile.user.fullName}</p>
                         <p className="text-xs text-muted-foreground">{alert.studentProfile.studentNumber}</p>
-                        <p dir="ltr" className="text-xs text-muted-foreground">
-                          {alert.studentProfile.user.email}
+                        <p className="text-xs text-muted-foreground">
+                          <span dir="ltr">{alert.studentProfile.user.email}</span>
                         </p>
                       </TableCell>
                       {/* Batch 7: see table.tsx's updated comment — the

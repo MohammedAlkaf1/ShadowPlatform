@@ -266,9 +266,11 @@ export function FacultyUploadPanel({
                     <div className="flex min-w-0 items-start gap-2">
                       <FileText className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0">
+                        {/* Batch 8: dir="ltr" on an inline span, not the
+                            block <p> — see admin/audit-log/page.tsx. */}
                         <p className="text-sm font-medium break-words">{r.title}</p>
-                        <p className="text-xs text-muted-foreground" dir="ltr">
-                          {formatDate(new Date(r.createdAt), locale)}
+                        <p className="text-xs text-muted-foreground">
+                          <span dir="ltr">{formatDate(new Date(r.createdAt), locale)}</span>
                         </p>
                       </div>
                     </div>

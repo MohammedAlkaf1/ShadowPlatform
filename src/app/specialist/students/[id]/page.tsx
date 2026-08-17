@@ -104,9 +104,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
+          {/* Batch 8: dir="ltr" on an inline span, not the block <p> —
+              see admin/audit-log/page.tsx. */}
           <p className="text-base font-semibold text-foreground">{student.user.fullName}</p>
-          <p className="text-sm text-muted-foreground" dir="ltr">
-            {student.user.email}
+          <p className="text-sm text-muted-foreground">
+            <span dir="ltr">{student.user.email}</span>
           </p>
           <p className="text-sm text-muted-foreground">
             {student.studentNumber} — {student.major} — {student.academicStage}
@@ -186,12 +188,18 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Batch 8 (new issue 1): was a bordered box per item (a "card
+              within a card") — switched to divide-y rows, matching the
+              divider pattern already used for lists elsewhere in the app
+              (e.g. admin/users' compact list), so this page's 5 stacked
+              cards read as organized sections rather than a wall of
+              similarly-weighted nested boxes. */}
           {assessments.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">{t("noAssessments")}</p>
           ) : (
-            <ul className="space-y-3">
+            <ul className="divide-y divide-border">
               {assessments.map((a) => (
-                <li key={a.id} className="rounded-md border border-border p-3 text-sm">
+                <li key={a.id} className="py-3 text-sm first:pt-0 last:pb-0">
                   <p className="font-medium text-foreground">
                     {locale === "en" ? a.condition.category.nameEn : a.condition.category.nameAr} —{" "}
                     {locale === "en" ? a.condition.nameEn : a.condition.nameAr}
@@ -200,8 +208,10 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                     {t("supportLevelLabel")}: {tSupportLevel(String(a.supportLevel.order))}
                   </p>
                   <p className="mt-1 text-foreground">{a.notes}</p>
-                  <p className="mt-1 text-xs text-muted-foreground" dir="ltr">
-                    {formatDateTime(a.assessedAt, locale)}
+                  {/* Batch 8: dir="ltr" on an inline span, not the block
+                      <p> — see admin/audit-log/page.tsx. */}
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    <span dir="ltr">{formatDateTime(a.assessedAt, locale)}</span>
                   </p>
                 </li>
               ))}
@@ -220,9 +230,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           {supportPlans.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">{t("noPlans")}</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="divide-y divide-border">
               {supportPlans.map((p) => (
-                <li key={p.id} className="flex items-center justify-between rounded-md border border-border p-3 text-sm">
+                <li key={p.id} className="flex items-center justify-between py-3 text-sm first:pt-0 last:pb-0">
                   <span dir="ltr" className="text-muted-foreground">
                     {formatDateTime(p.createdAt, locale)}
                   </span>
@@ -234,58 +244,62 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            {t("revisionsTitle")} ({planRevisions.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {planRevisions.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">{t("noRevisions")}</p>
-          ) : (
-            <ul className="space-y-3">
-              {planRevisions.map((rev) => (
-                <li key={rev.id} className="rounded-md border border-border p-3 text-sm">
-                  <p className="font-medium">
-                    {t("newLevelLabel")}: {tSupportLevel(String(rev.newSupportLevel.order))}
-                  </p>
-                  <p className="text-muted-foreground">{rev.reason}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {rev.revisedBy.fullName}{" "}
-                    <span dir="ltr">— {formatDateTime(rev.createdAt, locale)}</span>
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      {/* Batch 8 (new issue 1): revisions + usage summary grouped into a
+          2-column grid on lg+ — both are typically short/often-empty
+          sections, so stacking them as two more full-width cards added to
+          the "wall of similarly-sized boxes" feel; side-by-side gives the
+          page some visual variation instead of one long uniform column. */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              {t("revisionsTitle")} ({planRevisions.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {planRevisions.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">{t("noRevisions")}</p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {planRevisions.map((rev) => (
+                  <li key={rev.id} className="py-3 text-sm first:pt-0 last:pb-0">
+                    <p className="font-medium">
+                      {t("newLevelLabel")}: {tSupportLevel(String(rev.newSupportLevel.order))}
+                    </p>
+                    <p className="text-muted-foreground">{rev.reason}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {rev.revisedBy.fullName}{" "}
+                      <span dir="ltr">— {formatDateTime(rev.createdAt, locale)}</span>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("usageSummaryTitle")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {Object.keys(usageSummary).length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">{t("noUsageData")}</p>
-          ) : (
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {Object.entries(usageSummary).map(([eventType, count]) => (
-                <li
-                  key={eventType}
-                  className="flex items-center justify-between rounded-md border border-border bg-secondary/40 px-3 py-2 text-sm"
-                >
-                  <span dir="ltr" className="font-mono text-xs text-muted-foreground">
-                    {eventType}
-                  </span>
-                  <Badge variant="secondary">{count}</Badge>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("usageSummaryTitle")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {Object.keys(usageSummary).length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">{t("noUsageData")}</p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {Object.entries(usageSummary).map(([eventType, count]) => (
+                  <li key={eventType} className="flex items-center justify-between py-2.5 text-sm first:pt-0 last:pb-0">
+                    <span dir="ltr" className="font-mono text-xs text-muted-foreground">
+                      {eventType}
+                    </span>
+                    <Badge variant="secondary">{count}</Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
     </AppShell>
   );

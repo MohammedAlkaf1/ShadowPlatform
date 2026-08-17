@@ -164,7 +164,14 @@ export default async function StudentStatusPage({
       title={t("title")}
       subtitle={t("subtitle")}
     >
-    <div className="mx-auto max-w-3xl space-y-6">
+    {/* Batch 8 (issue 3): was `mx-auto max-w-3xl` — a leftover narrow
+        constraint from before the bento redesign. Every other dashboard
+        (admin/stats, faculty/students, specialist/queue) is full-width
+        (`space-y-6`, no max-w cap), so this page's hero/stat cards were
+        floating in a comparatively narrow column with a large unused
+        gutter beside them — the actual cause of the "feels lost/messy"
+        report, not a spacing/alignment bug within the cards themselves. */}
+    <div className="space-y-6">
 
       {/* Hero row: the one EchoCard on this page wraps the request-status
           card — the single most relevant card here. No forced bento "huge
@@ -175,7 +182,10 @@ export default async function StudentStatusPage({
           number available on this page: the count of enabled tools. */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
         <EchoCard className="sm:flex-[1.6]">
-          <Card className="h-full justify-between rounded-[24px]">
+          {/* Batch 8: was "h-full justify-between" — see admin/stats's
+              comment for why this now-splitting-content-apart class was
+              removed in favor of top-down stacking. */}
+          <Card className="h-full rounded-[24px]">
             <CardHeader>
               <p className="text-xs font-semibold tracking-wide text-accent uppercase">{t("heroTag")}</p>
               <CardTitle className="text-base font-medium text-muted-foreground">
@@ -211,9 +221,14 @@ export default async function StudentStatusPage({
           <CardTitle className="text-base">{t("toolsTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Batch 8: dir="ltr" wraps only the date value now, not the
+              whole line (the label text itself is natural-language
+              Arabic/English and shouldn't be forced LTR) — see
+              admin/audit-log/page.tsx's comment for the block-level-dir
+              alignment bug this also avoids. */}
           {approvedPlan && planLastUpdated && (
-            <p className="mb-4 text-xs text-muted-foreground" dir="ltr">
-              {t("planLastUpdated")}: {formatDate(planLastUpdated, locale)}
+            <p className="mb-4 text-xs text-muted-foreground">
+              {t("planLastUpdated")}: <span dir="ltr">{formatDate(planLastUpdated, locale)}</span>
             </p>
           )}
           {!approvedPlan || approvedPlan.toolActivations.length === 0 ? (

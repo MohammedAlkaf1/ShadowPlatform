@@ -129,7 +129,7 @@ function LoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="min-h-[52px] rounded-[14px] bg-card text-base"
+                className="min-h-[52px] rounded-[14px] border-border bg-card text-base shadow-[0_2px_4px_rgba(30,42,58,0.06)] dark:shadow-[0_2px_6px_rgba(0,0,0,0.3)]"
               />
             </div>
             <div className="space-y-2">
@@ -142,7 +142,7 @@ function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="min-h-[52px] rounded-[14px] bg-card text-base"
+                className="min-h-[52px] rounded-[14px] border-border bg-card text-base shadow-[0_2px_4px_rgba(30,42,58,0.06)] dark:shadow-[0_2px_6px_rgba(0,0,0,0.3)]"
               />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}

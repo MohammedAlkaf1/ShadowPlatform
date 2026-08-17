@@ -17,7 +17,15 @@ function Card({
         // previous rounded-xl (14px) — see EchoCard-wrapped hero cards for
         // the 24px variant, applied per-instance where they need to match
         // their echo layer exactly.
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-[20px] bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/10 [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-[20px] *:[img:last-child]:rounded-b-[20px]",
+        //
+        // shadow-[...]: the design brief's own rule is "a real shadow on
+        // every card, not just a border" — this component previously had
+        // only `ring-1 ring-foreground/10`, whose color sits too close to
+        // the cream page/card tones to read as a card boundary at all
+        // (reported live as "where's the card??" on the login form,
+        // whose inputs had a bg-card tint but no elevation). Exact values
+        // from the reference file's own light-mode `t.shadow` token.
+        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-[20px] bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/10 shadow-[0_8px_18px_rgba(30,42,58,0.1),0_2px_4px_rgba(30,42,58,0.06)] dark:shadow-[0_10px_24px_rgba(0,0,0,0.36)] [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-[20px] *:[img:last-child]:rounded-b-[20px]",
         className
       )}
       {...props}

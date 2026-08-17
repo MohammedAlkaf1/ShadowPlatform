@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E4DFD4;font-family:Tajawal,system-ui,sans-serif}
+a{color:#B5623A;text-decoration:none}
+a:hover{color:#8F4A2B}
+.pl-scroll{scrollbar-width:none;-ms-overflow-style:none}
+.pl-scroll::-webkit-scrollbar{display:none;width:0;height:0}
+@keyframes plfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</helmet>
+
+<div style="padding:40px 44px 44px" dir="rtl">
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">
+    <img src="assets/shadow_logo_horizontal.svg" alt="شادو" style="height:46px;display:block">
+    <span style="font:700 13px Tajawal,sans-serif;color:#5B6470">المنصة — دخول موحّد، وكل حساب يرى مهامه فقط (أقل صلاحية بالافتراض)</span>
+  </div>
+  <p style="margin:0 0 24px;font:400 13px/1.8 Tajawal,sans-serif;color:#5B6470;max-width:1020px;text-wrap:pretty">الصلاحيات مبنية على جدول المهام: الطالب يرفع وثيقته ولا يرى تصنيفه، الأستاذ يرفع ملفًا مخصصًا لطلاب مقرراته ولا يرى التصنيف، المختص يراجع ويصنّف ويعتمد خطة الدعم لطلابه المُعيَّنين فقط، والإدارة تدير المستخدمين وتعيّن المختص يدويًا وتصدّر CSV وتقرأ سجل التدقيق دون رؤية التصنيف. ما تظهر في الواجهة إلا الأزرار المسموحة، والمخفي مكتوب صراحة بسطر رمادي.</p>
+
+  <div dir="{{ dir }}" style="width:1440px;height:900px;border-radius:22px;overflow:hidden;position:relative;display:flex;font-family:Tajawal,system-ui,sans-serif;background:{{ t.bg }};box-shadow:0 24px 60px rgba(30,42,58,.24),0 3px 10px rgba(30,42,58,.12);border:1px solid {{ t.border }}">
+
+    <div style="width:272px;flex:none;display:flex;flex-direction:column;padding:22px 18px;background:{{ t.sidebar }};border-inline-end:1px solid {{ t.border }}">
+      <div style="display:flex;align-items:center;gap:11px;padding:0 6px 22px">
+        <img src="assets/shadow_icon.svg" alt="شادو" style="width:42px;height:42px;border-radius:13px;display:block;box-shadow:0 6px 14px rgba(30,42,58,.3)">
+        <div style="font-size:12px;line-height:1.6;color:{{ t.sidebarMuted }};text-wrap:pretty">{{ s.platform }}</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <sc-for list="{{ nav }}" as="n" hint-placeholder-count="3">
+          <div onClick="{{ n.go }}" style="min-height:48px;border-radius:14px;padding:0 14px;display:flex;align-items:center;gap:11px;cursor:pointer;background:{{ n.bg }}">
+            <span style="width:8px;height:8px;border-radius:50%;flex:none;background:{{ n.dot }}"></span>
+            <span style="font-size:14.5px;line-height:1.55;color:{{ t.sidebarText }};font-weight:{{ n.weight }};text-wrap:pretty">{{ n.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="margin-top:auto;border-radius:16px;padding:15px;background:{{ t.sidebarCard }}">
+        <div style="font-size:13px;font-weight:700;line-height:1.5;color:{{ t.sidebarText }};text-wrap:pretty">{{ userName }}</div>
+        <div style="font-size:11.5px;line-height:1.6;margin-top:3px;color:{{ t.sidebarMuted }};text-wrap:pretty">{{ roleLabel }}</div>
+        <div style="font-size:11.5px;line-height:1.6;color:{{ t.sidebarMuted }};text-wrap:pretty">{{ userEmail }}</div>
+      </div>
+    </div>
+
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <div style="height:76px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:22px;padding:0 28px;border-bottom:1px solid {{ t.border }};background:{{ t.surface }}">
+        <div style="flex:none;display:flex;align-items:center;gap:22px">
+          <div style="padding:{{ t.logoPad }};border-radius:12px;background:{{ t.logoPlate }};display:flex;align-items:center">
+            <img src="assets/shadow_logo_horizontal.svg" alt="شادو Shadow" style="height:38px;display:block">
+          </div>
+          <div style="width:1px;height:34px;background:{{ t.border }}"></div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:20px;font-weight:800;line-height:1.4;color:{{ t.text }};text-wrap:pretty">{{ viewTitle }}</div>
+          <div style="font-size:12.5px;line-height:1.5;color:{{ t.muted }};text-wrap:pretty">{{ viewSub }}</div>
+        </div>
+        <div style="flex:none;display:flex;align-items:center;gap:10px">
+          <div onClick="{{ toggleLang }}" style="min-height:44px;padding:0 18px;border-radius:14px;display:flex;align-items:center;font-size:13.5px;font-weight:700;cursor:pointer;color:{{ t.text }};background:{{ t.bg }};border:1px solid {{ t.border }}">{{ s.langSwitch }}</div>
+          <div onClick="{{ toggleTheme }}" style="min-height:44px;padding:0 18px;border-radius:14px;display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:700;cursor:pointer;color:{{ t.text }};background:{{ t.bg }};border:1px solid {{ t.border }}">
+            <span style="width:14px;height:14px;border-radius:50%;display:block;background:{{ t.themeDot }}"></span>{{ themeLabel }}
+          </div>
+          <div onClick="{{ logout }}" style="min-height:44px;padding:0 18px;border-radius:14px;display:flex;align-items:center;font-size:13.5px;font-weight:700;cursor:pointer;color:{{ t.muted }};border:1px solid {{ t.border }}">{{ s.logout }}</div>
+        </div>
+      </div>
+
+      <div class="pl-scroll" style="flex:1;min-height:0;overflow-y:auto;padding:26px 28px 34px">
+
+        <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:18px;align-items:stretch">
+            <div style="position:relative;flex:1.6;min-width:0">
+              <div style="position:absolute;inset:18px -9px -11px 18px;border-radius:24px;background:{{ t.echo }}"></div>
+              <div style="position:relative;height:100%;box-sizing:border-box;border-radius:24px;padding:26px 28px;background:{{ t.primaryBg }};box-shadow:{{ t.primaryShadow }}">
+                <div style="font-size:13px;font-weight:700;color:{{ t.primarySub }}">{{ heroTag }}</div>
+                <div style="font-size:52px;font-weight:800;line-height:1.2;margin-top:10px;color:{{ t.primaryText }}">{{ heroValue }}</div>
+                <div style="font-size:16px;line-height:1.7;margin-top:6px;color:{{ t.primarySub }};max-width:430px;text-wrap:pretty">{{ heroDesc }}</div>
+                <sc-if value="{{ hasChart }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;align-items:flex-end;gap:5px;height:44px;margin-top:22px">
+                    <sc-for list="{{ bars }}" as="b" hint-placeholder-count="12">
+                      <span style="width:12px;border-radius:4px;display:block;height:{{ b.h }};background:{{ b.c }}"></span>
+                    </sc-for>
+                  </div>
+                  <div style="font-size:12px;line-height:1.7;margin-top:10px;color:{{ t.primarySub }};text-wrap:pretty">{{ chartCaption }}</div>
+                </sc-if>
+              </div>
+            </div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:14px">
+              <sc-for list="{{ stats }}" as="k" hint-placeholder-count="3">
+                <div style="flex:1;border-radius:20px;padding:18px 20px;display:flex;flex-direction:column;justify-content:center;background:{{ t.surface }};border:1px solid {{ t.border }};box-shadow:{{ t.shadow }}">
+                  <div style="font-size:12.5px;font-weight:700;line-height:1.6;color:{{ t.muted }};text-wrap:pretty">{{ k.label }}</div>
+                  <div style="display:flex;align-items:baseline;gap:9px;margin-top:4px;flex-wrap:wrap">
+                    <span style="font-size:28px;font-weight:800;line-height:1.35;color:{{ t.text }};text-wrap:pretty">{{ k.value }}</span>
+                    <span style="font-size:12.5px;font-weight:700;color:{{ t.muted }};text-wrap:pretty">{{ k.delta }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="margin-top:30px;display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap">
+            <div style="min-width:0">
+              <div style="font-size:18px;font-weight:800;line-height:1.4;color:{{ t.text }};text-wrap:pretty">{{ tableTitle }}</div>
+              <div style="font-size:12.5px;line-height:1.6;margin-top:2px;color:{{ t.muted }};text-wrap:pretty">{{ tableSub }}</div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <div style="position:relative;width:250px">
+                <div onClick="{{ toggleFilter }}" style="min-height:46px;border-radius:14px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;background:{{ t.surface }};border:1px solid {{ t.border }}">
+                  <span style="font-size:13.5px;font-weight:600;line-height:1.55;color:{{ t.text }};text-wrap:pretty">{{ filterValue }}</span>
+                  <span style="width:9px;height:9px;flex:none;border-inline-end:2px solid {{ t.muted }};border-block-end:2px solid {{ t.muted }};transform:rotate(45deg);display:block"></span>
+                </div>
+                <sc-if value="{{ filterOpen }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;top:52px;inset-inline-start:0;width:100%;border-radius:16px;padding:6px;z-index:5;background:{{ t.surface }};border:1px solid {{ t.border }};box-shadow:0 18px 40px rgba(0,0,0,.22);animation:plfade .18s ease-out both">
+                    <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+                      <div onClick="{{ f.pick }}" style="border-radius:11px;padding:11px 12px;cursor:pointer;font-size:13.5px;line-height:1.6;color:{{ t.text }};background:{{ f.bg }};text-wrap:pretty">{{ f.label }}</div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+              <div onClick="{{ primaryAction }}" style="min-height:46px;padding:0 22px;border-radius:14px;display:flex;align-items:center;font-size:14px;font-weight:700;cursor:pointer;color:#F7F3EC;background:#B5623A;box-shadow:0 8px 20px rgba(181,98,58,.36)">{{ primaryActionLabel }}</div>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;border-radius:20px;overflow:hidden;background:{{ t.surface }};border:1px solid {{ t.border }};box-shadow:{{ t.shadow }}">
+            <div style="display:flex;align-items:center;gap:16px;padding:14px 20px;background:{{ t.tableHead }};border-bottom:1px solid {{ t.border }}">
+              <div style="flex:2.4;min-width:0;font-size:12.5px;font-weight:700;color:{{ t.muted }};text-align:start">{{ cols.one }}</div>
+              <div style="flex:1.7;min-width:0;font-size:12.5px;font-weight:700;color:{{ t.muted }};text-align:start">{{ cols.two }}</div>
+              <div style="flex:1.2;min-width:0;font-size:12.5px;font-weight:700;color:{{ t.muted }};text-align:start">{{ cols.three }}</div>
+              <div style="flex:1.2;min-width:0;font-size:12.5px;font-weight:700;color:{{ t.muted }};text-align:start">{{ cols.four }}</div>
+              <div style="width:106px;flex:none"></div>
+            </div>
+            <sc-for list="{{ rows }}" as="row" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:16px;padding:15px 20px;border-bottom:1px solid {{ t.rowLine }}">
+                <div style="flex:2.4;min-width:0;text-align:start">
+                  <div style="font-size:14.5px;font-weight:700;line-height:1.55;color:{{ t.text }};text-wrap:pretty">{{ row.name }}</div>
+                  <div style="font-size:12px;line-height:1.6;margin-top:1px;color:{{ t.muted }};text-wrap:pretty">{{ row.sub }}</div>
+                </div>
+                <div style="flex:1.7;min-width:0;font-size:13.5px;line-height:1.6;color:{{ t.text }};text-align:start;text-wrap:pretty">{{ row.mid }}</div>
+                <div style="flex:1.2;min-width:0;font-size:13.5px;color:{{ t.muted }};text-align:start;line-height:1.6;text-wrap:pretty">{{ row.date }}</div>
+                <div style="flex:1.2;min-width:0;text-align:start">
+                  <span style="display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:700;line-height:1.5;color:{{ row.statusColor }};background:{{ row.statusBg }}">
+                    <span style="width:7px;height:7px;border-radius:50%;display:block;background:{{ row.statusColor }}"></span>{{ row.status }}
+                  </span>
+                </div>
+                <div onClick="{{ row.open }}" style="width:106px;flex:none;min-height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:700;cursor:pointer;color:{{ t.text }};background:{{ t.bg }};border:1px solid {{ t.border }}">{{ openLabel }}</div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noRows }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:34px 20px;text-align:center;font-size:14px;line-height:1.8;color:{{ t.muted }};text-wrap:pretty">{{ s.emptyRows }}</div>
+            </sc-if>
+          </div>
+
+          <div style="margin-top:16px;display:flex;align-items:flex-start;gap:10px;max-width:760px">
+            <span style="width:7px;height:7px;border-radius:50%;flex:none;margin-top:8px;background:{{ t.muted }}"></span>
+            <div style="font-size:12.5px;line-height:1.85;color:{{ t.muted }};text-wrap:pretty">{{ hiddenNote }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isUpload }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:20px;align-items:flex-start">
+            <div style="position:relative;flex:1.4;min-width:0">
+              <div style="position:absolute;inset:18px -9px -11px 18px;border-radius:24px;background:{{ t.echo }}"></div>
+              <div style="position:relative;border-radius:24px;padding:34px;text-align:center;background:{{ t.primaryBg }};box-shadow:{{ t.primaryShadow }}">
+                <div style="width:64px;height:48px;margin:0 auto;border-radius:14px 14px 7px 7px;background:{{ t.primaryWave }};display:flex;align-items:center;justify-content:center">
+                  <span style="width:17px;height:22px;border-radius:3px;background:{{ t.primaryBg }};display:block"></span>
+                </div>
+                <div style="font-size:24px;font-weight:800;line-height:1.45;margin-top:18px;color:{{ t.primaryText }};text-wrap:pretty">{{ up.title }}</div>
+                <div style="font-size:14.5px;line-height:1.8;margin-top:8px;color:{{ t.primarySub }};max-width:470px;margin-inline:auto;text-wrap:pretty">{{ up.sub }}</div>
+                <div onClick="{{ pickFile }}" style="margin:22px auto 0;min-height:50px;display:inline-flex;align-items:center;padding:0 34px;border-radius:999px;cursor:pointer;font-size:16px;font-weight:700;color:#F7F3EC;background:#B5623A;box-shadow:0 10px 24px rgba(181,98,58,.4)">{{ s.pick }}</div>
+                <sc-if value="{{ hasFile }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:18px;display:inline-flex;align-items:center;gap:9px;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:700;color:{{ t.primaryText }};background:{{ t.primaryWave }};animation:plfade .2s ease-out both">
+                    <span style="width:8px;height:8px;border-radius:2px;background:{{ t.primaryText }};display:block"></span>{{ up.fileName }}
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+
+            <div style="flex:1;min-width:0;border-radius:22px;padding:24px;background:{{ t.surface }};border:1px solid {{ t.border }};box-shadow:{{ t.shadow }}">
+              <div style="font-size:17px;font-weight:800;color:{{ t.text }}">{{ up.formTitle }}</div>
+              <div style="display:flex;flex-direction:column;gap:16px;margin-top:18px">
+                <sc-for list="{{ up.fields }}" as="f" hint-placeholder-count="3">
+                  <div>
+                    <div style="font-size:12.5px;font-weight:700;color:{{ t.muted }};line-height:1.6;text-wrap:pretty">{{ f.label }}</div>
+                    <div style="min-height:48px;border-radius:14px;margin-top:6px;padding:11px 14px;display:flex;align-items:center;font-size:14px;line-height:1.65;color:{{ t.text }};background:{{ t.bg }};border:1px solid {{ t.border }};text-wrap:pretty">{{ f.value }}</div>
+                  </div>
+                </sc-for>
+                <div>
+                  <div style="font-size:12.5px;font-weight:700;color:{{ t.muted }}">{{ up.noteLabel }}</div>
+                  <div style="min-height:92px;border-radius:14px;margin-top:6px;padding:12px 14px;font-size:14px;line-height:1.75;color:{{ t.muted }};background:{{ t.bg }};border:1px solid {{ t.border }};text-wrap:pretty">{{ up.noteValue }}</div>
+                </div>
+                <div style="min-height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;cursor:pointer;color:{{ t.primaryText }};background:{{ t.primaryBg }};box-shadow:{{ t.shadow }}">{{ up.send }}</div>
+                <div style="display:flex;align-items:flex-start;gap:9px">
+                  <span style="width:7px;height:7px;border-radius:50%;flex:none;margin-top:7px;background:{{ t.muted }}"></span>
+                  <div style="font-size:12.5px;line-height:1.85;color:{{ t.muted }};text-wrap:pretty">{{ up.privacy }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isDoc }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:20px;align-items:flex-start">
+            <div style="flex:1.7;min-width:0;position:relative">
+              <div style="position:absolute;inset:18px -9px -11px 18px;border-radius:24px;background:{{ t.echo }}"></div>
+              <div style="position:relative;border-radius:24px;padding:28px;background:{{ t.surface }};border:1px solid {{ t.border }};box-shadow:{{ t.primaryShadow }}">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+                  <div style="min-width:0">
+                    <div style="font-size:21px;font-weight:800;line-height:1.45;color:{{ t.text }};text-wrap:pretty">{{ docTitle }}</div>
+                    <div style="font-size:13px;line-height:1.65;margin-top:3px;color:{{ t.muted }};text-wrap:pretty">{{ docMeta }}</div>
+                  </div>
+                  <span style="display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:999px;font-size:12.5px;font-weight:700;line-height:1.5;color:{{ t.text }};background:{{ t.pillBg }}">
+                    <span style="width:7px;height:7px;border-radius:50%;background:{{ t.text }};display:block"></span>{{ docStatusLabel }}
+                  </span>
+                </div>
+                <div style="height:1px;margin:20px 0;background:{{ t.border }}"></div>
+                <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
+                  <div style="width:216px;height:280px;flex:none;border-radius:16px;background:{{ t.bg }};border:1px solid {{ t.border }};display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
+                    <div style="font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.8;text-align:center;color:{{ t.muted }}">{{ s.docPlaceholder }}</div>
+                  </div>
+                  <div style="flex:1;min-width:220px">
+                    <sc-for list="{{ docFacts }}" as="d" hint-placeholder-count="4">
+                      <div style="display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid {{ t.rowLine }}">
+                        <span style="font-size:13.5px;line-height:1.65;color:{{ t.muted }};text-wrap:pretty">{{ d.label }}</span>
+                        <span style="font-size:13.5px;font-weight:700;line-height:1.65;color:{{ t.text }};text-align:end;text-wrap:pretty">{{ d.value }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:14px">
+              <sc-if value="{{ canClassify }}" hint-placeholder-val="{{ true }}">
+                <div style="border-radius:20px;padding:22px;background:{{ t.surface }};border:1px solid {{ t.border }};box-shadow:{{ t.shadow }}">
+                  <div style="font-size:16px;font-weight:800;color:{{ t.text }};line-height:1.45;text-wrap:pretty">{{ s.classifyTitle }}</div>
+                  <div style="font-size:12.5px;line-height:1.75;margin-top:4px;color:{{ t.muted }};text-wrap:pretty">{{ s.classifySub }}</div>
+                  <div style="display:flex;flex-direction:column;gap:9px;margin-top:14px">
+                    <sc-for list="{{ levels }}" as="l" hint-placeholder-count="3">
+                      <div onClick="{{ l.pick }}" style="min-height:52px;border-radius:14px;padding:10px 15px;display:flex;align-items:center;gap:12px;cursor:pointer;background:{{ l.bg }};border:1.5px solid {{ l.border }}">
+                        <span style="width:20px;height:20px;border-radius:50%;flex:none;border:2px solid {{ l.ring }};display:flex;align-items:center;justify-content:center"><span style="width:9px;height:9px;border-radius:50%;display:block;background:{{ l.dot }}"></span></span>
+                        <span style="font-size:14px;font-weight:600;line-height:1.6;color:{{ t.text }};text-wrap:pretty">{{ l.label }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="font-size:12.5px;font-weight:700;margin-top:16px;color:{{ t.muted }}">{{ s.planNotes }}</div>
+                  <div style="min-height:96px;border-radius:14px;margin-top:6px;padding:12px 14px;font-size:14px;line-height:1.8;color:{{ t.muted }};background:{{ t.bg }};border:1px solid {{ t.border }};text-wrap:pretty">{{ s.planNotesVal }}</div>
+                  <div style="display:flex;gap:10px;margin-top:14px">
+                    <div onClick="{{ approve }}" style="flex:1;min-height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:15px;font-weight:700;cursor:pointer;color:#F7F3EC;background:#B5623A;box-shadow:0 8px 20px rgba(181,98,58,.34);line-height:1.5">{{ approveLabel }}</div>
+                    <div style="flex:none;min-height:50px;padding:0 20px;border-radius:14px;display:flex;align-items:center;font-size:14px;font-weight:600;cursor:pointer;color:{{ t.muted }};border:1px solid {{ t.border }}">{{ s.sendBack }}</div>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ docReadOnly }}" hint-placeholder-val="{{ false }}">
+                <div style="border-radius:20px;padding:22px;background:{{ t.surface }};border:1px solid {{ t.border }};box-shadow:{{ t.shadow }}">
+                  <div style="font-size:16px;font-weight:800;color:{{ t.text }};line-height:1.45;text-wrap:pretty">{{ s.readOnlyTitle }}</div>
+                  <div style="font-size:13px;line-height:1.85;margin-top:6px;color:{{ t.muted }};text-wrap:pretty">{{ docReadOnlyNote }}</div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isAssign }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:20px;align-items:flex-start">
+            <div style="flex:1;min-width:0;border-radius:22px;padding:26px;background:{{ t.surface }};border:1px solid {{ t.border }};box-shadow:{{ t.shadow }}">
+              <div style="font-size:19px;font-weight:800;color:{{ t.text }};line-height:1.45;text-wrap:pretty">{{ s.assignTitle }}</div>
+              <div style="display:flex;flex-direction:column;gap:16px;margin-top:20px;max-width:470px">
+                <div>
+                  <div style="font-size:12.5px;font-weight:700;color:{{ t.muted }}">{{ s.assignStudent }}</div>
+                  <div style="min-height:50px;border-radius:14px;margin-top:6px;padding:11px 14px;display:flex;align-items:center;font-size:14px;line-height:1.65;color:{{ t.text }};background:{{ t.bg }};border:1px solid {{ t.border }};text-wrap:pretty">{{ s.assignStudentVal }}</div>
+                </div>
+                <div>
+                  <div style="font-size:12.5px;font-weight:700;color:{{ t.muted }}">{{ s.assignSpecialist }}</div>
+                  <div style="position:relative">
+                    <div onClick="{{ toggleAssign }}" style="min-height:50px;border-radius:14px;margin-top:6px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;background:{{ t.bg }};border:1px solid {{ t.border }}">
+                      <span style="font-size:14px;line-height:1.65;color:{{ t.text }};text-wrap:pretty">{{ assignValue }}</span>
+                      <span style="width:9px;height:9px;flex:none;border-inline-end:2px solid {{ t.muted }};border-block-end:2px solid {{ t.muted }};transform:rotate(45deg);display:block"></span>
+                    </div>
+                    <sc-if value="{{ assignOpen }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:absolute;top:62px;inset-inline-start:0;width:100%;border-radius:16px;padding:6px;z-index:5;background:{{ t.surface }};border:1px solid {{ t.border }};box-shadow:0 18px 40px rgba(0,0,0,.22);animation:plfade .18s ease-out both">
+                        <sc-for list="{{ specialists }}" as="sp" hint-placeholder-count="3">
+                          <div onClick="{{ sp.pick }}" style="border-radius:11px;padding:11px 12px;cursor:pointer;font-size:13.5px;line-height:1.7;color:{{ t.text }};background:{{ sp.bg }};text-wrap:pretty">{{ sp.label }}</div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </div>
+                <div onClick="{{ doAssign }}" style="min-height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:15.5px;font-weight:700;cursor:pointer;color:#F7F3EC;background:#B5623A;box-shadow:0 8px 20px rgba(181,98,58,.34)">{{ assignBtnLabel }}</div>
+                <div style="display:flex;align-items:flex-start;gap:9px">
+                  <span style="width:7px;height:7px;border-radius:50%;flex:none;margin-top:7px;background:{{ t.muted }}"></span>
+                  <div style="font-size:12.5px;line-height:1.85;color:{{ t.muted }};text-wrap:pretty">{{ s.assignNote }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="width:420px;flex:none;border-radius:22px;padding:24px;background:{{ t.surface }};border:1px solid {{ t.border }};box-shadow:{{ t.shadow }}">
+              <div style="font-size:16px;font-weight:800;color:{{ t.text }}">{{ s.usersTitle }}</div>
+              <div style="font-size:12.5px;line-height:1.75;margin-top:4px;color:{{ t.muted }};text-wrap:pretty">{{ s.usersSub }}</div>
+              <div style="display:flex;flex-direction:column;margin-top:14px">
+                <sc-for list="{{ users }}" as="u" hint-placeholder-count="4">
+                  <div style="padding:13px 0;border-bottom:1px solid {{ t.rowLine }}">
+                    <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline">
+                      <span style="font-size:14px;font-weight:700;line-height:1.55;color:{{ t.text }};text-wrap:pretty">{{ u.name }}</span>
+                      <span style="font-size:12.5px;font-weight:700;line-height:1.6;color:{{ t.muted }};text-align:end;text-wrap:pretty">{{ u.role }}</span>
+                    </div>
+                    <div style="font-size:12px;line-height:1.7;margin-top:2px;color:{{ t.muted }};text-wrap:pretty">{{ u.email }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isAudit }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:14px">
+            <div style="min-height:46px;padding:0 22px;border-radius:14px;display:flex;align-items:center;font-size:14px;font-weight:700;cursor:pointer;color:#F7F3EC;background:#B5623A;box-shadow:0 8px 20px rgba(181,98,58,.36)">{{ s.auditExport }}</div>
+          </div>
+          <div style="border-radius:20px;overflow:hidden;background:{{ t.surface }};border:1px solid {{ t.border }};box-shadow:{{ t.shadow }}">
+            <div style="display:flex;align-items:center;gap:16px;padding:14px 20px;background:{{ t.tableHead }};border-bottom:1px solid {{ t.border }}">
+              <div style="flex:1;min-width:0;font-size:12.5px;font-weight:700;color:{{ t.muted }};text-align:start">{{ s.auditTime }}</div>
+              <div style="flex:1.6;min-width:0;font-size:12.5px;font-weight:700;color:{{ t.muted }};text-align:start">{{ s.auditUser }}</div>
+              <div style="flex:2.4;min-width:0;font-size:12.5px;font-weight:700;color:{{ t.muted }};text-align:start">{{ s.auditAction }}</div>
+              <div style="flex:1.4;min-width:0;font-size:12.5px;font-weight:700;color:{{ t.muted }};text-align:start">{{ s.auditTarget }}</div>
+            </div>
+            <sc-for list="{{ audit }}" as="a" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid {{ t.rowLine }}">
+                <div style="flex:1;min-width:0;font-size:13px;color:{{ t.muted }};text-align:start;line-height:1.6">{{ a.time }}</div>
+                <div style="flex:1.6;min-width:0;font-size:13.5px;font-weight:700;color:{{ t.text }};text-align:start;line-height:1.6;text-wrap:pretty">{{ a.user }}</div>
+                <div style="flex:2.4;min-width:0;font-size:13.5px;color:{{ t.text }};text-align:start;line-height:1.7;text-wrap:pretty">{{ a.action }}</div>
+                <div style="flex:1.4;min-width:0;font-size:13px;color:{{ t.muted }};text-align:start;line-height:1.65;text-wrap:pretty">{{ a.target }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:16px;display:flex;align-items:flex-start;gap:10px;max-width:760px">
+            <span style="width:7px;height:7px;border-radius:50%;flex:none;margin-top:8px;background:{{ t.muted }}"></span>
+            <div style="font-size:12.5px;line-height:1.85;color:{{ t.muted }};text-wrap:pretty">{{ s.auditNote }}</div>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+
+    <sc-if value="{{ showLogin }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;inset:0;z-index:20;display:flex;background:{{ t.bg }}">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:0 72px">
+          <div style="padding:{{ t.logoPad }};border-radius:12px;background:{{ t.logoPlate }};align-self:flex-start;display:flex">
+            <img src="assets/shadow_logo_horizontal.svg" alt="شادو Shadow" style="height:54px;display:block">
+          </div>
+          <div style="font-size:34px;font-weight:800;line-height:1.35;margin-top:26px;color:{{ t.text }};text-wrap:pretty">{{ s.loginTitle }}</div>
+          <div style="font-size:15px;line-height:1.8;margin-top:8px;max-width:470px;color:{{ t.muted }};text-wrap:pretty">{{ s.loginSub }}</div>
+          <div style="display:flex;flex-direction:column;gap:14px;margin-top:26px;max-width:420px">
+            <div>
+              <div style="font-size:12.5px;font-weight:700;color:{{ t.muted }}">{{ s.fEmail }}</div>
+              <div style="min-height:52px;border-radius:14px;margin-top:6px;padding:0 16px;display:flex;align-items:center;font-size:14.5px;color:{{ t.text }};background:{{ t.surface }};border:1px solid {{ t.border }}">{{ loginEmail }}</div>
+            </div>
+            <div>
+              <div style="font-size:12.5px;font-weight:700;color:{{ t.muted }}">{{ s.fPassword }}</div>
+              <div style="min-height:52px;border-radius:14px;margin-top:6px;padding:0 16px;display:flex;align-items:center;font-size:16px;letter-spacing:3px;color:{{ t.text }};background:{{ t.surface }};border:1px solid {{ t.border }}">••••••••••</div>
+            </div>
+            <div onClick="{{ submitLogin }}" style="min-height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;cursor:pointer;color:#F7F3EC;background:#B5623A;box-shadow:0 10px 24px rgba(181,98,58,.38)">{{ s.loginBtn }}</div>
+            <div style="font-size:13px;font-weight:600;color:{{ t.muted }}">{{ s.forgot }}</div>
+          </div>
+        </div>
+
+        <div style="width:540px;flex:none;padding:52px 40px;display:flex;flex-direction:column;justify-content:center;background:{{ t.sidebar }}">
+          <div style="font-size:13px;font-weight:700;color:{{ t.sidebarMuted }}">{{ s.demoTitle }}</div>
+          <div style="font-size:13.5px;line-height:1.8;margin-top:6px;color:{{ t.sidebarMuted }};text-wrap:pretty">{{ s.demoSub }}</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px">
+            <sc-for list="{{ accounts }}" as="a" hint-placeholder-count="4">
+              <div onClick="{{ a.pick }}" style="border-radius:18px;padding:16px 18px;cursor:pointer;background:{{ a.bg }};border:1px solid {{ a.border }}">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                  <div style="font-size:15.5px;font-weight:800;line-height:1.45;color:{{ t.sidebarText }};text-wrap:pretty">{{ a.role }}</div>
+                  <span style="width:9px;height:9px;border-radius:50%;flex:none;background:{{ a.dot }}"></span>
+                </div>
+                <div style="font-size:12.5px;line-height:1.65;margin-top:3px;color:{{ t.sidebarMuted }};text-wrap:pretty">{{ a.name }} · {{ a.email }}</div>
+                <div style="font-size:12.5px;line-height:1.75;margin-top:5px;color:{{ t.sidebarMuted }};text-wrap:pretty">{{ a.perm }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="margin-top:22px;max-width:1020px;font:400 12.5px/1.85 Tajawal,sans-serif;color:#5B6470;text-wrap:pretty">
+    مطابق لجدول المهام: رفع الوثائق الطبية للطالب فقط · التصنيف ومستوى الدعم يظهران للمختص وحده (ممنوعان عن الطالب والأستاذ والإدارة) · اعتماد خطة الدعم للمختص فقط · قوائم الطلاب: الأستاذ مقرراته، المختص المُعيَّنين له، الإدارة الكل · الإحصائيات وتصدير CSV وسجل التدقيق وتعيين المختص وإدارة المستخدمين للإدارة فقط، والتعيين يدوي لا تلقائي. الأزرار غير المسموحة غير موجودة في الواجهة أصلًا، والممنوع مكتوب صراحة في سطر رمادي أسفل كل شاشة.
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;initialRole&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;student&quot;,&quot;faculty&quot;,&quot;specialist&quot;,&quot;admin&quot;],&quot;default&quot;:&quot;student&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const T = {
+  light: {
+    bg: "#ECE7DC", surface: "#F5F1E9", border: "#D9D2C4", rowLine: "#E4DFD4",
+    text: "#1E2A3A", muted: "#5B6470", echo: "rgba(30,42,58,.14)",
+    tableHead: "#EFEAE0", pillBg: "rgba(30,42,58,.09)",
+    primaryBg: "#1E2A3A", primaryText: "#F1ECE1", primarySub: "rgba(241,236,225,.78)", primaryWave: "rgba(241,236,225,.45)",
+    primaryShadow: "0 16px 34px rgba(30,42,58,.24),0 3px 8px rgba(30,42,58,.12)",
+    shadow: "0 8px 18px rgba(30,42,58,.1),0 2px 4px rgba(30,42,58,.06)",
+    sidebar: "#1E2A3A", sidebarText: "#F1ECE1", sidebarMuted: "#B2BAC6",
+    sidebarCard: "rgba(241,236,225,.08)", sidebarActive: "rgba(241,236,225,.14)",
+    themeDot: "#1E2A3A", logoPlate: "transparent", logoPad: "0"
+  },
+  dark: {
+    bg: "#12181F", surface: "#1C2632", border: "#33404F", rowLine: "#26313D",
+    text: "#F1ECE1", muted: "#A8B0BC", echo: "rgba(241,236,225,.07)",
+    tableHead: "#18212B", pillBg: "rgba(241,236,225,.1)",
+    primaryBg: "#ECE7DC", primaryText: "#1E2A3A", primarySub: "rgba(30,42,58,.7)", primaryWave: "rgba(30,42,58,.3)",
+    primaryShadow: "0 18px 40px rgba(0,0,0,.5)",
+    shadow: "0 10px 24px rgba(0,0,0,.36)",
+    sidebar: "#0D131A", sidebarText: "#F1ECE1", sidebarMuted: "#A8B0BC",
+    sidebarCard: "rgba(241,236,225,.06)", sidebarActive: "rgba(241,236,225,.12)",
+    themeDot: "#ECE7DC", logoPlate: "#ECE7DC", logoPad: "7px 14px"
+  }
+};
+
+const S = {
+  ar: {
+    platform: "منصة الدعم الأكاديمي", langSwitch: "English", themeLight: "نهاري", themeDark: "ليلي",
+    logout: "تسجيل الخروج", pick: "اختر ملفاً",
+    chartRequests: "طلبات الدعم الجديدة — آخر ١٢ أسبوعًا",
+    chartDocs: "وثائق وصلتك للمراجعة — آخر ١٢ أسبوعًا",
+    loginTitle: "تسجيل الدخول",
+    loginSub: "دخول موحّد لجميع مستخدمي شادو. الصلاحيات تتبع الدور المرتبط بحسابك — أقل صلاحية بالافتراض — ولا تُغيَّر من داخل المنصة.",
+    fEmail: "البريد الجامعي", fPassword: "كلمة المرور", loginBtn: "دخول", forgot: "نسيت كلمة المرور؟",
+    demoTitle: "حسابات تجريبية", demoSub: "كل حساب يفتح على مهامه المسموحة فقط.",
+    emptyRows: "لا توجد نتائج للفلتر المختار.",
+    docTitlePrefix: "وثيقة تقييم — ", docMeta: "رُفعت من الطالب · جامعة الملك سعود · ملف PDF ٣ صفحات",
+    fileMeta: "ملف مخصص شاركه معك أستاذ المقرر · ملف PDF",
+    docTypeFile: "ملخص / مادة مكيّفة", docFactFrom: "المُرسِل", docFactFor: "المستفيد",
+    fromYourCourse: " (من طلاب مقررك)",
+    readOnlyFile: "هذا ملف دراسي شاركه معك أستاذ المقرر — لا يتضمن أي تصنيف أو بيانات طبية.",
+    docPlaceholder: "معاينة الوثيقة\nتُدرج هنا من التخزين الآمن",
+    docPending: "بانتظار التصنيف", docDone: "مُصنَّفة ومعتمدة",
+    docFactStudent: "الطالبة", docFactStudentVal: "ريم القحطاني — ٤٤١٢٠٤٥٦٧",
+    docFactType: "نوع الوثيقة", docFactTypeVal: "تقرير طبي + تقييم أكاديمي",
+    docFactDate: "تاريخ الرفع", docFactDateVal: "أمس ١٩:٤٠",
+    docFactSource: "الجهة", docFactSourceVal: "مستشفى الملك خالد الجامعي",
+    classifyTitle: "التصنيف ومستوى الدعم", classifySub: "يظهر لك وحدك كأخصائي دعم مُعيَّن لهذه الطالبة.",
+    levelBasic: "دعم أساسي — ترتيبات صفية", levelExtended: "دعم موسّع — تفريغ ومواد مكيّفة", levelIntensive: "دعم مكثف — متابعة أسبوعية",
+    planNotes: "ملاحظات خطة الدعم",
+    planNotesVal: "تحتاج الطالبة مقعدًا في الصف الأول ونسخة نصية من كل محاضرة، وتُراجع الخطة نهاية الفصل.",
+    approvePlan: "اعتمد خطة الدعم", approvedPlan: "اعتُمدت الخطة ✓", sendBack: "أعدها للطالب",
+    readOnlyTitle: "عرض فقط",
+    readOnlyAdmin: "الإدارة تفتح الوثيقة من سجل التدقيق للعرض فقط: لا تصنيف، ولا اعتماد، ولا تعديل — وكل فتح يُسجَّل باسمك ووقته.",
+    readOnlyOther: "التصنيف ومستوى الدعم لا يظهران لهذا الحساب.",
+    assignTitle: "تعيين مختص لطالب", assignSub: "التعيين يدوي دائمًا — لا توزيع تلقائي، ويُسجَّل في سجل التدقيق.",
+    assignStudent: "الطالب", assignStudentVal: "ريم القحطاني — جامعة الملك سعود",
+    assignSpecialist: "المختص", assignBtn: "عيّن المختص", assigned: "تم التعيين ✓",
+    assignNote: "لا يظهر لك تصنيف الطالب ولا مستوى دعمه في هذه الشاشة، فالتعيين لا يحتاجه.",
+    specialists: ["هند الزهراني — جامعة الملك سعود (٣١ طالبًا)", "ماجد القرني — جامعة الملك سعود (٢٧ طالبًا)", "أمل الشهري — جامعة الملك عبدالعزيز (١٩ طالبًا)"],
+    usersTitle: "المستخدمون والأدوار", usersSub: "إضافة مستخدم أو تغيير دوره من صلاحيات الإدارة فقط.",
+    users: [
+      { name: "د. منى الحربي", role: "عضو هيئة تدريس", email: "m.alharbi@ksu.edu.sa" },
+      { name: "هند الزهراني", role: "أخصائي دعم", email: "h.alzahrani@ksu.edu.sa" },
+      { name: "ريم القحطاني", role: "طالبة", email: "441204567@student.ksu.edu.sa" },
+      { name: "ماجد القرني", role: "أخصائي دعم", email: "m.alqarni@ksu.edu.sa" },
+      { name: "سلطان العمري", role: "مسؤول نظام", email: "admin@shadow.sa" }
+    ],
+    auditTableTitle: "سجل التدقيق", auditTableSub: "كل إجراء على وثيقة أو خطة أو حساب — قراءة فقط",
+    auditExport: "تصدير السجل CSV",
+    auditTime: "الوقت", auditUser: "المستخدم", auditAction: "الإجراء", auditTarget: "الطالب المعني",
+    auditNote: "السجل للقراءة فقط ولا يُحذف منه شيء. يظهر لحساب الإدارة وحده.",
+    audit: [
+      { time: "اليوم ١٢:٤٥", user: "هند الزهراني — أخصائي", action: "اعتمدت خطة دعم بعد تصنيف الوثيقة", target: "ريم القحطاني" },
+      { time: "اليوم ١١:١٠", user: "سلطان العمري — إدارة", action: "فتح وثيقة تقييم للعرض فقط", target: "عبدالرحمن الدوسري" },
+      { time: "اليوم ٠٩:٤٠", user: "ريم القحطاني — طالبة", action: "رفعت تقريرًا طبيًا وتقييمًا أكاديميًا", target: "ريم القحطاني" },
+      { time: "اليوم ٠٨:٢٠", user: "د. منى الحربي — أستاذ", action: "رفعت ملفًا مخصصًا لطالب في مقررها", target: "لمى بن سعيدان" },
+      { time: "أمس ١٧:٣٠", user: "سلطان العمري — إدارة", action: "عيّن مختصًا لطالب يدويًا", target: "نورة العتيبي" },
+      { time: "أمس ١٦:٠٥", user: "سلطان العمري — إدارة", action: "صدّر ملف CSV للإحصائيات", target: "—" }
+    ],
+    roles: {
+      admin: {
+        role: "مسؤول النظام", name: "سلطان العمري", email: "admin@shadow.sa",
+        perm: "يدير المستخدمين والأدوار، يعيّن المختص يدويًا، يصدّر CSV، ويقرأ سجل التدقيق. لا يرى تصنيف أي طالب.",
+        nav: { dash: "لوحة التحكم", audit: "سجل التدقيق", assign: "تعيين مختص" },
+        dashTitle: "لوحة الإدارة", dashSub: "المستخدمون والطلبات والإحصائيات",
+        heroTag: "طلاب المنصة", heroValue: "١٢٤٨", heroDesc: "١٢٤٨ طالبًا في ست جامعات، و٣٧ طلبًا جديدًا هذا الأسبوع.",
+        stats: [
+          { label: "أخصائيو دعم نشطون", value: "١٤", delta: "٤ جامعات" },
+          { label: "طلاب بلا مختص مُعيَّن", value: "٩", delta: "تعيين يدوي" },
+          { label: "أحداث سجل التدقيق اليوم", value: "٤٢", delta: "" }
+        ],
+        tableTitle: "كل الطلاب", tableSub: "الإدارة ترى الجميع، بدون تصنيف",
+        cols: { one: "الطالب", two: "المختص المُعيَّن", three: "آخر إجراء", four: "حالة الملف" },
+        primary: "تصدير CSV", open: "السجل",
+        filters: ["كل الجامعات", "جامعة الملك سعود", "جامعة الملك عبدالعزيز", "جامعة الإمام محمد بن سعود"],
+        hidden: "لا يظهر لهذا الحساب: تصنيف الطالب ومستوى دعمه، ومحتوى خطة الدعم. فتح أي وثيقة يكون للعرض فقط ويُسجَّل في سجل التدقيق.",
+        rows: [
+          { name: "ريم القحطاني", sub: "جامعة الملك سعود · إحصاء ٢٠١", mid: "هند الزهراني", date: "اليوم ٠٩:٤٠", status: "pending", filter: "جامعة الملك سعود" },
+          { name: "عبدالرحمن الدوسري", sub: "جامعة الملك عبدالعزيز · فيزياء ١٠٣", mid: "أمل الشهري", date: "اليوم ٠٨:١٥", status: "done", filter: "جامعة الملك عبدالعزيز" },
+          { name: "نورة العتيبي", sub: "جامعة الإمام محمد بن سعود · قانون ٢١٢", mid: "لم يُعيَّن بعد", date: "أمس ١٧:٣٠", status: "returned", filter: "جامعة الإمام محمد بن سعود" },
+          { name: "فيصل الشمري", sub: "جامعة الملك سعود · رياضيات ١٠٦", mid: "ماجد القرني", date: "أمس ١٤:٠٥", status: "done", filter: "جامعة الملك سعود" },
+          { name: "لمى بن سعيدان", sub: "جامعة الملك سعود · إدارة ١٠١", mid: "هند الزهراني", date: "الأحد ١١:٢٠", status: "pending", filter: "جامعة الملك سعود" }
+        ]
+      },
+      faculty: {
+        role: "عضو هيئة التدريس", name: "د. منى الحربي", email: "m.alharbi@ksu.edu.sa",
+        perm: "يرى طلاب مقرراته ويرفع لهم ملفًا مخصصًا. لا يرى وثائقهم الطبية ولا تصنيفهم.",
+        nav: { dash: "لوحة التحكم", upload: "رفع ملف لطالب" },
+        dashTitle: "لوحة عضو هيئة التدريس", dashSub: "طلاب مقرراتك والملفات المخصصة",
+        heroTag: "طلاب مقرراتي", heroValue: "٧", heroDesc: "سبعة طلاب في مقرريك لديهم ترتيبات دعم معتمدة من الأخصائي.",
+        stats: [
+          { label: "مقرراتي هذا الفصل", value: "٢", delta: "إحصاء ٢٠١، مناهج البحث" },
+          { label: "ملفات مخصصة رفعتها", value: "١٨", delta: "هذا الفصل" },
+          { label: "طلبات ملفات من طلابي", value: "٣", delta: "أقدمها أمس" }
+        ],
+        tableTitle: "طلاب مقرراتي", tableSub: "مقرراتك فقط، بدون أي تصنيف",
+        cols: { one: "الطالب", two: "المقرر", three: "آخر ملف مخصص", four: "حالة الطلب" },
+        primary: "رفع ملف لطالب", open: "الملفات",
+        filters: ["كل مقرراتي", "إحصاء ٢٠١", "مناهج البحث"],
+        hidden: "لا يظهر لهذا الحساب: الوثائق الطبية، والتصنيف، ومستوى الدعم. تُعرض لك الترتيبات المطلوبة فقط عند اعتمادها من الأخصائي.",
+        rows: [
+          { name: "ريم القحطاني", sub: "الشعبة ٤", mid: "إحصاء ٢٠١", date: "اليوم ٠٩:٤٠", status: "pending", filter: "إحصاء ٢٠١" },
+          { name: "لمى بن سعيدان", sub: "الشعبة ٤", mid: "إحصاء ٢٠١", date: "الأحد ٠٩:٣٥", status: "done", filter: "إحصاء ٢٠١" },
+          { name: "فيصل الشمري", sub: "الشعبة ١", mid: "مناهج البحث", date: "السبت ١٣:٠٠", status: "done", filter: "مناهج البحث" },
+          { name: "نورة العتيبي", sub: "الشعبة ١", mid: "مناهج البحث", date: "الخميس ١٦:٤٥", status: "returned", filter: "مناهج البحث" }
+        ]
+      },
+      specialist: {
+        role: "أخصائي الدعم", name: "هند الزهراني", email: "h.alzahrani@ksu.edu.sa",
+        perm: "يراجع الوثائق ويصنّفها ويعتمد خطة الدعم لطلابه المُعيَّنين فقط.",
+        nav: { dash: "لوحة التحكم", doc: "مراجعة وثيقة" },
+        dashTitle: "لوحة أخصائي الدعم", dashSub: "طلابك المُعيَّنون ووثائقهم",
+        heroTag: "وثائق بانتظار التصنيف", heroValue: "١١", heroDesc: "١١ وثيقة بانتظارك، وثلاثة من أصحابها لديهم امتحان هذا الأسبوع.",
+        stats: [
+          { label: "طلابي المُعيَّنون", value: "٣١", delta: "جامعة واحدة" },
+          { label: "خطط دعم اعتمدتها", value: "٢٩", delta: "هذا الفصل" },
+          { label: "خطط تحتاج تحديثًا", value: "٤", delta: "نهاية الفصل" }
+        ],
+        tableTitle: "طلابي المُعيَّنون", tableSub: "المُعيَّنون لك فقط — ومستوى الدعم يظهر لك وحدك",
+        cols: { one: "الطالب", two: "مستوى الدعم", three: "آخر وثيقة", four: "حالة الخطة" },
+        primary: "ابدأ المراجعة", open: "مراجعة",
+        filters: ["كل المستويات", "دعم أساسي", "دعم موسّع", "دعم مكثف"],
+        hidden: "لا يظهر لهذا الحساب: طلاب غير مُعيَّنين له، وإحصائيات المنصة، وسجل التدقيق، وإدارة المستخدمين.",
+        rows: [
+          { name: "ريم القحطاني", sub: "إحصاء ٢٠١ · جامعة الملك سعود", mid: "دعم موسّع", date: "أمس ١٩:٤٠", status: "pending", filter: "دعم موسّع" },
+          { name: "لمى بن سعيدان", sub: "إدارة ١٠١ · جامعة الملك سعود", mid: "دعم أساسي", date: "اليوم ٠٧:٣٠", status: "pending", filter: "دعم أساسي" },
+          { name: "نورة العتيبي", sub: "قانون ٢١٢ · جامعة الملك سعود", mid: "دعم مكثف", date: "اليوم ٠٩:٠٠", status: "returned", filter: "دعم مكثف" },
+          { name: "فيصل الشمري", sub: "رياضيات ١٠٦ · جامعة الملك سعود", mid: "دعم أساسي", date: "اليوم ١٢:٤٥", status: "done", filter: "دعم أساسي" }
+        ]
+      },
+      student: {
+        role: "الطالب", name: "ريم القحطاني", email: "441204567@student.ksu.edu.sa",
+        perm: "يرفع وثائقه الطبية والتقييمية ويستلم ملفات أساتذته. لا يرى تصنيفه ولا مستوى دعمه.",
+        nav: { dash: "لوحتي", upload: "رفع وثيقة" },
+        dashTitle: "لوحتي", dashSub: "وثائقك المرفوعة والملفات المشتركة معك",
+        heroTag: "وثائقي المرفوعة", heroValue: "٣", heroDesc: "ثلاث وثائق مرفوعة، وآخرها قيد المراجعة عند أخصائي الدعم.",
+        stats: [
+          { label: "ملفات مشتركة معي", value: "١٢", delta: "من ٣ أساتذة" },
+          { label: "حالة آخر وثيقة", value: "قيد المراجعة", delta: "" },
+          { label: "أستاذ متابع لملفاتي", value: "٣", delta: "هذا الفصل" }
+        ],
+        tableTitle: "ملفاتي", tableSub: "وثائقك التي رفعتها، والملفات التي شاركها أساتذتك معك",
+        cols: { one: "الملف", two: "المصدر", three: "التاريخ", four: "الحالة" },
+        primary: "رفع وثيقة", open: "فتح",
+        filters: ["كل الملفات", "وثائق رفعتها", "ملفات من أستاذ"],
+        hidden: "لا يظهر لك: تصنيفك ولا مستوى دعمك ولا محتوى خطة الدعم — هذا قرار مقصود لحمايتك، وأخصائي الدعم هو من يشرحه لك مباشرة.",
+        rows: [
+          { name: "تقرير طبي + تقييم أكاديمي", sub: "وثيقة رفعتها", mid: "أنا", date: "أمس ١٩:٤٠", status: "pending", filter: "وثائق رفعتها" },
+          { name: "ملخص إحصاء ٢٠١ — الأسبوع الرابع", sub: "ملف مخصص لك", mid: "د. منى الحربي", date: "اليوم ٠٩:٤٠", status: "done", filter: "ملفات من أستاذ" },
+          { name: "مادة مبسّطة — مناهج البحث", sub: "ملف مخصص لك", mid: "د. سارة الغامدي", date: "السبت ١٣:٠٠", status: "done", filter: "ملفات من أستاذ" },
+          { name: "تقييم أكاديمي سابق", sub: "وثيقة رفعتها", mid: "أنا", date: "الفصل الماضي", status: "done", filter: "وثائق رفعتها" }
+        ]
+      }
+    },
+    statusPending: "بانتظار المراجعة", statusDone: "مكتمل", statusReturned: "أُعيد للتعديل",
+    upload: {
+      student: {
+        title: "ارفع وثيقتك الطبية أو التقييمية", sub: "PDF أو صورة واضحة — تُرسل مباشرة لأخصائي الدعم المُعيَّن لك، ولا يراها أستاذك.",
+        fileName: "تقرير_طبي.pdf", formTitle: "بيانات الوثيقة",
+        fields: [ { label: "نوع الوثيقة", value: "تقرير طبي / تقييم أكاديمي" }, { label: "الجهة المُصدِرة", value: "مستشفى الملك خالد الجامعي" }, { label: "تاريخ الإصدار", value: "١٤٤٧/٠٢/١٨" } ],
+        noteLabel: "ملاحظة للأخصائي (اختياري)", noteValue: "أواجه صعوبة في متابعة المحاضرات الطويلة.",
+        send: "أرسل للأخصائي",
+        privacy: "وثيقتك تُرسل للأخصائي فقط. لن يظهر لك — ولا لأستاذك — التصنيف أو مستوى الدعم الناتج عن المراجعة."
+      },
+      faculty: {
+        title: "ارفع ملفًا مخصصًا لطالب في مقررك", sub: "الملف يوصل الطالب المحدد وحده، ويُسجَّل في سجل التدقيق باسمك.",
+        fileName: "ملخص_إحصاء٢٠١_الأسبوع٤.pdf", formTitle: "بيانات الملف",
+        fields: [ { label: "المقرر", value: "إحصاء ٢٠١ — الشعبة ٤" }, { label: "الطالب المستهدف", value: "ريم القحطاني (من طلاب مقررك)" }, { label: "نوع الملف", value: "ملخص / مادة مكيّفة" } ],
+        noteLabel: "ملاحظة للطالب (اختياري)", noteValue: "ركّزي على أمثلة الجدول ٣ قبل الاختبار القصير.",
+        send: "أرسل للطالب",
+        privacy: "لا تظهر لك وثائق الطالب الطبية ولا تصنيفه، ولا يمكنك الرفع لطالب خارج مقرراتك."
+      }
+    }
+  },
+  en: {
+    platform: "Academic support platform", langSwitch: "العربية", themeLight: "Light", themeDark: "Dark",
+    logout: "Sign out", pick: "Choose a file",
+    chartRequests: "New support requests — last 12 weeks",
+    chartDocs: "Documents sent to you for review — last 12 weeks",
+    loginTitle: "Sign in",
+    loginSub: "One sign-in for everyone on Shadow. Permissions follow the role attached to your account — least privilege by default — and cannot be changed from inside the platform.",
+    fEmail: "University email", fPassword: "Password", loginBtn: "Sign in", forgot: "Forgot your password?",
+    demoTitle: "Demo accounts", demoSub: "Each account opens on its permitted tasks only.",
+    emptyRows: "No results for the selected filter.",
+    docTitlePrefix: "Assessment document — ", docMeta: "Uploaded by the student · King Saud University · 3-page PDF",
+    fileMeta: "A custom file your lecturer shared with you · PDF",
+    docTypeFile: "Summary / adapted material", docFactFrom: "From", docFactFor: "For",
+    fromYourCourse: " (in your course)",
+    readOnlyFile: "This is course material shared by your lecturer — it carries no classification or medical data.",
+    docPlaceholder: "document preview\nserved from secure storage",
+    docPending: "Awaiting classification", docDone: "Classified and approved",
+    docFactStudent: "Student", docFactStudentVal: "Reem Alqahtani — 441204567",
+    docFactType: "Document type", docFactTypeVal: "Medical report + academic assessment",
+    docFactDate: "Uploaded", docFactDateVal: "Yesterday 19:40",
+    docFactSource: "Issued by", docFactSourceVal: "King Khalid University Hospital",
+    classifyTitle: "Classification and support level", classifySub: "Visible only to you, as the specialist assigned to this student.",
+    levelBasic: "Basic support — classroom arrangements", levelExtended: "Extended support — transcripts and adapted material", levelIntensive: "Intensive support — weekly follow-up",
+    planNotes: "Support plan notes",
+    planNotesVal: "Needs a front-row seat and a text version of every lecture; plan to be revisited at the end of term.",
+    approvePlan: "Approve support plan", approvedPlan: "Plan approved ✓", sendBack: "Return to student",
+    readOnlyTitle: "View only",
+    readOnlyAdmin: "Administrators open a document from the audit log for viewing only: no classification, no approval, no edits — and every open is logged with your name and time.",
+    readOnlyOther: "Classification and support level are not visible to this account.",
+    assignTitle: "Assign a specialist to a student", assignSub: "Assignment is always manual — no automatic routing — and it is written to the audit log.",
+    assignStudent: "Student", assignStudentVal: "Reem Alqahtani — King Saud University",
+    assignSpecialist: "Specialist", assignBtn: "Assign specialist", assigned: "Assigned ✓",
+    assignNote: "This screen never shows the student's classification or support level — assignment does not need it.",
+    specialists: ["Hind Alzahrani — King Saud University (31 students)", "Majed Alqarni — King Saud University (27 students)", "Amal Alshehri — King Abdulaziz University (19 students)"],
+    usersTitle: "Users and roles", usersSub: "Adding a user or changing a role is an administrator-only action.",
+    users: [
+      { name: "Dr. Mona Alharbi", role: "Faculty member", email: "m.alharbi@ksu.edu.sa" },
+      { name: "Hind Alzahrani", role: "Support specialist", email: "h.alzahrani@ksu.edu.sa" },
+      { name: "Reem Alqahtani", role: "Student", email: "441204567@student.ksu.edu.sa" },
+      { name: "Majed Alqarni", role: "Support specialist", email: "m.alqarni@ksu.edu.sa" },
+      { name: "Sultan Alamri", role: "System administrator", email: "admin@shadow.sa" }
+    ],
+    auditTableTitle: "Audit log", auditTableSub: "Every action on a document, plan or account — read only",
+    auditExport: "Export log CSV",
+    auditTime: "Time", auditUser: "User", auditAction: "Action", auditTarget: "Student",
+    auditNote: "The log is read-only and nothing is ever deleted from it. Visible to the administrator account only.",
+    audit: [
+      { time: "Today 12:45", user: "Hind Alzahrani — specialist", action: "Approved a support plan after classifying the document", target: "Reem Alqahtani" },
+      { time: "Today 11:10", user: "Sultan Alamri — admin", action: "Opened an assessment document, view only", target: "Abdulrahman Aldosari" },
+      { time: "Today 09:40", user: "Reem Alqahtani — student", action: "Uploaded a medical report and academic assessment", target: "Reem Alqahtani" },
+      { time: "Today 08:20", user: "Dr. Mona Alharbi — faculty", action: "Uploaded a custom file for a student in her course", target: "Lama Bin Saidan" },
+      { time: "Yesterday 17:30", user: "Sultan Alamri — admin", action: "Manually assigned a specialist to a student", target: "Noura Alotaibi" },
+      { time: "Yesterday 16:05", user: "Sultan Alamri — admin", action: "Exported the statistics CSV", target: "—" }
+    ],
+    roles: {
+      admin: {
+        role: "System administrator", name: "Sultan Alamri", email: "admin@shadow.sa",
+        perm: "Manages users and roles, assigns specialists manually, exports CSV and reads the audit log. Never sees a student's classification.",
+        nav: { dash: "Dashboard", audit: "Audit log", assign: "Assign specialist" },
+        dashTitle: "Administration", dashSub: "Users, requests and statistics",
+        heroTag: "Students on the platform", heroValue: "1,248", heroDesc: "1,248 students across six universities, and 37 new requests this week.",
+        stats: [
+          { label: "Active specialists", value: "14", delta: "4 universities" },
+          { label: "Students without a specialist", value: "9", delta: "manual assignment" },
+          { label: "Audit events today", value: "42", delta: "" }
+        ],
+        tableTitle: "All students", tableSub: "Administrators see everyone, without classification",
+        cols: { one: "Student", two: "Assigned specialist", three: "Last action", four: "File status" },
+        primary: "Export CSV", open: "Log",
+        filters: ["All universities", "King Saud University", "King Abdulaziz University", "Imam Mohammad Ibn Saud University"],
+        hidden: "Hidden from this account: student classification, support level and support-plan content. Any document is opened view-only and the open is logged.",
+        rows: [
+          { name: "Reem Alqahtani", sub: "King Saud University · STAT 201", mid: "Hind Alzahrani", date: "Today 09:40", status: "pending", filter: "King Saud University" },
+          { name: "Abdulrahman Aldosari", sub: "King Abdulaziz University · PHYS 103", mid: "Amal Alshehri", date: "Today 08:15", status: "done", filter: "King Abdulaziz University" },
+          { name: "Noura Alotaibi", sub: "Imam Mohammad Ibn Saud University · LAW 212", mid: "Not assigned yet", date: "Yesterday 17:30", status: "returned", filter: "Imam Mohammad Ibn Saud University" },
+          { name: "Faisal Alshammari", sub: "King Saud University · MATH 106", mid: "Majed Alqarni", date: "Yesterday 14:05", status: "done", filter: "King Saud University" },
+          { name: "Lama Bin Saidan", sub: "King Saud University · MGT 101", mid: "Hind Alzahrani", date: "Sunday 11:20", status: "pending", filter: "King Saud University" }
+        ]
+      },
+      faculty: {
+        role: "Faculty member", name: "Dr. Mona Alharbi", email: "m.alharbi@ksu.edu.sa",
+        perm: "Sees students in their own courses and uploads custom files for them. Never sees medical documents or classification.",
+        nav: { dash: "Dashboard", upload: "Upload for a student" },
+        dashTitle: "Faculty member", dashSub: "Your students and custom files",
+        heroTag: "Students in my courses", heroValue: "7", heroDesc: "Seven students in your two courses have support arrangements approved by a specialist.",
+        stats: [
+          { label: "My courses this term", value: "2", delta: "STAT 201, research methods" },
+          { label: "Custom files uploaded", value: "18", delta: "this term" },
+          { label: "File requests from students", value: "3", delta: "oldest yesterday" }
+        ],
+        tableTitle: "Students in my courses", tableSub: "Your courses only, with no classification",
+        cols: { one: "Student", two: "Course", three: "Last custom file", four: "Request status" },
+        primary: "Upload for a student", open: "Files",
+        filters: ["All my courses", "STAT 201", "Research methods"],
+        hidden: "Hidden from this account: medical documents, classification and support level. You only see the arrangements once a specialist has approved them.",
+        rows: [
+          { name: "Reem Alqahtani", sub: "Section 4", mid: "STAT 201", date: "Today 09:40", status: "pending", filter: "STAT 201" },
+          { name: "Lama Bin Saidan", sub: "Section 4", mid: "STAT 201", date: "Sunday 09:35", status: "done", filter: "STAT 201" },
+          { name: "Faisal Alshammari", sub: "Section 1", mid: "Research methods", date: "Saturday 13:00", status: "done", filter: "Research methods" },
+          { name: "Noura Alotaibi", sub: "Section 1", mid: "Research methods", date: "Thursday 16:45", status: "returned", filter: "Research methods" }
+        ]
+      },
+      specialist: {
+        role: "Support specialist", name: "Hind Alzahrani", email: "h.alzahrani@ksu.edu.sa",
+        perm: "Reviews and classifies documents and approves support plans for assigned students only.",
+        nav: { dash: "Dashboard", doc: "Review document" },
+        dashTitle: "Support specialist", dashSub: "Your assigned students and their documents",
+        heroTag: "Documents awaiting classification", heroValue: "11", heroDesc: "11 documents are waiting, and three of those students have an exam this week.",
+        stats: [
+          { label: "My assigned students", value: "31", delta: "one university" },
+          { label: "Support plans approved", value: "29", delta: "this term" },
+          { label: "Plans needing an update", value: "4", delta: "end of term" }
+        ],
+        tableTitle: "My assigned students", tableSub: "Assigned to you only — support level is visible to you alone",
+        cols: { one: "Student", two: "Support level", three: "Last document", four: "Plan status" },
+        primary: "Start reviewing", open: "Review",
+        filters: ["All levels", "Basic support", "Extended support", "Intensive support"],
+        hidden: "Hidden from this account: students not assigned to you, platform statistics, the audit log and user management.",
+        rows: [
+          { name: "Reem Alqahtani", sub: "STAT 201 · King Saud University", mid: "Extended support", date: "Yesterday 19:40", status: "pending", filter: "Extended support" },
+          { name: "Lama Bin Saidan", sub: "MGT 101 · King Saud University", mid: "Basic support", date: "Today 07:30", status: "pending", filter: "Basic support" },
+          { name: "Noura Alotaibi", sub: "LAW 212 · King Saud University", mid: "Intensive support", date: "Today 09:00", status: "returned", filter: "Intensive support" },
+          { name: "Faisal Alshammari", sub: "MATH 106 · King Saud University", mid: "Basic support", date: "Today 12:45", status: "done", filter: "Basic support" }
+        ]
+      },
+      student: {
+        role: "Student", name: "Reem Alqahtani", email: "441204567@student.ksu.edu.sa",
+        perm: "Uploads their own medical and assessment documents and receives files from lecturers. Never sees their own classification or support level.",
+        nav: { dash: "My dashboard", upload: "Upload a document" },
+        dashTitle: "My dashboard", dashSub: "Your uploads and the files shared with you",
+        heroTag: "My uploaded documents", heroValue: "3", heroDesc: "Three documents uploaded; the latest is under review with your support specialist.",
+        stats: [
+          { label: "Files shared with me", value: "12", delta: "from 3 lecturers" },
+          { label: "Latest document status", value: "Under review", delta: "" },
+          { label: "Lecturers sharing files", value: "3", delta: "this term" }
+        ],
+        tableTitle: "My files", tableSub: "Documents you uploaded and files your lecturers shared with you",
+        cols: { one: "File", two: "Source", three: "Date", four: "Status" },
+        primary: "Upload a document", open: "Open",
+        filters: ["All files", "My uploads", "From a lecturer"],
+        hidden: "Hidden from you: your classification, your support level and the support-plan content — a deliberate decision to protect you; your specialist explains it to you directly.",
+        rows: [
+          { name: "Medical report + academic assessment", sub: "Document you uploaded", mid: "Me", date: "Yesterday 19:40", status: "pending", filter: "My uploads" },
+          { name: "STAT 201 summary — week four", sub: "Custom file for you", mid: "Dr. Mona Alharbi", date: "Today 09:40", status: "done", filter: "From a lecturer" },
+          { name: "Simplified material — research methods", sub: "Custom file for you", mid: "Dr. Sara Alghamdi", date: "Saturday 13:00", status: "done", filter: "From a lecturer" },
+          { name: "Previous academic assessment", sub: "Document you uploaded", mid: "Me", date: "Last term", status: "done", filter: "My uploads" }
+        ]
+      }
+    },
+    statusPending: "Awaiting review", statusDone: "Complete", statusReturned: "Sent back",
+    upload: {
+      student: {
+        title: "Upload your medical or assessment document", sub: "PDF or a clear photo — it goes straight to your assigned specialist and your lecturer never sees it.",
+        fileName: "medical_report.pdf", formTitle: "Document details",
+        fields: [ { label: "Document type", value: "Medical report / academic assessment" }, { label: "Issued by", value: "King Khalid University Hospital" }, { label: "Issue date", value: "18/02/1447" } ],
+        noteLabel: "Note for the specialist (optional)", noteValue: "I find it hard to follow long lectures.",
+        send: "Send to specialist",
+        privacy: "Your document goes to the specialist only. Neither you nor your lecturer will see the classification or support level that results from the review."
+      },
+      faculty: {
+        title: "Upload a custom file for a student in your course", sub: "The file reaches that one student, and the upload is logged under your name.",
+        fileName: "stat201_week4_summary.pdf", formTitle: "File details",
+        fields: [ { label: "Course", value: "STAT 201 — Section 4" }, { label: "Target student", value: "Reem Alqahtani (in your course)" }, { label: "File type", value: "Summary / adapted material" } ],
+        noteLabel: "Note for the student (optional)", noteValue: "Focus on the table 3 examples before the quiz.",
+        send: "Send to student",
+        privacy: "You cannot see the student's medical documents or classification, and you cannot upload for a student outside your courses."
+      }
+    }
+  }
+};
+
+const SERIES = {
+  admin: [62, 71, 58, 80, 74, 93, 69, 88, 76, 101, 84, 112],
+  specialist: [4, 7, 5, 9, 6, 11, 8, 13, 7, 12, 9, 11]
+};
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const roles = ["admin", "faculty", "specialist", "student"];
+    this.state = {
+      signedIn: false,
+      role: roles.includes(props.initialRole) ? props.initialRole : "student",
+      view: "dash", lang: "ar", theme: "light",
+      filter: 0, filterOpen: false, hasFile: false, activeRow: null,
+      level: 1, approved: false,
+      assignOpen: false, assignIdx: 0, assigned: false
+    };
+  }
+
+  renderVals() {
+    const st = this.state;
+    const s = S[st.lang];
+    const t = T[st.theme];
+    const r = s.roles[st.role];
+    const isSpecialist = st.role === "specialist";
+    const isAdmin = st.role === "admin";
+    const upKind = st.role === "faculty" ? "faculty" : "student";
+    const up = s.upload[upKind];
+    const statusMap = {
+      pending: { label: s.statusPending, color: t.text, bg: t.pillBg },
+      done: { label: s.statusDone, color: st.theme === "dark" ? "#4FAE82" : "#276E4F", bg: st.theme === "dark" ? "rgba(79,174,130,.16)" : "rgba(39,110,79,.12)" },
+      returned: { label: s.statusReturned, color: t.muted, bg: st.theme === "dark" ? "rgba(168,176,188,.14)" : "rgba(91,100,112,.1)" }
+    };
+    const visibleRows = st.filter === 0 ? r.rows : r.rows.filter(x => x.filter === r.filters[st.filter]);
+    const navKeys = Object.keys(r.nav);
+    const primaryTarget = { admin: "audit", faculty: "upload", specialist: "doc", student: "upload" }[st.role];
+    const rowTarget = { admin: "doc", faculty: "upload", specialist: "doc", student: "doc" }[st.role];
+    const row = st.activeRow;
+    const meLabel = st.lang === "ar" ? "أنا" : "Me";
+    const isLecturerFile = st.role === "student" && row && row.mid !== meLabel;
+    const subject = row ? (st.role === "student" ? r.name : row.name) : s.docFactStudentVal;
+    const doc = isLecturerFile
+      ? {
+          isAssessment: false,
+          title: row.name,
+          meta: s.fileMeta,
+          facts: [
+            { label: s.docFactFrom, value: row.mid },
+            { label: s.docFactType, value: s.docTypeFile },
+            { label: s.docFactFor, value: r.name },
+            { label: s.docFactDate, value: row.date }
+          ]
+        }
+      : {
+          isAssessment: true,
+          title: s.docTitlePrefix + (row ? subject : s.docFactStudentVal.split(" — ")[0]),
+          meta: s.docMeta,
+          facts: [
+            { label: s.docFactStudent, value: subject },
+            { label: s.docFactType, value: s.docFactTypeVal },
+            { label: s.docFactSource, value: s.docFactSourceVal },
+            { label: s.docFactDate, value: row ? row.date : s.docFactDateVal }
+          ]
+        };
+    const series = SERIES[st.role] || null;
+    const seriesMax = series ? Math.max.apply(null, series) : 1;
+    const levelLabels = [s.levelBasic, s.levelExtended, s.levelIntensive];
+    const titles = { dash: r.dashTitle, upload: up.title, doc: doc.title, audit: r.nav.audit, assign: r.nav.assign };
+    const subs = { dash: r.dashSub, upload: up.sub, doc: doc.meta, audit: s.auditTableSub, assign: s.assignSub };
+
+    return {
+      t, s, dir: st.lang === "ar" ? "rtl" : "ltr",
+      up: st.role === "faculty" && row
+        ? Object.assign({}, up, {
+            fields: up.fields.map((f, i) => (i === 1 ? { label: f.label, value: row.name + s.fromYourCourse } : f))
+          })
+        : up,
+      showLogin: !st.signedIn,
+      isDash: st.view === "dash", isUpload: st.view === "upload",
+      isDoc: st.view === "doc", isAudit: st.view === "audit", isAssign: st.view === "assign",
+      viewTitle: titles[st.view], viewSub: subs[st.view],
+      userName: r.name, userEmail: r.email, roleLabel: r.role,
+
+      nav: navKeys.map(k => ({
+        label: r.nav[k], go: () => this.setState({ view: k, filterOpen: false }),
+        bg: k === st.view ? t.sidebarActive : "transparent",
+        dot: k === st.view ? t.sidebarText : "rgba(178,186,198,.45)",
+        weight: k === st.view ? 700 : 500
+      })),
+      logout: () => this.setState({ signedIn: false, view: "dash", filterOpen: false, hasFile: false, approved: false, assigned: false }),
+
+      accounts: ["admin", "faculty", "specialist", "student"].map(k => ({
+        role: s.roles[k].role, name: s.roles[k].name, email: s.roles[k].email, perm: s.roles[k].perm,
+        pick: () => this.setState({ role: k, signedIn: true, view: "dash", filter: 0, hasFile: false, approved: false, assigned: false }),
+        bg: k === st.role ? t.sidebarActive : "transparent",
+        border: k === st.role ? "rgba(241,236,225,.35)" : "rgba(241,236,225,.14)",
+        dot: k === st.role ? t.sidebarText : "rgba(178,186,198,.4)"
+      })),
+      loginEmail: r.email,
+      submitLogin: () => this.setState({ signedIn: true, view: "dash" }),
+
+      toggleLang: () => this.setState(p => ({ lang: p.lang === "ar" ? "en" : "ar", filterOpen: false, assignOpen: false })),
+      toggleTheme: () => this.setState(p => ({ theme: p.theme === "light" ? "dark" : "light" })),
+      themeLabel: st.theme === "light" ? s.themeLight : s.themeDark,
+
+      heroTag: r.heroTag, heroValue: r.heroValue, heroDesc: r.heroDesc, stats: r.stats,
+      hasChart: !!series,
+      chartCaption: st.role === "admin" ? s.chartRequests : s.chartDocs,
+      bars: (series || []).map((v, i) => ({
+        h: Math.round((v / seriesMax) * 100) + "%",
+        c: i === series.length - 1 ? t.primaryText : t.primaryWave
+      })),
+      tableTitle: r.tableTitle, tableSub: r.tableSub, cols: r.cols,
+      openLabel: r.open, hiddenNote: r.hidden,
+      primaryActionLabel: r.primary,
+      primaryAction: () => this.setState({ view: primaryTarget, filterOpen: false, activeRow: null }),
+      filterValue: r.filters[st.filter], filterOpen: st.filterOpen,
+      toggleFilter: () => this.setState(p => ({ filterOpen: !p.filterOpen })),
+      filters: r.filters.map((label, i) => ({
+        label, bg: i === st.filter ? t.bg : "transparent",
+        pick: () => this.setState({ filter: i, filterOpen: false })
+      })),
+      rows: visibleRows.map(x => ({
+        name: x.name, sub: x.sub, mid: x.mid, date: x.date,
+        status: statusMap[x.status].label, statusColor: statusMap[x.status].color, statusBg: statusMap[x.status].bg,
+        open: () => this.setState({ view: rowTarget, filterOpen: false, activeRow: x })
+      })),
+      noRows: visibleRows.length === 0,
+
+      hasFile: st.hasFile, pickFile: () => this.setState({ hasFile: true }),
+
+      docTitle: doc.title, docMeta: doc.meta, docFacts: doc.facts,
+      docStatusLabel: doc.isAssessment ? (st.approved ? s.docDone : s.docPending) : s.statusDone,
+      canClassify: isSpecialist && doc.isAssessment,
+      docReadOnly: !(isSpecialist && doc.isAssessment),
+      docReadOnlyNote: isAdmin ? s.readOnlyAdmin : (doc.isAssessment ? s.readOnlyOther : s.readOnlyFile),
+      levels: levelLabels.map((label, i) => ({
+        label,
+        pick: () => this.setState({ level: i }),
+        bg: i === st.level ? t.bg : "transparent",
+        border: i === st.level ? "#B5623A" : t.border,
+        ring: i === st.level ? "#B5623A" : t.muted,
+        dot: i === st.level ? "#B5623A" : "transparent"
+      })),
+      approve: () => this.setState({ approved: true }),
+      approveLabel: st.approved ? s.approvedPlan : s.approvePlan,
+
+      audit: s.audit, users: s.users,
+      assignValue: s.specialists[st.assignIdx], assignOpen: st.assignOpen,
+      toggleAssign: () => this.setState(p => ({ assignOpen: !p.assignOpen })),
+      specialists: s.specialists.map((label, i) => ({
+        label, bg: i === st.assignIdx ? t.bg : "transparent",
+        pick: () => this.setState({ assignIdx: i, assignOpen: false })
+      })),
+      doAssign: () => this.setState({ assigned: true }),
+      assignBtnLabel: st.assigned ? s.assigned : s.assignBtn
+    };
+  }
+}
+</script>
+</body>
+</html>

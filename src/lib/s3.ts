@@ -47,6 +47,27 @@ export function buildFacultyResourceObjectKey(
   return `${tenantId}/faculty-resources/${studentProfileId}/${resourceId}${ext}`;
 }
 
+/**
+ * Voice-confirmation audio for an exam Answer (voice-driven exam-taking,
+ * Phase 1) — a student's spoken confirmation of their chosen MCQ option,
+ * not a medical document, so it follows FacultyResource's PLAINTEXT
+ * pattern (see putPlainObject/getPlainObject below), not Document's
+ * encrypted pair (judgment call — see docs/API.md and the feature's
+ * report: this carries no more sensitivity than the Answer row itself,
+ * which is already plaintext in the DB). Own prefix, distinct from both
+ * documents/ and faculty-resources/, so the bucket layout keeps signaling
+ * storage class by path at a glance.
+ */
+export function buildExamAnswerAudioObjectKey(
+  tenantId: string,
+  examSubmissionId: string,
+  answerId: string,
+  originalFilename: string
+): string {
+  const ext = originalFilename.includes(".") ? originalFilename.slice(originalFilename.lastIndexOf(".")) : "";
+  return `${tenantId}/exam-answers/${examSubmissionId}/${answerId}${ext}`;
+}
+
 export async function putEncryptedObject(objectKey: string, body: Buffer): Promise<void> {
   await s3Client.send(
     new PutObjectCommand({

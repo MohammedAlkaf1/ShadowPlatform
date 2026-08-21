@@ -623,6 +623,201 @@ is a required field in the schema).
 
 ---
 
+## Voice-driven exam-taking (Phase 1, MCQ only)
+
+**EXPLICIT, USER-CONFIRMED EXCEPTION** to this project's "no AI inside the
+platform" rule — scoped only to AI-generated exam question drafting
+(faculty-side, web-only, not documented here) and the TTS proxy below. See
+`src/lib/ai.ts`'s top-of-file comment for the full explanation. Essay/
+free-response questions are out of scope this round; every exam in this
+API is MCQ-only.
+
+An `Exam` is visible to a student only once it is **published**:
+`availableAt` is set (not `null`) AND is `<= now`. A `null` `availableAt`
+means the exam is still a draft; a future `availableAt` means it's
+scheduled but not yet open. Both draft and scheduled/not-yet-open exams
+behave identically to "doesn't exist" from the student-facing API below —
+never distinguishable from a genuinely invalid id.
+
+## `GET /api/exams/:id/questions`
+
+Returns a published exam's questions and options for a student actually
+enrolled in that exam's course. **`isCorrect` is never present anywhere in
+this response** — verified by explicit field-by-field response shaping in
+the route handler itself, not just a Prisma `select` clause.
+
+- **Auth required:** Bearer token, role = `student`.
+- **Path parameter:** `id` — the `Exam.id` (UUID).
+
+**Access rule:** the calling student must have a real `FacultyCourseLink`
+row for the exam's `facultyUserId` + `courseCode` — the same enrollment
+proof used elsewhere in this API, not just "any student in the tenant."
+
+**Response `200 OK`**
+
+```json
+{
+  "exam": {
+    "id": "b1f2c3d4-5e6f-7890-abcd-ef1234567890",
+    "title": "اختبار الفصل الثالث",
+    "courseCode": "CS301",
+    "questions": [
+      {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "text": "ما هو التعقيد الزمني لخوارزمية البحث الثنائي؟",
+        "type": "MCQ",
+        "order": 0,
+        "options": [
+          { "id": "aaaaaaaa-0000-0000-0000-000000000001", "text": "O(n)", "order": 0 },
+          { "id": "aaaaaaaa-0000-0000-0000-000000000002", "text": "O(log n)", "order": 1 },
+          { "id": "aaaaaaaa-0000-0000-0000-000000000003", "text": "O(n^2)", "order": 2 },
+          { "id": "aaaaaaaa-0000-0000-0000-000000000004", "text": "O(1)", "order": 3 }
+        ]
+      }
+    ]
+  }
+}
+```
+
+| Field                         | Type     | Notes                                            |
+|--------------------------------|----------|----------------------------------------------------|
+| exam.id                         | string (uuid) |                                                |
+| exam.title                       | string   |                                                   |
+| exam.courseCode                   | string   |                                                   |
+| exam.questions[].id                 | string (uuid) |                                              |
+| exam.questions[].text                | string   |                                                |
+| exam.questions[].type                 | `"MCQ"`  | the only value that exists in Phase 1              |
+| exam.questions[].order                 | number   | display order, ascending                         |
+| exam.questions[].options[].id            | string (uuid) |                                              |
+| exam.questions[].options[].text           | string   |                                              |
+| exam.questions[].options[].order           | number   | display order, ascending                   |
+
+**Errors**
+
+| Status | Body                                      | When                                                                 |
+|--------|----------------------------------------------|---------------------------------------------------------------------|
+| 401    | `{ "error": "غير مصرح" }`                   | missing/invalid/expired token                                        |
+| 403    | `{ "error": "لا تملك صلاحية الوصول" }`      | role != student                                                      |
+| 404    | `{ "error": "لم يتم العثور على الاختبار" }` | no such exam id, it's a draft/scheduled/soft-deleted exam, **or** the caller isn't enrolled in its course — deliberately the same response in every case |
+
+---
+
+## `POST /api/exams/:id/answers`
+
+Records the calling student's answer to one question of a published exam,
+optionally with a spoken voice-confirmation clip of the choice. Creates
+the student's `ExamSubmission` for this exam lazily on their first answer
+(`status: "in_progress"`) if one doesn't exist yet — there is no separate
+"start exam" call. Calling again for a question already answered
+overwrites that answer (upsert), so the app can let a student change their
+mind before the exam is complete.
+
+- **Auth required:** Bearer token, role = `student`.
+- **Headers:** `Content-Type: multipart/form-data`.
+- **Path parameter:** `id` — the `Exam.id` (UUID).
+
+**Request body** — `multipart/form-data`:
+
+| Field                    | Type          | Required | Notes                                                        |
+|---------------------------|---------------|----------|-----------------------------------------------------------------|
+| questionId                 | string (uuid) | yes      | must belong to this exam                                        |
+| selectedOptionId             | string (uuid) | yes      | must belong to `questionId`                                    |
+| voiceConfirmationAudio         | binary (audio) | no     | max 10MB; any audio MIME type — stored as-is, no transcoding      |
+
+Example (curl):
+
+```bash
+curl -X POST https://<host>/api/exams/b1f2c3d4-5e6f-7890-abcd-ef1234567890/answers \
+  -H "Authorization: Bearer <accessToken>" \
+  -F "questionId=11111111-1111-1111-1111-111111111111" \
+  -F "selectedOptionId=aaaaaaaa-0000-0000-0000-000000000002" \
+  -F "voiceConfirmationAudio=@confirmation.webm;type=audio/webm"
+```
+
+**Response `201 Created`**
+
+```json
+{
+  "ok": true,
+  "answerId": "c2d3e4f5-6789-0abc-def1-234567890abc",
+  "examSubmissionId": "d3e4f5a6-7890-1bcd-ef23-4567890abcde"
+}
+```
+
+Side effects: a `submit_exam_answer` row is written to `AuditLog`.
+
+**Storage note:** `voiceConfirmationAudio`, when present, is stored
+**plaintext** in object storage (same pattern as `FacultyResource`, own
+`{tenantId}/exam-answers/{examSubmissionId}/{answerId}.<ext>` prefix) —
+NOT encrypted like `Document`. Judgment call: this is a spoken confirmation
+of a multiple-choice answer choice, not a medical document, and carries no
+more sensitivity than the `Answer` row itself (already plaintext in the
+database).
+
+**Errors**
+
+| Status | Body                                                | When                                                                 |
+|--------|--------------------------------------------------------|---------------------------------------------------------------------|
+| 400    | `{ "error": "questionId و selectedOptionId مطلوبان" }` | missing/malformed required fields                                    |
+| 400    | `{ "error": "بيانات غير صالحة" }`                       | malformed multipart body, or `voiceConfirmationAudio` present but not a file |
+| 400    | `{ "error": "حجم الملف الصوتي يتجاوز الحد المسموح" }`   | audio file exceeds 10MB                                              |
+| 401    | `{ "error": "غير مصرح" }`                               | missing/invalid/expired token                                        |
+| 403    | `{ "error": "لا تملك صلاحية الوصول" }`                  | role != student                                                      |
+| 404    | `{ "error": "لم يتم العثور على الاختبار" }`             | no such exam id, not published, or caller not enrolled in its course |
+| 404    | `{ "error": "لم يتم العثور على السؤال" }`               | `questionId` doesn't belong to this exam                             |
+| 404    | `{ "error": "لم يتم العثور على الخيار" }`               | `selectedOptionId` doesn't belong to `questionId`                    |
+
+---
+
+## `POST /api/tts/generate`
+
+Server-side text-to-speech proxy for reading exam question/option text
+aloud, for the voice-driven exam-taking feature. The Flutter app must never
+call Gemini directly (that would require shipping the API key inside the
+mobile binary) — it always calls this proxy instead, which holds the key
+server-side only.
+
+- **Auth required:** Bearer token, role = `student`.
+- **Headers:** `Content-Type: application/json`.
+- **Rate limit:** **30 requests per 60-second window, per authenticated
+  user** (same in-memory fixed-window limiter as `/api/events`, see
+  `src/lib/rate-limit.ts`). Higher than `/api/events`' 20/min because a
+  student working through an exam may replay a question or option's audio
+  several times in quick succession — this is a direct per-action UI
+  trigger, not a buffered batch-flush call. Exceeding it returns `429` with
+  a `Retry-After` header (seconds) and `X-RateLimit-Limit` /
+  `X-RateLimit-Remaining` headers, same shape as `/api/events`.
+
+**Request body**
+
+```json
+{ "text": "ما هو التعقيد الزمني لخوارزمية البحث الثنائي؟" }
+```
+
+| Field | Type                      | Required | Notes             |
+|-------|---------------------------|----------|--------------------|
+| text  | string, 1–2000 characters | yes      |                    |
+
+**Response `200 OK`**: binary WAV audio body (`audio/wav`, 16-bit PCM mono,
+24kHz).
+
+| Header        | Value          |
+|----------------|----------------|
+| Content-Type    | `audio/wav`   |
+| Cache-Control    | `no-store`   |
+
+**Errors**
+
+| Status | Body                                                        | When                                    |
+|--------|------------------------------------------------------------------|--------------------------------------------|
+| 400    | `{ "error": "بيانات غير صالحة" }`                                 | missing/empty/too-long `text`               |
+| 401    | `{ "error": "غير مصرح" }`                                         | missing/invalid/expired token               |
+| 403    | `{ "error": "لا تملك صلاحية الوصول" }`                            | role != student                             |
+| 429    | `{ "error": "عدد الطلبات كبير جداً، الرجاء المحاولة لاحقاً" }`     | rate limit exceeded (30 req/60s per user)   |
+| 502    | `{ "error": "تعذر توليد الصوت، حاول مرة أخرى" }`                  | the upstream Gemini TTS call failed          |
+
+---
+
 ## Error shape
 
 Every error response from every endpoint above follows the same shape:
@@ -640,8 +835,14 @@ flow. Message text may change; status codes won't.
 The following exist as **web-only** features today (NextAuth session, not
 Bearer JWT) and have no mobile API equivalent yet: alert
 acknowledge/resolve, plan revision, admin CSV export, audit log viewing,
-and every faculty-side FacultyResource route (`/api/faculty/resources`,
+every faculty-side FacultyResource route (`/api/faculty/resources`,
 `/api/faculty/resources/:id`, `/api/faculty/resources/:id/download` — a
 faculty member uploads/manages files from the web `/faculty/students` page
-only; there is no faculty mobile app surface). Ask before assuming any of
-these will be added to the mobile surface — none were in scope for the app.
+only; there is no faculty mobile app surface), and every faculty-side exam
+route (`/api/faculty/exams`, `/api/faculty/exams/:id`,
+`/api/faculty/exams/generate` — a faculty member creates/edits/publishes
+exams from the web `/faculty/exams` pages only; the student-facing side of
+the exam feature, `GET /api/exams/:id/questions` and
+`POST /api/exams/:id/answers` above, are the only exam endpoints the
+mobile app calls). Ask before assuming any of these will be added to the
+mobile surface — none were in scope for the app.

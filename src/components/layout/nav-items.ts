@@ -23,6 +23,7 @@ export async function getFacultyNavItems(): Promise<NavItem[]> {
   return [
     { href: "/faculty/students", label: t("students") },
     { href: "/faculty/upload", label: t("upload") },
+    { href: "/faculty/exams", label: t("exams") },
   ];
 }
 

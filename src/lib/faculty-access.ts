@@ -44,3 +44,59 @@ export async function assertFacultyLinkedToStudent(
     throw new FacultyAccessError();
   }
 }
+
+/**
+ * Course-level variant of assertFacultyLinkedToStudent, for the exam
+ * feature: creating/editing an Exam isn't about one specific student, it's
+ * about "does this faculty member actually teach this courseCode at all" —
+ * proven the same way the rest of this codebase proves any faculty/course
+ * relationship, by requiring at least one real FacultyCourseLink row for
+ * this faculty member in this course (to ANY student). Deliberately reuses
+ * FacultyAccessError/the same 403-mapping convention as the per-student
+ * check above, rather than inventing a parallel error type.
+ */
+export async function assertFacultyTeachesCourse(ctx: RequestContext, courseCode: string): Promise<void> {
+  const db = getTenantScopedPrisma(ctx.tenantId);
+  const link = await db.facultyCourseLink.findFirst({
+    where: {
+      facultyUserId: ctx.userId,
+      courseCode,
+    },
+  });
+
+  if (!link) {
+    throw new FacultyAccessError();
+  }
+}
+
+/**
+ * Student-side equivalent for the exam feature: is the calling student
+ * actually enrolled in `courseCode` under `facultyUserId`? Same
+ * FacultyCourseLink table, same "an actual link row must exist" rule as
+ * assertFacultyLinkedToStudent, just checked from the student's side (by
+ * studentProfileId, not by a specific student id the faculty is asserting
+ * about).
+ */
+export async function assertStudentEnrolledInCourse(
+  ctx: RequestContext,
+  facultyUserId: string,
+  courseCode: string
+): Promise<void> {
+  const db = getTenantScopedPrisma(ctx.tenantId);
+  const studentProfile = await db.studentProfile.findUnique({ where: { userId: ctx.userId } });
+  if (!studentProfile) {
+    throw new FacultyAccessError("الملف الشخصي غير موجود");
+  }
+
+  const link = await db.facultyCourseLink.findFirst({
+    where: {
+      facultyUserId,
+      studentProfileId: studentProfile.id,
+      courseCode,
+    },
+  });
+
+  if (!link) {
+    throw new FacultyAccessError();
+  }
+}

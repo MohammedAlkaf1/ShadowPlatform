@@ -29,7 +29,13 @@ export type AuditAction =
   // Batch 3: specialist review screen — "أعدها للطالب" (return to
   // student). See specialist/students/[id]/review/actions.ts for why this
   // sets RequestStatus.rejected rather than any SupportPlan field.
-  | "return_request_to_student";
+  | "return_request_to_student"
+  // Voice-driven exam-taking (MCQ, Phase 1) — see prisma/schema.prisma's
+  // Exam model comment and src/lib/ai.ts for the scoped AI exception.
+  | "create_exam"
+  | "generate_exam_ai"
+  | "publish_exam"
+  | "submit_exam_answer";
 
 export interface AuditLogInput {
   tenantId: string;

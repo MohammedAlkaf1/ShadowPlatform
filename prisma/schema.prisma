@@ -86,6 +86,30 @@ enum FacultyResourceCategory {
   other
 }
 
+// ─────────────────────── Voice-driven exams (Phase 1, MCQ only) ───────────────────────
+//
+// EXPLICIT, USER-CONFIRMED EXCEPTION to this project's "no AI/chatbot inside
+// the platform" rule (see AGENTS.md) — scoped ONLY to AI_GENERATED exam
+// question generation (Gemini, server-side, see src/lib/ai.ts) and the TTS
+// proxy (/api/tts/generate). This is not license to add AI anywhere else.
+
+enum ExamSource {
+  MANUAL
+  AI_GENERATED
+}
+
+enum QuestionType {
+  MCQ
+  // Essay/free-response is out of scope this round - this enum exists so
+  // adding it later doesn't need a big migration, per explicit product
+  // instruction. Do not build any UI/API path for a non-MCQ type now.
+}
+
+enum ExamSubmissionStatus {
+  in_progress
+  completed
+}
+
 // ───────────────────────────── Tenant ─────────────────────────────
 
 model Tenant {
@@ -98,20 +122,22 @@ model Tenant {
   documentRetentionDays Int      @default(90)
   createdAt             DateTime @default(now())
 
-  users              User[]
-  studentProfiles    StudentProfile[]
-  categories         Category[]
-  conditions         Condition[]
-  supportLevels      SupportLevel[]
-  documents          Document[]
-  assessments        Assessment[]
-  supportPlans       SupportPlan[]
-  usageEvents        UsageEvent[]
-  mentorAlerts       MentorAlert[]
-  facultyCourseLinks FacultyCourseLink[]
-  auditLogs          AuditLog[]
+  users                 User[]
+  studentProfiles       StudentProfile[]
+  categories            Category[]
+  conditions            Condition[]
+  supportLevels         SupportLevel[]
+  documents             Document[]
+  assessments           Assessment[]
+  supportPlans          SupportPlan[]
+  usageEvents           UsageEvent[]
+  mentorAlerts          MentorAlert[]
+  facultyCourseLinks    FacultyCourseLink[]
+  auditLogs             AuditLog[]
   specialistAssignments SpecialistAssignment[]
-  facultyResources   FacultyResource[]
+  facultyResources      FacultyResource[]
+  exams                 Exam[]
+  examSubmissions       ExamSubmission[]
 
   @@map("tenants")
 }
@@ -134,16 +160,18 @@ model User {
 
   studentProfile StudentProfile?
 
-  uploadedDocuments       Document[]          @relation("DocumentUploadedBy")
-  assessmentsAsSpecialist Assessment[]        @relation("AssessmentSpecialist")
-  approvedSupportPlans    SupportPlan[]       @relation("SupportPlanApprovedBy")
-  planRevisions           PlanRevision[]      @relation("PlanRevisionBy")
-  assignedMentorAlerts    MentorAlert[]       @relation("MentorAlertAssignedSpecialist")
-  facultyCourseLinks      FacultyCourseLink[] @relation("FacultyCourseLinkFaculty")
-  auditLogsAsActor        AuditLog[]          @relation("AuditLogActor")
-  specialistAssignments   SpecialistAssignment[] @relation("SpecialistAssignmentSpecialist")
-  assignmentsMade         SpecialistAssignment[] @relation("SpecialistAssignmentAssignedBy")
-  uploadedFacultyResources FacultyResource[]     @relation("FacultyResourceUploadedBy")
+  uploadedDocuments        Document[]             @relation("DocumentUploadedBy")
+  assessmentsAsSpecialist  Assessment[]           @relation("AssessmentSpecialist")
+  approvedSupportPlans     SupportPlan[]          @relation("SupportPlanApprovedBy")
+  planRevisions            PlanRevision[]         @relation("PlanRevisionBy")
+  assignedMentorAlerts     MentorAlert[]          @relation("MentorAlertAssignedSpecialist")
+  facultyCourseLinks       FacultyCourseLink[]    @relation("FacultyCourseLinkFaculty")
+  auditLogsAsActor         AuditLog[]             @relation("AuditLogActor")
+  specialistAssignments    SpecialistAssignment[] @relation("SpecialistAssignmentSpecialist")
+  assignmentsMade          SpecialistAssignment[] @relation("SpecialistAssignmentAssignedBy")
+  uploadedFacultyResources FacultyResource[]      @relation("FacultyResourceUploadedBy")
+  examsAsFaculty           Exam[]                 @relation("ExamFaculty")
+  examSubmissionsAsStudent ExamSubmission[]       @relation("ExamSubmissionStudent")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -395,10 +423,10 @@ model MentorAlert {
   message                 String
   createdAt               DateTime      @default(now())
 
-  tenant                Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant                Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   studentProfile        StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
-  assignedSpecialist    User        @relation("MentorAlertAssignedSpecialist", fields: [assignedSpecialistId], references: [id])
-  triggeredByUsageEvent UsageEvent? @relation(fields: [triggeredByUsageEventId], references: [id])
+  assignedSpecialist    User           @relation("MentorAlertAssignedSpecialist", fields: [assignedSpecialistId], references: [id])
+  triggeredByUsageEvent UsageEvent?    @relation(fields: [triggeredByUsageEventId], references: [id])
 
   @@index([tenantId])
   @@index([studentProfileId])
@@ -482,4 +510,112 @@ model AuditLog {
   @@index([actorUserId])
   @@index([targetStudentProfileId])
   @@map("audit_logs")
+}
+
+// ─────────────────── Voice-driven exam-taking (MCQ, Phase 1) ───────────────────
+//
+// Draft-vs-published semantics for `Exam.availableAt` (decided here, since
+// the spec left this open): `availableAt: null` means the exam is a DRAFT —
+// invisible to students no matter how many questions it has, this is the
+// state a manually-built exam starts in and the state AI-generated
+// questions stay in until the faculty member explicitly approves/saves
+// them (see /faculty/exams/new — "never auto-publish AI output"). Setting
+// `availableAt` to a non-null timestamp is the one explicit "publish"
+// action a faculty member takes; a FUTURE timestamp schedules the exam to
+// become visible at that moment (supports "opens Monday 9am"), a
+// past-or-now timestamp makes it immediately visible. The student-facing
+// GET /api/exams/:id/questions and the enrollment check both require
+// `availableAt` to be non-null AND <= now — there is no separate
+// boolean `published` field, `availableAt` alone carries both facts
+// (whether it's published, and when it became/becomes so).
+
+/**
+ * See src/lib/ai.ts for the explicit, scoped AI exception this feature relies on.
+ */
+model Exam {
+  id            String     @id @default(uuid())
+  tenantId      String
+  title         String
+  facultyUserId String
+  courseCode    String // matches FacultyCourseLink.courseCode - no separate Course entity exists
+  source        ExamSource
+  availableAt   DateTime? // null = draft; see the semantics note above this model
+  createdAt     DateTime   @default(now())
+  deletedAt     DateTime?
+
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  faculty     User             @relation("ExamFaculty", fields: [facultyUserId], references: [id])
+  questions   Question[]
+  submissions ExamSubmission[]
+
+  @@index([tenantId])
+  @@index([facultyUserId])
+  @@index([tenantId, courseCode])
+  @@map("exams")
+}
+
+model Question {
+  id     String       @id @default(uuid())
+  examId String
+  text   String
+  type   QuestionType @default(MCQ)
+  order  Int
+
+  exam    Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
+  options QuestionOption[]
+  answers Answer[]
+
+  @@index([examId])
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String  @id @default(uuid())
+  questionId String
+  text       String
+  isCorrect  Boolean @default(false) // NEVER returned by the student-facing GET endpoint - see /api/exams/[id]/questions
+  order      Int
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers  Answer[] @relation("AnswerSelectedOption")
+
+  @@index([questionId])
+  @@map("question_options")
+}
+
+model ExamSubmission {
+  id            String               @id @default(uuid())
+  tenantId      String
+  examId        String
+  studentUserId String
+  status        ExamSubmissionStatus @default(in_progress)
+  startedAt     DateTime             @default(now())
+  completedAt   DateTime?
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  exam    Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student User     @relation("ExamSubmissionStudent", fields: [studentUserId], references: [id])
+  answers Answer[]
+
+  @@unique([examId, studentUserId])
+  @@index([tenantId])
+  @@index([examId])
+  @@map("exam_submissions")
+}
+
+model Answer {
+  id                         String   @id @default(uuid())
+  examSubmissionId           String
+  questionId                 String
+  selectedOptionId           String?
+  voiceConfirmationObjectKey String? // S3 object key - same "no binary in DB" pattern as Document/FacultyResource
+  answeredAt                 DateTime @default(now())
+
+  examSubmission ExamSubmission  @relation(fields: [examSubmissionId], references: [id], onDelete: Cascade)
+  question       Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption QuestionOption? @relation("AnswerSelectedOption", fields: [selectedOptionId], references: [id])
+
+  @@unique([examSubmissionId, questionId])
+  @@index([examSubmissionId])
+  @@map("answers")
 }

@@ -15,12 +15,15 @@ import { prisma } from "./prisma";
  * src/lib/session.ts), never from client-supplied input — middleware.ts and
  * every server component/route handler resolve it that way.
  *
- * Two models are intentionally NOT in this list because they don't carry a
+ * Models intentionally NOT in this list because they don't carry a
  * tenantId column directly (they scope transitively through their parent):
- *   - ToolActivation  (scopes via SupportPlan.tenantId)
- *   - PlanRevision    (scopes via SupportPlan.tenantId)
- * Any query against those two must join through/verify the parent
- * SupportPlan's tenantId explicitly.
+ *   - ToolActivation    (scopes via SupportPlan.tenantId)
+ *   - PlanRevision      (scopes via SupportPlan.tenantId)
+ *   - Question          (scopes via Exam.tenantId)
+ *   - QuestionOption    (scopes via Question -> Exam.tenantId)
+ *   - Answer            (scopes via ExamSubmission.tenantId)
+ * Any query against those must join through/verify the parent's tenantId
+ * explicitly.
  */
 const TENANT_SCOPED_MODELS = new Set<string>([
   "User",
@@ -36,6 +39,8 @@ const TENANT_SCOPED_MODELS = new Set<string>([
   "FacultyCourseLink",
   "AuditLog",
   "SpecialistAssignment",
+  "Exam",
+  "ExamSubmission",
 ]);
 
 const WHERE_SCOPED_OPERATIONS = new Set([

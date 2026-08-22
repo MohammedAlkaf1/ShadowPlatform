@@ -4,7 +4,12 @@ import { assertFacultyTeachesCourse, FacultyAccessError } from "@/lib/faculty-ac
 import { generateExamQuestionsFromPdf } from "@/lib/ai";
 import { logAudit } from "@/lib/audit";
 
-const MAX_PDF_SIZE_BYTES = Number(process.env.MAX_FACULTY_RESOURCE_SIZE_BYTES ?? 20_971_520);
+// Dedicated env var, NOT shared with MAX_FACULTY_RESOURCE_SIZE_BYTES (an
+// unrelated feature) - real lecture-slide PDFs with embedded images/charts
+// commonly run 5-30MB, and reusing that other feature's 20MB default was
+// too tight, causing real uploads to be rejected. 50MB default gives
+// headroom above the realistic upper end.
+const MAX_PDF_SIZE_BYTES = Number(process.env.MAX_EXAM_PDF_SIZE_BYTES ?? 52_428_800);
 
 /**
  * POST /api/faculty/exams/generate — multipart/form-data.
@@ -46,7 +51,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "يُسمح فقط برفع ملفات PDF" }, { status: 400 });
   }
   if (file.size > MAX_PDF_SIZE_BYTES) {
-    return NextResponse.json({ error: "حجم الملف يتجاوز الحد المسموح" }, { status: 400 });
+    const maxMb = Math.round(MAX_PDF_SIZE_BYTES / 1_048_576);
+    const fileMb = (file.size / 1_048_576).toFixed(1);
+    return NextResponse.json(
+      { error: `حجم الملف (${fileMb} ميجابايت) يتجاوز الحد المسموح (${maxMb} ميجابايت)` },
+      { status: 400 }
+    );
   }
 
   const questionCount = Number(questionCountRaw);

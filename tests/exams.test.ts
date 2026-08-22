@@ -325,4 +325,65 @@ describe("Exam permissions (voice-driven exam-taking, MCQ Phase 1)", () => {
 
     expect(res.status).toBe(404);
   });
+
+  it("GET /api/student/exams lists only published exams the student is enrolled in, with their own submission status", async () => {
+    currentSessionUser = { id: faculty.id, tenantId: faculty.tenantId, role: "faculty" };
+    const { POST: createExam } = await import("@/app/api/faculty/exams/route");
+
+    // A second published exam, same course, so the list has >1 real row to
+    // distinguish from noise, plus a draft that must NOT appear at all.
+    const publishedRes = await createExam(
+      new Request(`${BASE}/faculty/exams`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "TEST_EXAM_list_published",
+          courseCode: facultyCourseCode,
+          source: "MANUAL",
+          availableAt: new Date(Date.now() - 1000).toISOString(),
+          questions: [{ text: "q", options: [{ text: "a", isCorrect: true }, { text: "b", isCorrect: false }] }],
+        }),
+      })
+    );
+    const { examId: publishedExamId } = await publishedRes.json();
+    await createExam(
+      new Request(`${BASE}/faculty/exams`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "TEST_EXAM_list_draft",
+          courseCode: facultyCourseCode,
+          source: "MANUAL",
+          // no availableAt -> draft, must not appear in the student's list
+          questions: [{ text: "q", options: [{ text: "a", isCorrect: true }, { text: "b", isCorrect: false }] }],
+        }),
+      })
+    );
+
+    const enrolledToken = await tokenFor(enrolledStudent.email);
+    const { GET } = await import("@/app/api/student/exams/route");
+    const res = await GET(authedRequest(`${BASE}/student/exams`, enrolledToken.token));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const ids = body.exams.map((e: { id: string }) => e.id);
+
+    expect(ids).toContain(publishedExamId);
+    expect(ids).not.toContain(undefined);
+    const listedDraft = body.exams.find((e: { title: string }) => e.title === "TEST_EXAM_list_draft");
+    expect(listedDraft).toBeUndefined();
+
+    const publishedEntry = body.exams.find((e: { id: string }) => e.id === publishedExamId);
+    expect(publishedEntry.submission).toBeNull(); // not yet answered by this student
+
+    assertNoRawClassificationLeak(body);
+  });
+
+  it("GET /api/student/exams for an unenrolled student never includes exams from a course they're not linked to", async () => {
+    const outsiderToken = await tokenFor(unenrolledStudent.email);
+    const { GET } = await import("@/app/api/student/exams/route");
+    const res = await GET(authedRequest(`${BASE}/student/exams`, outsiderToken.token));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.exams).toEqual([]);
+  });
 });

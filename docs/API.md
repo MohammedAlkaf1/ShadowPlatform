@@ -639,6 +639,69 @@ scheduled but not yet open. Both draft and scheduled/not-yet-open exams
 behave identically to "doesn't exist" from the student-facing API below —
 never distinguishable from a genuinely invalid id.
 
+## `GET /api/student/exams`
+
+Lists every **published** exam (`availableAt` set and `<= now`, not soft-deleted)
+across every course the calling student is actually enrolled in, plus the
+student's own submission status for each one so the app can render
+"لم تبدأ" / "قيد التنفيذ" / "تم التسليم" without a second round-trip per exam.
+
+- **Auth required:** Bearer token, role = `student`.
+- **No path/query parameters** — always scoped to the calling student's own enrollments.
+
+**Access rule:** enrollment is proven the same way as `GET /api/exams/:id/questions` —
+a real `FacultyCourseLink` row for the exam's `facultyUserId` + `courseCode`. Draft
+(`availableAt: null`) and not-yet-scheduled exams never appear here, even for an
+enrolled student.
+
+**Response `200 OK`**
+
+```json
+{
+  "exams": [
+    {
+      "id": "b1f2c3d4-5e6f-7890-abcd-ef1234567890",
+      "title": "اختبار الفصل الثالث",
+      "courseCode": "CS301",
+      "availableAt": "2026-08-20T09:00:00.000Z",
+      "questionCount": 5,
+      "submission": { "id": "c2e3d4f5-6789-0abc-def1-234567890abc", "status": "completed" }
+    },
+    {
+      "id": "9f8e7d6c-5b4a-3210-fedc-ba9876543210",
+      "title": "اختبار قصير",
+      "courseCode": "CS301",
+      "availableAt": "2026-08-21T09:00:00.000Z",
+      "questionCount": 2,
+      "submission": null
+    }
+  ]
+}
+```
+
+| Field                    | Type                        | Notes                                                        |
+|--------------------------|------------------------------|---------------------------------------------------------------|
+| exams[].id                 | string (uuid)                |                                                                |
+| exams[].title                | string                       |                                                                |
+| exams[].courseCode            | string                       |                                                                |
+| exams[].availableAt            | string (ISO datetime)         | always non-null in this response — drafts are filtered out entirely |
+| exams[].questionCount           | number                       |                                                                |
+| exams[].submission                | object \| `null`             | `null` = student hasn't answered anything yet for this exam    |
+| exams[].submission.id               | string (uuid)                | present only when `submission` is non-null                    |
+| exams[].submission.status            | `"in_progress"` \| `"completed"` | present only when `submission` is non-null                |
+
+**Errors**
+
+| Status | Body                       | When                                       |
+|--------|--------------------------------|---------------------------------------------|
+| 401    | `{ "error": "غير مصرح" }`     | missing/invalid/expired token                |
+| 404    | `{ "error": "الملف الشخصي غير موجود" }` | the calling user has no `StudentProfile` |
+
+Note: a student with zero course enrollments (no `FacultyCourseLink` rows) gets
+`{ "exams": [] }`, not an error.
+
+---
+
 ## `GET /api/exams/:id/questions`
 
 Returns a published exam's questions and options for a student actually

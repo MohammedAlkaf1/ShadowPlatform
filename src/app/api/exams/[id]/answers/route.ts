@@ -135,5 +135,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     resourceId: answer.id,
   });
 
+  // Mark the submission completed once every question in the exam has an
+  // answer row — the client (voice-driven exam screen) already knows
+  // locally when it's on the last question, but the submission's own
+  // status/completedAt would otherwise sit at "in_progress" forever with no
+  // server-side signal that the student actually finished. Re-checked on
+  // every call (not just guarded by "is this the last question" client
+  // input) so it self-corrects even if answers arrive out of order or a
+  // previous call was interrupted.
+  if (submission.status === "in_progress") {
+    const [answeredCount, totalCount] = await Promise.all([
+      db.answer.count({ where: { examSubmissionId: submission.id } }),
+      db.question.count({ where: { examId } }),
+    ]);
+    if (answeredCount >= totalCount) {
+      await db.examSubmission.update({
+        where: { id: submission.id },
+        data: { status: "completed", completedAt: new Date() },
+      });
+    }
+  }
+
   return NextResponse.json({ ok: true, answerId: answer.id, examSubmissionId: submission.id }, { status: 201 });
 }

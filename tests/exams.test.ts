@@ -284,7 +284,12 @@ describe("Exam permissions (voice-driven exam-taking, MCQ Phase 1)", () => {
       where: { examId_studentUserId: { examId: manualExamId, studentUserId: enrolledStudent.id } },
     });
     expect(submission).not.toBeNull();
-    expect(submission!.status).toBe("in_progress");
+    // manualExamId has exactly one question (see the "faculty can create a
+    // manual exam..." fixture above) — answering it answers every question
+    // in the exam, so the submission auto-completes on this same call
+    // (see POST /api/exams/:id/answers's post-upsert completion check).
+    expect(submission!.status).toBe("completed");
+    expect(submission!.completedAt).not.toBeNull();
 
     const [auditRow] = await prisma.auditLog.findMany({
       where: { action: "submit_exam_answer", actorUserId: enrolledStudent.id },

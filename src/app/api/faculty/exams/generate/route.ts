@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole, AuthError } from "@/lib/session";
 import { assertFacultyTeachesCourse, FacultyAccessError } from "@/lib/faculty-access";
-import { generateExamQuestionsFromPdf } from "@/lib/ai";
+import { generateExamQuestionsFromPdf, type ExamQuestionLanguage } from "@/lib/ai";
 import { logAudit } from "@/lib/audit";
 
 // Dedicated env var, NOT shared with MAX_FACULTY_RESOURCE_SIZE_BYTES (an
@@ -25,6 +25,7 @@ const MAX_PDF_SIZE_BYTES = Number(process.env.MAX_EXAM_PDF_SIZE_BYTES ?? 52_428_
  * teacher explicitly clicks save/publish) persists anything.
  */
 export async function POST(request: Request) {
+  const t0 = Date.now();
   let ctx;
   try {
     ctx = await requireRole("faculty");
@@ -43,10 +44,15 @@ export async function POST(request: Request) {
   const file = formData.get("file");
   const courseCode = formData.get("courseCode");
   const questionCountRaw = formData.get("questionCount");
+  const languageRaw = formData.get("language");
 
   if (!(file instanceof File) || typeof courseCode !== "string" || !courseCode) {
     return NextResponse.json({ error: "الرجاء إرفاق ملف PDF واختيار مقرر" }, { status: 400 });
   }
+  if (languageRaw !== "ar" && languageRaw !== "en") {
+    return NextResponse.json({ error: "الرجاء اختيار لغة الأسئلة" }, { status: 400 });
+  }
+  const language: ExamQuestionLanguage = languageRaw;
   if (file.type !== "application/pdf") {
     return NextResponse.json({ error: "يُسمح فقط برفع ملفات PDF" }, { status: 400 });
   }
@@ -71,14 +77,17 @@ export async function POST(request: Request) {
     throw err;
   }
 
+  const tReceived = Date.now();
   const pdfBytes = Buffer.from(await file.arrayBuffer());
+  const tRead = Date.now();
 
   let questions;
   try {
-    questions = await generateExamQuestionsFromPdf(pdfBytes, approxQuestionCount);
+    questions = await generateExamQuestionsFromPdf(pdfBytes, approxQuestionCount, language);
   } catch {
     return NextResponse.json({ error: "تعذر توليد الأسئلة من الملف، حاول مرة أخرى" }, { status: 502 });
   }
+  const tGemini = Date.now();
 
   if (questions.length === 0) {
     return NextResponse.json({ error: "تعذر توليد الأسئلة من الملف، حاول مرة أخرى" }, { status: 502 });
@@ -90,6 +99,18 @@ export async function POST(request: Request) {
     action: "generate_exam_ai",
     resourceType: "Exam",
   });
+  const tAudit = Date.now();
+
+  // Temporary stage-by-stage timing to diagnose real-world slowness
+  // reports (see برومبت_تسريع_التوليد_ولغة_الأسئلة.md task 2) — the PDF
+  // already goes straight to Gemini as inline bytes with no intermediate
+  // parsing/re-encoding step, so if this log shows tGemini dominating,
+  // the bottleneck is the Gemini call itself, not this route's own code.
+  console.log(
+    `[exams/generate] auth+parse=${tReceived - t0}ms readFile=${tRead - tReceived}ms ` +
+      `gemini=${tGemini - tRead}ms audit=${tAudit - tGemini}ms total=${tAudit - t0}ms ` +
+      `fileSizeMb=${(file.size / 1_048_576).toFixed(1)} questionCount=${questions.length}`
+  );
 
   return NextResponse.json({ questions });
 }

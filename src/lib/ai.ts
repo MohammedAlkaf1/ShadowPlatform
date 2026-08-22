@@ -58,9 +58,12 @@ export interface GeneratedQuestion {
  * them without the faculty member's explicit save action. This function
  * itself never writes to the database.
  */
+export type ExamQuestionLanguage = "ar" | "en";
+
 export async function generateExamQuestionsFromPdf(
   pdfBytes: Buffer,
-  approxQuestionCount: number
+  approxQuestionCount: number,
+  language: ExamQuestionLanguage
 ): Promise<GeneratedQuestion[]> {
   const ai = getClient();
 
@@ -92,15 +95,35 @@ export async function generateExamQuestionsFromPdf(
     required: ["questions"],
   };
 
+  // Language is the instructor's explicit choice (see the "عربي"/"English"
+  // toggle in the AI-generation form), never inferred from the slide
+  // content's own language — a professor with English slides may still
+  // want an Arabic exam, and vice versa. The wording below is deliberately
+  // "compose/write new questions in <language>" rather than "translate",
+  // so Gemini doesn't machine-translate slide phrasing word-for-word (which
+  // reads awkwardly) and instead produces natural exam-register prose in
+  // the target language, grounded in the slides' meaning.
+  const languageInstruction =
+    language === "ar"
+      ? `Write every question and every option in formal Modern Standard Arabic ` +
+        `(الفصحى), regardless of what language the slide content itself is ` +
+        `written in. Compose natural, exam-register Arabic that tests the ` +
+        `same concepts as the slides — do not produce a literal word-for-word ` +
+        `translation of English slide text.`
+      : `Write every question and every option in English, regardless of what ` +
+        `language the slide content itself is written in. Compose natural, ` +
+        `exam-register English that tests the same concepts as the slides — ` +
+        `do not produce a literal word-for-word translation of non-English ` +
+        `slide text.`;
+
   const prompt =
     `You are helping a university instructor draft a multiple-choice exam ` +
     `from their lecture slides. Read the attached PDF and generate ` +
     `approximately ${approxQuestionCount} multiple-choice questions that ` +
     `test understanding of the material. Each question must have exactly ` +
     `4 answer options, with exactly ONE marked isCorrect: true and the ` +
-    `rest isCorrect: false. Write both questions and options in the same ` +
-    `language as the slide content. Do not include any question or option ` +
-    `outside of what's returned in the JSON structure.`;
+    `rest isCorrect: false. ${languageInstruction} Do not include any ` +
+    `question or option outside of what's returned in the JSON structure.`;
 
   const response = await ai.models.generateContent({
     model: GEMINI_MODEL,

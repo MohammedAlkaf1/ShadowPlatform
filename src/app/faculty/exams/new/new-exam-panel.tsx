@@ -36,6 +36,14 @@ function emptyQuestion(): DraftQuestion {
 
 type Mode = "choose" | "manual" | "ai";
 
+// Real measured stage split for a 30+ slide PDF: reading the file is
+// near-instant (<100ms), the Gemini call is ~30-45s end to end and doesn't
+// expose intermediate progress, so these labels are spaced roughly to match
+// where a real request tends to be, not a literal server signal.
+const GENERATING_STAGE_KEYS = ["generatingStageUpload", "generatingStageAnalyze", "generatingStageCompose"] as const;
+const GENERATING_STAGE_COUNT = GENERATING_STAGE_KEYS.length;
+const GENERATING_STAGE_INTERVAL_MS = 6000;
+
 /**
  * Client panel for /faculty/exams/new. Presents the two creation paths as
  * two explicit, clearly-separated cards up front (hard requirement from the
@@ -59,8 +67,19 @@ export function NewExamPanel({ courseCodes }: { courseCodes: string[] }) {
 
   // AI-generation sub-state.
   const [aiQuestionCount, setAiQuestionCount] = useState("10");
+  // The instructor's explicit choice, never inferred from the slide
+  // content's own language (see src/lib/ai.ts's language instruction).
+  const [aiLanguage, setAiLanguage] = useState<"ar" | "en">("ar");
   const [aiFileName, setAiFileName] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  // The Gemini call itself is the entire cost of this request (~30-45s for
+  // a real 30+ slide PDF, measured directly — there is no app-side
+  // preprocessing step to speed up, see POST /api/faculty/exams/generate's
+  // stage timing log). Since the backend can't report real progress
+  // mid-request, this cycles through realistic phase labels on a timer
+  // purely to make the wait feel active rather than frozen — it does not
+  // reflect the server's actual state.
+  const [generatingStage, setGeneratingStage] = useState(0);
   const aiFileInputRef = useRef<HTMLInputElement>(null);
   const source = useRef<"MANUAL" | "AI_GENERATED">("MANUAL");
 
@@ -134,10 +153,16 @@ export function NewExamPanel({ courseCodes }: { courseCodes: string[] }) {
     }
 
     setGenerating(true);
+    setGeneratingStage(0);
+    const stageTimer = setInterval(() => {
+      setGeneratingStage((s) => Math.min(s + 1, GENERATING_STAGE_COUNT - 1));
+    }, GENERATING_STAGE_INTERVAL_MS);
+
     const formData = new FormData();
     formData.set("file", file);
     formData.set("courseCode", courseCode);
     formData.set("questionCount", aiQuestionCount);
+    formData.set("language", aiLanguage);
 
     try {
       const res = await fetch("/api/faculty/exams/generate", { method: "POST", body: formData });
@@ -155,6 +180,7 @@ export function NewExamPanel({ courseCodes }: { courseCodes: string[] }) {
     } catch {
       toast.error(t("errorGenerateFailed"));
     } finally {
+      clearInterval(stageTimer);
       setGenerating(false);
     }
   }
@@ -314,9 +340,27 @@ export function NewExamPanel({ courseCodes }: { courseCodes: string[] }) {
                   />
                 </div>
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ai-language">{t("aiLanguageLabel")}</Label>
+                <Select value={aiLanguage} onValueChange={(v) => setAiLanguage(v as "ar" | "en")}>
+                  <SelectTrigger id="ai-language" className="w-full sm:w-56">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ar">{t("aiLanguageArabic")}</SelectItem>
+                    <SelectItem value="en">{t("aiLanguageEnglish")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button type="button" variant="outline" disabled={generating} onClick={handleGenerate}>
                 {generating ? t("generatingButton") : t("generateButton")}
               </Button>
+              {generating && (
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground" role="status" aria-live="polite">
+                  <span className="size-1.5 animate-pulse rounded-full bg-primary" />
+                  {t(GENERATING_STAGE_KEYS[generatingStage])}
+                </p>
+              )}
               {questions.length > 0 && (
                 <p className="text-xs text-muted-foreground">{t("aiDraftNote")}</p>
               )}

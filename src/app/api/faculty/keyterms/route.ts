@@ -19,6 +19,11 @@ const termInputSchema = z.object({
 
 const saveTermsSchema = z.object({
   courseCode: z.string().trim().min(1),
+  // Manually typed by the faculty member above the upload button, before
+  // extraction — labels which chapter's slides this batch came from. See
+  // LectureKeyterm.chapterTitle's schema comment: purely a display/grouping
+  // label, doesn't affect uniqueness or the student-facing API's flat list.
+  chapterTitle: z.string().trim().min(1),
   terms: z.array(termInputSchema).max(500),
 });
 
@@ -50,8 +55,11 @@ export async function GET(request: Request) {
   const db = getTenantScopedPrisma(ctx.tenantId);
   const keyterms = await db.lectureKeyterm.findMany({
     where: { facultyUserId: ctx.userId, courseCode, deletedAt: null },
-    orderBy: { term: "asc" },
-    select: { id: true, term: true, source: true, approved: true, createdAt: true },
+    // Grouped by chapter on the client (see keyterms-panel.tsx) — ordering
+    // here by chapterTitle first keeps each chapter's rows contiguous, term
+    // ascending as the tiebreak within a chapter.
+    orderBy: [{ chapterTitle: "asc" }, { term: "asc" }],
+    select: { id: true, chapterTitle: true, term: true, source: true, approved: true, createdAt: true },
   });
 
   return NextResponse.json({ keyterms });
@@ -86,7 +94,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
   }
-  const { courseCode, terms } = parsed.data;
+  const { courseCode, chapterTitle, terms } = parsed.data;
 
   try {
     await assertFacultyTeachesCourse(ctx, courseCode);
@@ -116,6 +124,7 @@ export async function POST(request: Request) {
       tenantId: ctx.tenantId,
       facultyUserId: ctx.userId,
       courseCode,
+      chapterTitle,
       term: t.term,
       source: t.source,
       approved: true,

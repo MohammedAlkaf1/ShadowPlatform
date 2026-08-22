@@ -23,6 +23,12 @@ import { getTenantScopedPrisma } from "@/lib/tenant-db";
  * Only APPROVED terms are ever returned (LectureKeyterm.approved = true) —
  * an AI-extracted draft the faculty member hasn't reviewed yet is invisible
  * here, same "never auto-publish AI output" rule as the exam feature.
+ *
+ * Deliberately IGNORES LectureKeyterm.chapterTitle — that field only drives
+ * grouping/display on the faculty review page (/faculty/keyterms); Deepgram
+ * needs one flat boost-list regardless of which chapter's slides a term
+ * came from, so terms from every chapter are merged into a single sorted
+ * array here, same as before chapterTitle existed.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ courseCode: string }> }) {
   const { courseCode } = await params;

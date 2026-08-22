@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,10 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionPanel } from "@/components/ui/accordion";
 import { Sparkles, Plus, UploadCloud, X } from "lucide-react";
 
 interface SavedKeyterm {
   id: string;
+  chapterTitle: string;
   term: string;
   source: "AI_EXTRACTED" | "MANUAL";
   approved: boolean;
@@ -24,16 +26,47 @@ interface DraftTerm {
   source: "AI_EXTRACTED" | "MANUAL";
 }
 
+function TermChip({
+  term,
+  source,
+  t,
+  onRemove,
+}: {
+  term: string;
+  source: "AI_EXTRACTED" | "MANUAL";
+  t: ReturnType<typeof useTranslations>;
+  onRemove: () => void;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/40 py-1 ps-3 pe-1.5 text-sm">
+      <span dir="ltr">{term}</span>
+      <Badge variant={source === "AI_EXTRACTED" ? "secondary" : "outline"} className="text-[10px]">
+        {source === "AI_EXTRACTED" ? t("sourceAi") : t("sourceManual")}
+      </Badge>
+      <button
+        type="button"
+        title={t("removeTermButton")}
+        onClick={onRemove}
+        className="rounded-full p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+      >
+        <X className="size-3.5" />
+      </button>
+    </span>
+  );
+}
+
 /**
  * Client panel for /faculty/keyterms. Two independent things live on this
  * page: (1) the already-approved, accumulated glossary for the selected
- * course (see LectureKeyterm's schema comment — this never shrinks except
- * by explicit per-term delete), and (2) an upload-and-review flow that adds
- * to it. AI-extracted terms land in an editable DRAFT list the faculty
- * member can add to / remove from before a single "approve" action saves
- * them — nothing from the draft reaches the glossary (or students) until
- * that explicit save, same "never auto-publish AI output" rule the exam
- * feature already established.
+ * course, grouped into one collapsible section PER CHAPTER (see
+ * LectureKeyterm.chapterTitle's schema comment — chapters are never merged,
+ * each upload's approved batch keeps its own labeled section), and (2) an
+ * upload-and-review flow for ONE chapter at a time that adds to it.
+ * AI-extracted terms land in an editable DRAFT list the faculty member can
+ * add to / remove from before a single "approve" action saves them under
+ * the chapter title they typed — nothing from the draft reaches the
+ * glossary (or students) until that explicit save, same "never
+ * auto-publish AI output" rule the exam feature already established.
  */
 export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
   const t = useTranslations("FacultyKeyterms");
@@ -42,6 +75,7 @@ export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
   const [saved, setSaved] = useState<SavedKeyterm[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
 
+  const [chapterTitle, setChapterTitle] = useState("");
   const [draft, setDraft] = useState<DraftTerm[]>([]);
   const [newTermText, setNewTermText] = useState("");
   const [extracting, setExtracting] = useState(false);
@@ -75,6 +109,23 @@ export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
     void Promise.resolve().then(() => loadSaved(courseCode));
   }, [courseCode]);
 
+  // Groups the flat `saved` list into ordered [chapterTitle, terms[]]
+  // sections for the accordion below. GET /api/faculty/keyterms already
+  // sorts by chapterTitle then term, so insertion order here already
+  // matches — just partitioning by the run of matching chapterTitle values.
+  const savedByChapter = useMemo(() => {
+    const groups: { chapterTitle: string; terms: SavedKeyterm[] }[] = [];
+    for (const k of saved) {
+      const last = groups[groups.length - 1];
+      if (last && last.chapterTitle === k.chapterTitle) {
+        last.terms.push(k);
+      } else {
+        groups.push({ chapterTitle: k.chapterTitle, terms: [k] });
+      }
+    }
+    return groups;
+  }, [saved]);
+
   if (courseCodes.length === 0) {
     return (
       <Card>
@@ -91,6 +142,10 @@ export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
     }
     if (!courseCode) {
       toast.error(t("errorCourseRequired"));
+      return;
+    }
+    if (!chapterTitle.trim()) {
+      toast.error(t("errorChapterTitleRequired"));
       return;
     }
 
@@ -148,6 +203,10 @@ export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
       toast.error(t("errorCourseRequired"));
       return;
     }
+    if (!chapterTitle.trim()) {
+      toast.error(t("errorChapterTitleRequired"));
+      return;
+    }
     if (draft.length === 0) {
       toast.error(t("errorNoDraftTerms"));
       return;
@@ -158,7 +217,7 @@ export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
       const res = await fetch("/api/faculty/keyterms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseCode, terms: draft }),
+        body: JSON.stringify({ courseCode, chapterTitle: chapterTitle.trim(), terms: draft }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -167,6 +226,7 @@ export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
       }
       toast.success(t("successApproved", { count: draft.length }));
       setDraft([]);
+      setChapterTitle("");
       setFileName(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       await loadSaved(courseCode);
@@ -225,6 +285,15 @@ export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-1.5">
+            <Label htmlFor="chapter-title">{t("chapterTitleLabel")}</Label>
+            <Input
+              id="chapter-title"
+              value={chapterTitle}
+              onChange={(e) => setChapterTitle(e.target.value)}
+              placeholder={t("chapterTitlePlaceholder")}
+            />
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="keyterm-file">{t("uploadLabel")}</Label>
             <Input
               id="keyterm-file"
@@ -248,7 +317,9 @@ export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{t("draftSectionTitle")}</CardTitle>
+          <CardTitle className="text-base">
+            {chapterTitle.trim() ? t("draftSectionTitleWithChapter", { chapterTitle: chapterTitle.trim() }) : t("draftSectionTitle")}
+          </CardTitle>
           <CardDescription className="text-pretty">{t("draftSectionDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -280,20 +351,7 @@ export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
             <ul className="flex flex-wrap gap-2">
               {draft.map((d, index) => (
                 <li key={`${d.term}-${index}`}>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/40 py-1 ps-3 pe-1.5 text-sm">
-                    <span dir="ltr">{d.term}</span>
-                    <Badge variant={d.source === "AI_EXTRACTED" ? "secondary" : "outline"} className="text-[10px]">
-                      {d.source === "AI_EXTRACTED" ? t("sourceAi") : t("sourceManual")}
-                    </Badge>
-                    <button
-                      type="button"
-                      title={t("removeTermButton")}
-                      onClick={() => removeDraftTerm(index)}
-                      className="rounded-full p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  </span>
+                  <TermChip term={d.term} source={d.source} t={t} onRemove={() => removeDraftTerm(index)} />
                 </li>
               ))}
             </ul>
@@ -317,29 +375,32 @@ export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
         <CardContent>
           {loadingSaved ? (
             <p className="py-4 text-center text-sm text-muted-foreground">{t("loading")}</p>
-          ) : saved.length === 0 ? (
+          ) : savedByChapter.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">{t("noSavedTermsYet")}</p>
           ) : (
-            <ul className="flex flex-wrap gap-2">
-              {saved.map((k) => (
-                <li key={k.id}>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/40 py-1 ps-3 pe-1.5 text-sm">
-                    <span dir="ltr">{k.term}</span>
-                    <Badge variant={k.source === "AI_EXTRACTED" ? "secondary" : "outline"} className="text-[10px]">
-                      {k.source === "AI_EXTRACTED" ? t("sourceAi") : t("sourceManual")}
-                    </Badge>
-                    <button
-                      type="button"
-                      title={t("removeTermButton")}
-                      onClick={() => handleDeleteSaved(k.id)}
-                      className="rounded-full p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  </span>
-                </li>
+            <Accordion multiple defaultValue={savedByChapter.map((g) => g.chapterTitle)}>
+              {savedByChapter.map((group) => (
+                <AccordionItem key={group.chapterTitle} value={group.chapterTitle}>
+                  <AccordionTrigger>
+                    <span>
+                      {group.chapterTitle}{" "}
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {t("chapterTermCount", { count: group.terms.length })}
+                      </span>
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionPanel>
+                    <ul className="flex flex-wrap gap-2">
+                      {group.terms.map((k) => (
+                        <li key={k.id}>
+                          <TermChip term={k.term} source={k.source} t={t} onRemove={() => handleDeleteSaved(k.id)} />
+                        </li>
+                      ))}
+                    </ul>
+                  </AccordionPanel>
+                </AccordionItem>
               ))}
-            </ul>
+            </Accordion>
           )}
         </CardContent>
       </Card>

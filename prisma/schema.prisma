@@ -660,11 +660,25 @@ model Answer {
 // term (see POST /api/faculty/keyterms/extract's doc comment) - re-uploading
 // slides for the same course adds new terms, it never deletes/replaces
 // previously-approved ones.
+//
+// `chapterTitle` is a manual label the faculty member types in once per
+// upload (before extraction), purely for grouping/display on the faculty
+// review page (/faculty/keyterms shows one collapsible section per distinct
+// chapterTitle) - it does NOT change the uniqueness rule or the
+// student-facing API. Uniqueness stays course-wide
+// (facultyUserId+courseCode+term, unchanged), not per-chapter: if the same
+// term legitimately appears in two chapters' slides, it's still one
+// glossary entry (whichever chapter it was first approved under keeps the
+// label) rather than a duplicate row - GET /api/courses/:courseCode/keyterms
+// has always returned (and still returns) one flat deduplicated list, since
+// that's the shape Deepgram's keyterm boosting needs regardless of which
+// chapter a term came from.
 model LectureKeyterm {
   id            String               @id @default(uuid())
   tenantId      String
   facultyUserId String
   courseCode    String // matches FacultyCourseLink.courseCode - no separate Course entity exists
+  chapterTitle  String
   term          String
   source        LectureKeytermSource
   approved      Boolean              @default(false)

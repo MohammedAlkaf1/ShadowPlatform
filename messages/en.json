@@ -393,7 +393,17 @@
     "hiddenNote": "Students never see an exam until you explicitly publish it, and neither an administrator nor a specialist ever has any read access to exams, questions, or answers — not even from the admin panel.",
     "tableSource": "Source",
     "tableStatus": "Status",
-    "tableQuestions": "Questions"
+    "tableQuestions": "Questions",
+    "resultsTitle": "Results",
+    "backToExam": "Back to exam",
+    "resultsListTitle": "Student Results",
+    "noSubmissionsYet": "No student has submitted this exam yet.",
+    "resultsStudentColumn": "Student",
+    "resultsSubmittedAtColumn": "Submitted at",
+    "resultsScoreColumn": "Score",
+    "resultsNotSubmittedYet": "Not submitted yet",
+    "resultsStatusCompleted": "Completed",
+    "resultsStatusInProgress": "In progress"
   },
   "SpecialistQueue": {
     "title": "Review Queue",

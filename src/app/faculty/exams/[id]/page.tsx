@@ -1,12 +1,16 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { getTranslations, getLocale } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { AppShell } from "@/components/layout/app-shell";
 import { getFacultyNavItems } from "@/components/layout/nav-items";
 import { formatDateTime } from "@/lib/format-date";
+import { BarChart3 } from "lucide-react";
 import { PublishButton } from "./publish-button";
 
 /** Plain module-level helper so the `Date.now()` call doesn't trip the
@@ -67,7 +71,16 @@ export default async function ExamDetailPage({ params }: { params: Promise<{ id:
                 {t("createdAt")} <span dir="ltr">{formatDateTime(exam.createdAt, locale)}</span>
               </span>
             </div>
-            {!exam.availableAt && <PublishButton examId={exam.id} />}
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/faculty/exams/${exam.id}/results`}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              >
+                <BarChart3 className="size-3.5" data-icon="inline-start" />
+                {t("resultsTitle")}
+              </Link>
+              {!exam.availableAt && <PublishButton examId={exam.id} />}
+            </div>
           </CardHeader>
         </Card>
 

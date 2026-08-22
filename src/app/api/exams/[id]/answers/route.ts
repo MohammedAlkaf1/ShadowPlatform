@@ -149,9 +149,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       db.question.count({ where: { examId } }),
     ]);
     if (answeredCount >= totalCount) {
+      // Score computed ONCE here, at completion, and stored — not
+      // recalculated on every read of the faculty results page (see
+      // ExamSubmission.score's schema comment). Grading is a plain
+      // correct-count ratio, no AI involved: MCQ correctness is fully
+      // determined by QuestionOption.isCorrect, already in the DB.
+      const answers = await db.answer.findMany({
+        where: { examSubmissionId: submission.id },
+        include: { selectedOption: { select: { isCorrect: true } } },
+      });
+      const correctCount = answers.filter((a) => a.selectedOption?.isCorrect === true).length;
+      const score = totalCount > 0 ? (correctCount / totalCount) * 100 : 0;
+
       await db.examSubmission.update({
         where: { id: submission.id },
-        data: { status: "completed", completedAt: new Date() },
+        data: { status: "completed", completedAt: new Date(), score },
       });
     }
   }

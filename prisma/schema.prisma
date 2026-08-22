@@ -591,6 +591,13 @@ model ExamSubmission {
   status        ExamSubmissionStatus @default(in_progress)
   startedAt     DateTime             @default(now())
   completedAt   DateTime?
+  // Percentage 0-100, computed ONCE when status flips to "completed" (see
+  // POST /api/exams/:id/answers) and never recalculated afterward — a
+  // deliberate design choice (see faculty results-page report) so the
+  // results page reads a stable stored value instead of re-scoring on every
+  // view, and so a submission's grade can't silently shift if questions
+  // are edited later. Null while in_progress (not yet meaningful).
+  score         Float?
 
   tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   exam    Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)

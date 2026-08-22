@@ -393,7 +393,17 @@
     "hiddenNote": "لا يرى الطلاب اختباراً إلا بعد نشره صراحةً، ولا يرى المسؤول أو المختص أي اختبار أو سؤال أو إجابة أبداً — لا حتى من لوحة الإدارة.",
     "tableSource": "المصدر",
     "tableStatus": "الحالة",
-    "tableQuestions": "الأسئلة"
+    "tableQuestions": "الأسئلة",
+    "resultsTitle": "النتائج",
+    "backToExam": "رجوع للاختبار",
+    "resultsListTitle": "نتائج الطلاب",
+    "noSubmissionsYet": "لم يقدّم أي طالب هذا الاختبار بعد.",
+    "resultsStudentColumn": "الطالب",
+    "resultsSubmittedAtColumn": "وقت التسليم",
+    "resultsScoreColumn": "النتيجة",
+    "resultsNotSubmittedYet": "لم يُسلَّم بعد",
+    "resultsStatusCompleted": "مكتمل",
+    "resultsStatusInProgress": "قيد التنفيذ"
   },
   "SpecialistQueue": {
     "title": "قائمة المراجعة",

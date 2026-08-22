@@ -540,6 +540,11 @@ model Exam {
   courseCode    String // matches FacultyCourseLink.courseCode - no separate Course entity exists
   source        ExamSource
   availableAt   DateTime? // null = draft; see the semantics note above this model
+  // Least-privilege default (false): a student sees NO score for an exam
+  // unless the faculty member explicitly opts in — see the toggle on
+  // /faculty/exams/new and /faculty/exams/:id, and GET
+  // /api/exams/:id/my-result's own gating on this flag.
+  showResultsToStudents Boolean   @default(false)
   createdAt     DateTime   @default(now())
   deletedAt     DateTime?
 

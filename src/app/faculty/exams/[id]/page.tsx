@@ -12,6 +12,7 @@ import { getFacultyNavItems } from "@/components/layout/nav-items";
 import { formatDateTime } from "@/lib/format-date";
 import { BarChart3 } from "lucide-react";
 import { PublishButton } from "./publish-button";
+import { ShowResultsToggle } from "./show-results-toggle";
 
 /** Plain module-level helper so the `Date.now()` call doesn't trip the
  * "impure function during render" lint rule — same pattern as
@@ -72,16 +73,37 @@ export default async function ExamDetailPage({ params }: { params: Promise<{ id:
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Link
-                href={`/faculty/exams/${exam.id}/results`}
-                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-              >
-                <BarChart3 className="size-3.5" data-icon="inline-start" />
+              {/* Full-size, filled button — matches PublishButton's own
+                  prominence level (same default size). Previously an
+                  outline/sm link that read as a minor secondary action;
+                  results are just as central to this page as publishing,
+                  so it gets equal visual weight, not the accent slot
+                  (reserved for the one terracotta CTA per screen — see
+                  PublishButton). */}
+              <Link href={`/faculty/exams/${exam.id}/results`} className={cn(buttonVariants({ variant: "secondary" }))}>
+                <BarChart3 className="size-4" data-icon="inline-start" />
                 {t("resultsTitle")}
               </Link>
               {!exam.availableAt && <PublishButton examId={exam.id} />}
             </div>
           </CardHeader>
+        </Card>
+
+        <Card>
+          <CardContent className="py-4">
+            <ShowResultsToggle
+              exam={{
+                id: exam.id,
+                title: exam.title,
+                availableAt: exam.availableAt ? exam.availableAt.toISOString() : null,
+                showResultsToStudents: exam.showResultsToStudents,
+                questions: exam.questions.map((q) => ({
+                  text: q.text,
+                  options: q.options.map((o) => ({ text: o.text, isCorrect: o.isCorrect })),
+                })),
+              }}
+            />
+          </CardContent>
         </Card>
 
         <Card>

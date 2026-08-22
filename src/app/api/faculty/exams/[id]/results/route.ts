@@ -31,10 +31,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "لم يتم العثور على الاختبار" }, { status: 404 });
   }
 
+  const totalQuestions = await db.question.count({ where: { examId } });
+
   const submissions = await db.examSubmission.findMany({
     where: { examId },
     orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }],
-    include: { student: { select: { fullName: true, email: true } } },
+    include: {
+      student: { select: { fullName: true, email: true } },
+      // Correct count is re-derived from the answers themselves (not just
+      // trusting the stored `score`) so the "X/Y" breakdown always matches
+      // what `score` was computed from — see the completion-time scoring
+      // note in POST /api/exams/:id/answers.
+      answers: { select: { selectedOption: { select: { isCorrect: true } } } },
+    },
   });
 
   return NextResponse.json({
@@ -45,6 +54,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       status: s.status,
       submittedAt: s.completedAt,
       score: s.score,
+      correctCount: s.answers.filter((a) => a.selectedOption?.isCorrect === true).length,
+      totalQuestions,
     })),
   });
 }

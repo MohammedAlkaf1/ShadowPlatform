@@ -403,7 +403,10 @@
     "resultsScoreColumn": "النتيجة",
     "resultsNotSubmittedYet": "لم يُسلَّم بعد",
     "resultsStatusCompleted": "مكتمل",
-    "resultsStatusInProgress": "قيد التنفيذ"
+    "resultsStatusInProgress": "قيد التنفيذ",
+    "resultsScoreUnavailable": "غير متوفرة (تسليم قديم)",
+    "showResultsToStudentsLabel": "إظهار النتيجة للطلاب بعد التسليم",
+    "showResultsToStudentsDescription": "لو فعّلته، يشوف الطالب نتيجته فور تسليم الاختبار بالتطبيق. لو معطّل، يشوف رسالة تسليم عادية بدون أي رقم."
   },
   "SpecialistQueue": {
     "title": "قائمة المراجعة",

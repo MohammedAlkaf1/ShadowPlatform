@@ -832,6 +832,53 @@ database).
 
 ---
 
+## `GET /api/exams/:id/my-result`
+
+Called after the "submitted" screen in the voice-driven exam flow to check
+whether the calling student may see their own score. Gated on
+`Exam.showResultsToStudents` (faculty opt-in, default `false`) — when the
+faculty member hasn't enabled it, this returns `{ "available": false }`
+with **no score field present at all**, not even `null`. Same 404 posture
+as the other student-facing exam endpoints: a draft/scheduled exam or an
+unenrolled caller both return the identical not-found response.
+
+- **Auth required:** Bearer token, role = `student`.
+- **Path parameter:** `id` — the `Exam.id` (UUID).
+
+**Response `200 OK` — results disabled, or not submitted yet**
+
+```json
+{ "available": false }
+```
+
+**Response `200 OK` — results enabled and submission completed**
+
+```json
+{
+  "available": true,
+  "score": 75,
+  "correctCount": 3,
+  "totalQuestions": 4
+}
+```
+
+| Field           | Type          | Notes                                                    |
+|------------------|---------------|--------------------------------------------------------------|
+| available          | boolean       | `false` if `showResultsToStudents` is off, or the caller hasn't completed the exam yet |
+| score               | number        | percentage 0-100; **only present when `available: true`**    |
+| correctCount          | number        | **only present when `available: true`**                     |
+| totalQuestions          | number        | **only present when `available: true`**                    |
+
+**Errors**
+
+| Status | Body                                          | When                                                                 |
+|--------|---------------------------------------------------|---------------------------------------------------------------------|
+| 401    | `{ "error": "غير مصرح" }`                       | missing/invalid/expired token                                        |
+| 403    | `{ "error": "لا تملك صلاحية الوصول" }`          | role != student                                                      |
+| 404    | `{ "error": "لم يتم العثور على الاختبار" }`     | no such exam id, not published, or caller not enrolled in its course |
+
+---
+
 ## `POST /api/tts/generate`
 
 Server-side text-to-speech proxy for reading exam question/option text

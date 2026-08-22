@@ -41,6 +41,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       courseCode: exam.courseCode,
       source: exam.source,
       availableAt: exam.availableAt,
+      showResultsToStudents: exam.showResultsToStudents,
       createdAt: exam.createdAt,
       questions: exam.questions.map((q) => ({
         id: q.id,
@@ -64,6 +65,7 @@ const updateExamSchema = z.object({
   title: z.string().trim().min(1),
   questions: z.array(questionSchema).min(1),
   availableAt: z.string().datetime().nullish(),
+  showResultsToStudents: z.boolean().default(false),
 });
 
 /**
@@ -92,7 +94,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (!parsed.success) {
     return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
   }
-  const { title, questions, availableAt } = parsed.data;
+  const { title, questions, availableAt, showResultsToStudents } = parsed.data;
 
   for (const q of questions) {
     const correctCount = q.options.filter((o) => o.isCorrect).length;
@@ -130,6 +132,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       data: {
         title,
         availableAt: availableAt ? new Date(availableAt) : null,
+        showResultsToStudents,
         questions: {
           create: questions.map((q, qIndex) => ({
             text: q.text,

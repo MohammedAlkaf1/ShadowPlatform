@@ -64,6 +64,9 @@ export function NewExamPanel({ courseCodes }: { courseCodes: string[] }) {
   const [courseCode, setCourseCode] = useState<string>(courseCodes[0] ?? "");
   const [questions, setQuestions] = useState<DraftQuestion[]>([]);
   const [saving, setSaving] = useState(false);
+  // Least-privilege default false — matches Exam.showResultsToStudents'
+  // schema default, the faculty member must explicitly opt in.
+  const [showResultsToStudents, setShowResultsToStudents] = useState(false);
 
   // AI-generation sub-state.
   const [aiQuestionCount, setAiQuestionCount] = useState("10");
@@ -216,6 +219,7 @@ export function NewExamPanel({ courseCodes }: { courseCodes: string[] }) {
           courseCode,
           source: source.current,
           availableAt: publish ? new Date().toISOString() : null,
+          showResultsToStudents,
           questions: questions.map((q) => ({
             text: q.text.trim(),
             options: q.options
@@ -439,6 +443,24 @@ export function NewExamPanel({ courseCodes }: { courseCodes: string[] }) {
               </div>
             ))
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="py-4">
+          <label className="flex items-start gap-3">
+            <Checkbox
+              className="mt-0.5"
+              checked={showResultsToStudents}
+              onCheckedChange={(v) => setShowResultsToStudents(v === true)}
+            />
+            <span className="space-y-0.5">
+              <span className="block text-sm font-medium">{t("showResultsToStudentsLabel")}</span>
+              <span className="block text-xs text-muted-foreground text-pretty">
+                {t("showResultsToStudentsDescription")}
+              </span>
+            </span>
+          </label>
         </CardContent>
       </Card>
 

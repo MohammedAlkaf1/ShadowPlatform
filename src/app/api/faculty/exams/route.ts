@@ -28,6 +28,9 @@ const createExamSchema = z.object({
   source: z.enum(["MANUAL", "AI_GENERATED"]).default("MANUAL"),
   // Absent/null = save as draft. ISO datetime = publish (now or scheduled).
   availableAt: z.string().datetime().nullish(),
+  // Least-privilege default false, matching Exam.showResultsToStudents'
+  // schema default — see that field's comment.
+  showResultsToStudents: z.boolean().default(false),
 });
 
 /**
@@ -92,7 +95,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
   }
-  const { title, courseCode, questions, source, availableAt } = parsed.data;
+  const { title, courseCode, questions, source, availableAt, showResultsToStudents } = parsed.data;
 
   // Every question must have exactly one correct option — checked here,
   // not left to the DB, since QuestionOption.isCorrect has no CHECK
@@ -128,6 +131,7 @@ export async function POST(request: Request) {
       courseCode,
       source,
       availableAt: availableAt ? new Date(availableAt) : null,
+      showResultsToStudents,
       questions: {
         create: questions.map((q, qIndex) => ({
           text: q.text,

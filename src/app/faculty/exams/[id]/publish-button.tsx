@@ -35,6 +35,10 @@ export function PublishButton({ examId }: { examId: string }) {
         body: JSON.stringify({
           title: exam.title,
           availableAt: new Date().toISOString(),
+          // Carried through unchanged from the fetched exam — the update
+          // schema requires this field, and omitting it would silently
+          // reset it to the schema default (false) on every publish.
+          showResultsToStudents: exam.showResultsToStudents,
           questions: exam.questions.map((q: { text: string; options: { text: string; isCorrect: boolean }[] }) => ({
             text: q.text,
             options: q.options.map((o) => ({ text: o.text, isCorrect: o.isCorrect })),

@@ -403,7 +403,10 @@
     "resultsScoreColumn": "Score",
     "resultsNotSubmittedYet": "Not submitted yet",
     "resultsStatusCompleted": "Completed",
-    "resultsStatusInProgress": "In progress"
+    "resultsStatusInProgress": "In progress",
+    "resultsScoreUnavailable": "Unavailable (older submission)",
+    "showResultsToStudentsLabel": "Show result to students after submission",
+    "showResultsToStudentsDescription": "If enabled, the student sees their score right after submitting the exam in the app. If disabled, they see a plain submission confirmation with no number."
   },
   "SpecialistQueue": {
     "title": "Review Queue",

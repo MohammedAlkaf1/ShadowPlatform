@@ -31,10 +31,15 @@ export default async function ExamResultsPage({ params }: { params: Promise<{ id
     notFound();
   }
 
+  const totalQuestions = await db.question.count({ where: { examId: id } });
+
   const submissions = await db.examSubmission.findMany({
     where: { examId: id },
     orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }],
-    include: { student: { select: { fullName: true, email: true } } },
+    include: {
+      student: { select: { fullName: true, email: true } },
+      answers: { select: { selectedOption: { select: { isCorrect: true } } } },
+    },
   });
 
   const navItems = await getFacultyNavItems();
@@ -92,7 +97,15 @@ export default async function ExamResultsPage({ params }: { params: Promise<{ id
                       </TableCell>
                       <TableCell>
                         {s.score !== null ? (
-                          <span dir="ltr">{s.score.toFixed(0)}%</span>
+                          <span dir="ltr">
+                            {s.answers.filter((a) => a.selectedOption?.isCorrect === true).length}/{totalQuestions} (
+                            {s.score.toFixed(0)}%)
+                          </span>
+                        ) : s.status === "completed" ? (
+                          // Legacy data from before ExamSubmission.score existed
+                          // (submissions completed prior to this column being
+                          // added) — never silently blank, always labeled.
+                          <span className="text-muted-foreground">{t("resultsScoreUnavailable")}</span>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}

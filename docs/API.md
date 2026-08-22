@@ -954,5 +954,52 @@ route (`/api/faculty/exams`, `/api/faculty/exams/:id`,
 exams from the web `/faculty/exams` pages only; the student-facing side of
 the exam feature, `GET /api/exams/:id/questions` and
 `POST /api/exams/:id/answers` above, are the only exam endpoints the
-mobile app calls). Ask before assuming any of these will be added to the
+mobile app calls), and every faculty-side lecture-keyterm route
+(`/api/faculty/keyterms`, `/api/faculty/keyterms/extract`,
+`/api/faculty/keyterms/:id` — a faculty member uploads slides and reviews/
+approves the extracted glossary from the web `/faculty/keyterms` page only;
+`GET /api/courses/:courseCode/keyterms` below is the only keyterm endpoint
+the mobile app calls). Ask before assuming any of these will be added to the
 mobile surface — none were in scope for the app.
+
+---
+
+## `GET /api/courses/:courseCode/keyterms`
+
+Returns the approved lecture-keyterm glossary for a course, as a flat list
+of terms — meant to be sent to Deepgram as a keyterm boost-list alongside
+each speech-to-text transcription request in the app's "convert speech to
+text" mode (no model retraining involved, purely per-request keyterm
+boosting).
+
+There is no separate course entity in this schema — `courseCode` is a
+plain string, and a student proves access via a real `FacultyCourseLink`
+row (same enrollment proof used by every other student-facing exam/
+resource endpoint). Since a student's `FacultyCourseLink` rows aren't tied
+to a single faculty member, this aggregates approved keyterms across every
+faculty member the student is actually linked to for `courseCode` — same
+"OR across all my links for this code" approach `GET /api/student/exams`
+uses. Only **approved** terms are ever returned; an AI-extracted draft the
+faculty member hasn't reviewed/approved yet never appears here.
+
+- **Auth required:** Bearer token, role = `student`.
+- **Path parameter:** `courseCode` — the course code string (e.g. `CS301`), not a UUID.
+
+**Response `200 OK`**
+
+```json
+{ "terms": ["API", "Blockchain", "Consensus", "Proof of Work"] }
+```
+
+| Field    | Type      | Notes                                          |
+|-----------|-----------|-----------------------------------------------------|
+| terms       | string[]  | sorted alphabetically; empty array if the course has no approved terms yet |
+
+**Errors**
+
+| Status | Body                                        | When                                                                 |
+|--------|--------------------------------------------------|---------------------------------------------------------------------|
+| 401    | `{ "error": "غير مصرح" }`                       | missing/invalid/expired token                                        |
+| 403    | `{ "error": "لا تملك صلاحية الوصول" }`          | role != student                                                      |
+| 404    | `{ "error": "لم يتم العثور على الملف الشخصي" }` | caller has no StudentProfile                                         |
+| 404    | `{ "error": "لم يتم العثور على المقرر" }`       | caller has no FacultyCourseLink for this courseCode                  |

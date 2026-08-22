@@ -6,15 +6,21 @@ import { GoogleGenAI, Type } from "@google/genai";
  * inside the platform" rule (see AGENTS.md).
  *
  * This file is the ONLY place in the codebase that is allowed to call an
- * external AI model, and it exists solely to support the voice-driven
- * exam-taking feature (Phase 1, MCQ only):
- *   1. Generating draft multiple-choice questions from a faculty member's
- *      uploaded PDF slide deck (see /faculty/exams/new's AI-generation
- *      option and POST /api/faculty/exams/generate).
- *   2. Text-to-speech for reading exam questions aloud to motor-impaired
- *      students (see POST /api/tts/generate).
+ * external AI model. Scoped to these features, each its own explicit,
+ * user-confirmed exception:
+ *   1. Voice-driven exam-taking (Phase 1, MCQ only): generating draft
+ *      multiple-choice questions from a faculty member's uploaded PDF slide
+ *      deck (see /faculty/exams/new's AI-generation option and
+ *      POST /api/faculty/exams/generate), and text-to-speech for reading
+ *      exam questions aloud to motor-impaired students (see
+ *      POST /api/tts/generate).
+ *   2. Lecture keyterm glossary (speech-to-text boosting for
+ *      Deaf/hard-of-hearing students): extracting English technical terms
+ *      from a faculty member's uploaded PDF slide deck (see
+ *      POST /api/faculty/keyterms/extract) — never persisted or exposed to
+ *      students without the faculty member's explicit review/approval.
  *
- * Both call sites require an authenticated faculty/student user and are
+ * All call sites require an authenticated faculty/student user and are
  * server-side only — the API key never reaches the client. This is NOT
  * license to add AI calls anywhere else in the app; every other feature in
  * this codebase remains AI-free by design.
@@ -169,6 +175,92 @@ export async function generateExamQuestionsFromPdf(
       q.options.filter((o) => o.isCorrect === true).length === 1 &&
       q.options.every((o) => typeof o.text === "string" && o.text.trim().length > 0)
   );
+}
+
+/**
+ * Extracts English technical/domain terms (the kind a Deepgram keyterm list
+ * should boost — proper nouns, acronyms, jargon like "blockchain",
+ * "consensus", "API") from a PDF slide deck's content, REGARDLESS of
+ * whether the deck itself is in Arabic or English. Deliberately prompted as
+ * "extract technical terms" rather than "extract English words", so it
+ * doesn't just regex-match Latin script — an incidental English word used
+ * casually is not what this is for; a term a lecturer would actually say
+ * mid-sentence while otherwise speaking Arabic is. Returns plain data, no
+ * DB writes — the caller (POST /api/faculty/keyterms/extract) renders these
+ * as an editable draft; nothing is visible to students until the faculty
+ * member explicitly approves (see LectureKeyterm.approved's schema
+ * comment).
+ */
+export async function extractLectureKeytermsFromPdf(pdfBytes: Buffer): Promise<string[]> {
+  const ai = getClient();
+
+  const responseSchema = {
+    type: Type.OBJECT,
+    properties: {
+      terms: { type: Type.ARRAY, items: { type: Type.STRING } },
+    },
+    required: ["terms"],
+  };
+
+  const prompt =
+    `You are helping a university instructor build a glossary of English ` +
+    `technical/domain terms from their lecture slides, for a speech-to-text ` +
+    `system that needs a boost-list of terms likely to be spoken aloud ` +
+    `mid-lecture (even if the lecture itself is mostly in Arabic). Read the ` +
+    `attached PDF and extract every distinct English technical term, ` +
+    `acronym, proper noun, or piece of jargon that appears — e.g. product/ ` +
+    `algorithm/protocol names, technical vocabulary specific to the ` +
+    `subject, standard abbreviations. Do NOT include ordinary English words ` +
+    `that carry no special/technical meaning in this context (e.g. common ` +
+    `words like "the", "example", "chapter"), and do NOT include Arabic ` +
+    `text. Each term should appear once (deduplicated), in the casing it ` +
+    `most commonly appears in the slides (e.g. "API" not "api").`;
+
+  const response = await ai.models.generateContent({
+    model: GEMINI_MODEL,
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { inlineData: { mimeType: "application/pdf", data: pdfBytes.toString("base64") } },
+          { text: prompt },
+        ],
+      },
+    ],
+    config: {
+      responseMimeType: "application/json",
+      responseSchema,
+    },
+  });
+
+  const raw = response.text;
+  if (!raw) {
+    throw new Error("Gemini returned no content");
+  }
+
+  let parsed: { terms?: unknown[] };
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("Gemini returned invalid JSON");
+  }
+
+  const terms = parsed.terms ?? [];
+
+  // Defensive re-validation + dedup server-side — never trust the model's
+  // structural/uniqueness guarantees even with schema+prompt.
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const t of terms) {
+    if (typeof t !== "string") continue;
+    const trimmed = t.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(trimmed);
+  }
+  return result;
 }
 
 /**

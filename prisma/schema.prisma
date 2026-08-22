@@ -105,6 +105,11 @@ enum QuestionType {
   // instruction. Do not build any UI/API path for a non-MCQ type now.
 }
 
+enum LectureKeytermSource {
+  AI_EXTRACTED
+  MANUAL
+}
+
 enum ExamSubmissionStatus {
   in_progress
   completed
@@ -138,6 +143,7 @@ model Tenant {
   facultyResources      FacultyResource[]
   exams                 Exam[]
   examSubmissions       ExamSubmission[]
+  lectureKeyterms       LectureKeyterm[]
 
   @@map("tenants")
 }
@@ -172,6 +178,7 @@ model User {
   uploadedFacultyResources FacultyResource[]      @relation("FacultyResourceUploadedBy")
   examsAsFaculty           Exam[]                 @relation("ExamFaculty")
   examSubmissionsAsStudent ExamSubmission[]       @relation("ExamSubmissionStudent")
+  lectureKeytermsAsFaculty LectureKeyterm[]       @relation("LectureKeytermFaculty")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -630,4 +637,46 @@ model Answer {
   @@unique([examSubmissionId, questionId])
   @@index([examSubmissionId])
   @@map("answers")
+}
+
+// ─────────────────── Lecture keyterm glossary (speech-to-text boosting) ───────────────────
+//
+// One row per term. Scoped by facultyUserId + courseCode directly on the
+// row (same pattern as Exam.courseCode) rather than through
+// FacultyCourseLink, since FacultyCourseLink is a per-student enrollment
+// row and there is no separate "course" or "lecture" entity in this schema
+// to hang a course-wide glossary off of instead.
+//
+// `approved` (default false) is the review gate: AI-extracted terms start
+// unapproved and are invisible to students until the faculty member
+// reviews/edits the batch and explicitly approves it - same
+// "never auto-publish AI output" rule as the exam feature's
+// Exam.availableAt draft state, just modeled as a boolean here since a
+// keyterm has no scheduling concept. Manually-added terms are approved
+// immediately (no review step makes sense for something the faculty member
+// typed themselves).
+//
+// The glossary ACCUMULATES per course across multiple uploads over the
+// term (see POST /api/faculty/keyterms/extract's doc comment) - re-uploading
+// slides for the same course adds new terms, it never deletes/replaces
+// previously-approved ones.
+model LectureKeyterm {
+  id            String               @id @default(uuid())
+  tenantId      String
+  facultyUserId String
+  courseCode    String // matches FacultyCourseLink.courseCode - no separate Course entity exists
+  term          String
+  source        LectureKeytermSource
+  approved      Boolean              @default(false)
+  createdAt     DateTime             @default(now())
+  deletedAt     DateTime?
+
+  tenant  Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  faculty User   @relation("LectureKeytermFaculty", fields: [facultyUserId], references: [id])
+
+  @@unique([facultyUserId, courseCode, term])
+  @@index([tenantId])
+  @@index([facultyUserId])
+  @@index([tenantId, courseCode])
+  @@map("lecture_keyterms")
 }

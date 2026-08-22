@@ -35,7 +35,12 @@ export type AuditAction =
   | "create_exam"
   | "generate_exam_ai"
   | "publish_exam"
-  | "submit_exam_answer";
+  | "submit_exam_answer"
+  // Lecture keyterm glossary (speech-to-text boosting) — see
+  // prisma/schema.prisma's LectureKeyterm model comment and src/lib/ai.ts.
+  | "extract_lecture_keywords_ai"
+  | "approve_lecture_keyterms"
+  | "delete_lecture_keyterm";
 
 export interface AuditLogInput {
   tenantId: string;

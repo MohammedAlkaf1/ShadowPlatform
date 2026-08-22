@@ -43,7 +43,8 @@
     "faculty": {
       "students": "Dashboard",
       "upload": "Upload for a Student",
-      "exams": "Exams"
+      "exams": "Exams",
+      "keyterms": "Lecture Keyterms"
     },
     "specialist": {
       "queue": "Dashboard",
@@ -407,6 +408,40 @@
     "resultsScoreUnavailable": "Unavailable (older submission)",
     "showResultsToStudentsLabel": "Show result to students after submission",
     "showResultsToStudentsDescription": "If enabled, the student sees their score right after submitting the exam in the app. If disabled, they see a plain submission confirmation with no number."
+  },
+  "FacultyKeyterms": {
+    "title": "Lecture Keyterms",
+    "subtitle": "Upload lecture slides and automatically extract English technical terms to support speech-to-text for Deaf and hard-of-hearing students.",
+    "noCourseLinks": "You have no students linked to your courses yet.",
+    "courseSelectLabel": "Course",
+    "courseSelectPlaceholder": "Choose a course",
+    "extractSectionTitle": "Extract terms from slides",
+    "extractSectionDescription": "Upload a PDF of lecture slides — the system automatically extracts English technical terms as a draft for you to review before approving.",
+    "uploadLabel": "Lecture slides (PDF)",
+    "extractButton": "Extract Terms",
+    "extractingButton": "Extracting...",
+    "errorFileRequired": "Please attach a PDF of the lecture slides",
+    "errorCourseRequired": "Please choose a course",
+    "errorExtractFailed": "Could not extract terms from the file",
+    "infoAllTermsAlreadySaved": "All extracted terms are already in the approved glossary.",
+    "draftSectionTitle": "Review and approve",
+    "draftSectionDescription": "Edit the list as needed (remove or add) before approving — no term is visible to students until explicitly approved.",
+    "addManualTermLabel": "Add a term manually",
+    "addManualTermPlaceholder": "e.g. Blockchain",
+    "addButton": "Add",
+    "errorTermAlreadyExists": "This term already exists",
+    "noDraftTermsYet": "No terms in the draft yet — extract from a file or add manually.",
+    "removeTermButton": "Remove",
+    "sourceAi": "AI-extracted",
+    "sourceManual": "Manual",
+    "approveButton": "Approve {count} terms",
+    "savingButton": "Saving...",
+    "errorNoDraftTerms": "No terms to approve",
+    "errorSaveFailed": "Could not save the terms",
+    "successApproved": "Approved {count} terms and added them to the glossary",
+    "savedSectionTitle": "Approved glossary — {courseCode}",
+    "loading": "Loading...",
+    "noSavedTermsYet": "No approved terms for this course yet."
   },
   "SpecialistQueue": {
     "title": "Review Queue",

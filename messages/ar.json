@@ -43,7 +43,8 @@
     "faculty": {
       "students": "لوحة التحكم",
       "upload": "رفع ملف لطالب",
-      "exams": "الاختبارات"
+      "exams": "الاختبارات",
+      "keyterms": "مصطلحات المحاضرة"
     },
     "specialist": {
       "queue": "لوحة التحكم",
@@ -407,6 +408,40 @@
     "resultsScoreUnavailable": "غير متوفرة (تسليم قديم)",
     "showResultsToStudentsLabel": "إظهار النتيجة للطلاب بعد التسليم",
     "showResultsToStudentsDescription": "لو فعّلته، يشوف الطالب نتيجته فور تسليم الاختبار بالتطبيق. لو معطّل، يشوف رسالة تسليم عادية بدون أي رقم."
+  },
+  "FacultyKeyterms": {
+    "title": "مصطلحات المحاضرة",
+    "subtitle": "ارفع سلايدات المحاضرة، واستخرج المصطلحات التقنية الإنجليزية تلقائيًا لدعم تحويل الكلام لنص للطلاب الصم وضعاف السمع.",
+    "noCourseLinks": "لا يوجد طلاب مرتبطون بمقرراتك بعد.",
+    "courseSelectLabel": "المقرر",
+    "courseSelectPlaceholder": "اختر مقرراً",
+    "extractSectionTitle": "استخراج مصطلحات من سلايدات",
+    "extractSectionDescription": "ارفع ملف PDF لسلايدات المحاضرة — يستخرج النظام المصطلحات التقنية الإنجليزية تلقائيًا كمسودة تراجعها قبل الاعتماد.",
+    "uploadLabel": "سلايدات المحاضرة (PDF)",
+    "extractButton": "استخراج المصطلحات",
+    "extractingButton": "جاري الاستخراج...",
+    "errorFileRequired": "الرجاء إرفاق ملف PDF لسلايدات المحاضرة",
+    "errorCourseRequired": "الرجاء اختيار مقرر",
+    "errorExtractFailed": "تعذر استخراج المصطلحات من الملف",
+    "infoAllTermsAlreadySaved": "كل المصطلحات المستخرجة موجودة أصلًا بالمعجم المعتمد.",
+    "draftSectionTitle": "مراجعة واعتماد",
+    "draftSectionDescription": "عدّل القائمة كما تشاء (احذف أو أضف) قبل الاعتماد — لن يظهر أي مصطلح للطلاب قبل اعتماده صراحةً.",
+    "addManualTermLabel": "إضافة مصطلح يدويًا",
+    "addManualTermPlaceholder": "مثال: Blockchain",
+    "addButton": "إضافة",
+    "errorTermAlreadyExists": "هذا المصطلح موجود أصلًا",
+    "noDraftTermsYet": "لا توجد مصطلحات بالمسودة بعد — استخرج من ملف أو أضف يدويًا.",
+    "removeTermButton": "حذف",
+    "sourceAi": "بالذكاء الاصطناعي",
+    "sourceManual": "يدوي",
+    "approveButton": "اعتماد {count} مصطلح",
+    "savingButton": "جاري الحفظ...",
+    "errorNoDraftTerms": "لا توجد مصطلحات لاعتمادها",
+    "errorSaveFailed": "تعذر حفظ المصطلحات",
+    "successApproved": "تم اعتماد {count} مصطلح وإضافتها للمعجم",
+    "savedSectionTitle": "المعجم المعتمد — {courseCode}",
+    "loading": "جاري التحميل...",
+    "noSavedTermsYet": "لا توجد مصطلحات معتمدة لهذا المقرر بعد."
   },
   "SpecialistQueue": {
     "title": "قائمة المراجعة",

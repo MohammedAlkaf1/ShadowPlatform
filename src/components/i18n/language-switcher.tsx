@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { Loader2 } from "lucide-react";
+import { Globe, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LOCALE_COOKIE_NAME, type AppLocale } from "@/lib/locale";
 import { cn } from "@/lib/utils";
@@ -21,7 +21,7 @@ import { setLocalePreference } from "./actions";
  * Persistence logic (cookie + setLocalePreference + router.refresh) is
  * unchanged — only the rendered markup changed from 2 buttons to 1.
  */
-export function LanguageSwitcher({ className }: { className?: string }) {
+export function LanguageSwitcher({ className, iconOnly }: { className?: string; iconOnly?: boolean }) {
   const locale = useLocale() as AppLocale;
   const t = useTranslations("LanguageSwitcher");
   const router = useRouter();
@@ -36,6 +36,23 @@ export function LanguageSwitcher({ className }: { className?: string }) {
       await setLocalePreference(nextLocale);
       router.refresh();
     });
+  }
+
+  if (iconOnly) {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        size="icon-lg"
+        className={cn("rounded-xl bg-background", isPending && "opacity-60", className)}
+        disabled={isPending}
+        onClick={handleClick}
+        aria-label={t("label")}
+        aria-busy={isPending}
+      >
+        {isPending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Globe className="size-4" />}
+      </Button>
+    );
   }
 
   return (

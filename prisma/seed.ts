@@ -127,12 +127,13 @@ async function main() {
   async function upsertUser(
     email: string,
     role: "student" | "faculty" | "specialist" | "admin",
-    fullName: string
+    fullName: string,
+    fullNameEn: string
   ) {
     return prisma.user.upsert({
       where: { tenantId_email: { tenantId: tenant.id, email } },
-      update: { fullName },
-      create: { tenantId: tenant.id, email, fullName, passwordHash, role, active: true },
+      update: { fullName, fullNameEn },
+      create: { tenantId: tenant.id, email, fullName, fullNameEn, passwordHash, role, active: true },
     });
   }
 
@@ -142,26 +143,78 @@ async function main() {
   // fullName is displayed, which produced duplicated, differently-worded
   // role info (e.g. "سارة عبدالله الأستاذة" next to a badge reading "عضو
   // هيئة تدريس").
-  const studentUser = await upsertUser("student@demo.shadow.sa", "student", "أحمد محمد");
-  const facultyUser = await upsertUser("faculty@demo.shadow.sa", "faculty", "سارة عبدالله");
-  const specialistUser = await upsertUser("specialist@demo.shadow.sa", "specialist", "نورة سعيد");
-  const adminUser = await upsertUser("admin@demo.shadow.sa", "admin", "خالد إبراهيم");
+  // A previous seed revision created a SEPARATE "ريم القحطاني" user under
+  // 441204567@student.ksu.edu.sa for a thin, unrelated demo scenario. That
+  // scenario has since been merged into the primary student below, so this
+  // is now the primary student's real, permanent identity — but she
+  // already has her own real AuditLog rows (append-only, never deleted, by
+  // design — see audit.ts), so she can't be deleted and re-created under a
+  // renamed "أحمد محمد" row. Instead: if she already exists, reuse her
+  // row as-is (do NOT rename "أحمد محمد" — leave that old row alone,
+  // orphaned but harmless, same as other unused historical seed rows);
+  // otherwise (a fresh DB that never had her), rename "أحمد محمد" in place,
+  // same reasoning as the specialist rename below.
+  const existingReem = await prisma.user.findFirst({
+    where: { tenantId: tenant.id, email: "441204567@student.ksu.edu.sa" },
+  });
+  const staleStudent = existingReem
+    ? null
+    : await prisma.user.findFirst({ where: { tenantId: tenant.id, email: "student@demo.shadow.sa" } });
+  const studentUser =
+    existingReem ??
+    (staleStudent
+      ? await prisma.user.update({
+          where: { id: staleStudent.id },
+          data: { email: "441204567@student.ksu.edu.sa", fullName: "ريم القحطاني", fullNameEn: "Reem Alqahtani" },
+        })
+      : await upsertUser("441204567@student.ksu.edu.sa", "student", "ريم القحطاني", "Reem Alqahtani"));
+  const facultyUser = await upsertUser("faculty@demo.shadow.sa", "faculty", "سارة عبدالله", "Sarah Abdullah");
+  // Renamed from "نورة سعيد" / specialist@demo.shadow.sa. Renaming in place
+  // (rather than upserting under the new email) so environments seeded
+  // before this rename don't end up with an orphaned duplicate row.
+  const staleSpecialist = await prisma.user.findFirst({
+    where: { tenantId: tenant.id, email: "specialist@demo.shadow.sa" },
+  });
+  const specialistUser = staleSpecialist
+    ? await prisma.user.update({
+        where: { id: staleSpecialist.id },
+        data: { email: "h.alzahrani@ksu.edu.sa", fullName: "هند الزهراني", fullNameEn: "Hind Alzahrani" },
+      })
+    : await upsertUser("h.alzahrani@ksu.edu.sa", "specialist", "هند الزهراني", "Hind Alzahrani");
+  const adminUser = await upsertUser("admin@demo.shadow.sa", "admin", "خالد إبراهيم", "Khalid Ibrahim");
 
   // A second student, unassigned to any specialist yet, to show the
   // "assignment is manual" boundary — not enough on its own to prove it in
   // seed data, but keeps /specialist/queue from looking like a single-row demo.
-  const secondStudentUser = await upsertUser("student2@demo.shadow.sa", "student", "منى فهد");
+  const secondStudentUser = await upsertUser("student2@demo.shadow.sa", "student", "منى فهد", "Mona Fahad");
 
   const studentProfile = await prisma.studentProfile.upsert({
     where: { userId: studentUser.id },
-    update: {},
+    // Explicit update (not `{}`) so a re-seed of an already-seeded DB
+    // actually refreshes these fields to Reem's identity, and clears
+    // `deletedAt` — this profile is the same row that used to be "أحمد
+    // محمد" and had accumulated real interactive-testing state earlier
+    // this session, including a manual soft-delete during that testing.
+    update: {
+      studentNumber: "441204567",
+      major: "إدارة الأعمال",
+      majorEn: "Business Administration",
+      academicStage: "السنة الثانية",
+      academicStageEn: "Second Year",
+      phone: "+966500000003",
+      requestStatus: "approved",
+      verified: true,
+      deletedAt: null,
+    },
     create: {
       userId: studentUser.id,
       tenantId: tenant.id,
-      studentNumber: "441012345",
-      major: "علوم الحاسب",
-      academicStage: "السنة الثالثة",
-      phone: "+966500000001",
+      studentNumber: "441204567",
+      major: "إدارة الأعمال",
+      majorEn: "Business Administration",
+      academicStage: "السنة الثانية",
+      academicStageEn: "Second Year",
+      phone: "+966500000003",
       requestStatus: "approved",
       verified: true,
     },
@@ -175,7 +228,9 @@ async function main() {
       tenantId: tenant.id,
       studentNumber: "441098765",
       major: "إدارة الأعمال",
+      majorEn: "Business Administration",
       academicStage: "السنة الأولى",
+      academicStageEn: "First Year",
       phone: "+966500000002",
       requestStatus: "under_review",
       verified: true,
@@ -199,23 +254,87 @@ async function main() {
     },
   });
 
-  // ── Demo document (metadata only — no binary in DB) ─────────────────
-  await prisma.document.upsert({
-    where: { id: "00000000-0000-0000-0000-0000000d0c01" },
-    update: {},
-    create: {
+  // ── Demo documents for "مستنداتي" (metadata only — no binary in DB) ──
+  // Fixed createdAt values (not the default now()) so these always sort in
+  // the same relative order regardless of which seed run actually inserted
+  // each row.
+  const demoDocuments = [
+    {
       id: "00000000-0000-0000-0000-0000000d0c01",
-      tenantId: tenant.id,
+      filename: "تقرير التقييم الأكاديمي",
+      filenameEn: "Academic Evaluation Report",
+      sizeBytes: 1_258_291,
+      createdAt: new Date("2025-08-02T10:00:00Z"),
+      status: "reviewed" as const,
+      documentType: "تقرير طبي وتقييم أكاديمي",
+      documentTypeEn: "Medical report and academic evaluation",
+      issuingEntity: "مستشفى الملك خالد الجامعي",
+      issuingEntityEn: "King Khalid University Hospital",
+    },
+    {
+      id: "00000000-0000-0000-0000-0000000d0c02",
+      filename: "خطاب الطبيب المعالج",
+      filenameEn: "Attending Physician Letter",
+      sizeBytes: 838_861,
+      createdAt: new Date("2025-08-01T10:00:00Z"),
+      status: "reviewed" as const,
+      documentType: "خطاب طبي",
+      documentTypeEn: "Medical letter",
+      issuingEntity: "مستشفى الملك خالد الجامعي",
+      issuingEntityEn: "King Khalid University Hospital",
+    },
+    {
+      id: "00000000-0000-0000-0000-0000000d0c03",
+      filename: "كشف الدرجات الجامعي",
+      filenameEn: "University Transcript",
+      sizeBytes: 524_288,
+      createdAt: new Date("2025-08-01T09:00:00Z"),
+      status: "reviewed" as const,
+      documentType: null,
+      documentTypeEn: null,
+      issuingEntity: null,
+      issuingEntityEn: null,
+    },
+    {
+      id: "00000000-0000-0000-0000-0000000d0c04",
+      filename: "استمارة طلب الإتاحة",
+      filenameEn: "Accommodation Request Form",
+      sizeBytes: 314_573,
+      createdAt: new Date("2025-08-02T09:00:00Z"),
+      status: "needs_update" as const,
+      documentType: null,
+      documentTypeEn: null,
+      issuingEntity: null,
+      issuingEntityEn: null,
+    },
+  ];
+  for (const doc of demoDocuments) {
+    const shared = {
       studentProfileId: studentProfile.id,
       uploadedByUserId: studentUser.id,
-      objectKey: `${tenant.id}/documents/${studentProfile.id}/demo-report.pdf.enc`,
-      originalFilename: "التقرير-الطبي.pdf",
+      originalFilename: doc.filename,
+      originalFilenameEn: doc.filenameEn,
       mimeType: "application/pdf",
-      sizeBytes: 245_760,
-      encryptionKeyRef: "local-env-key-v1",
-      status: "reviewed",
-    },
-  });
+      sizeBytes: doc.sizeBytes,
+      status: doc.status,
+      documentType: doc.documentType,
+      documentTypeEn: doc.documentTypeEn,
+      issuingEntity: doc.issuingEntity,
+      issuingEntityEn: doc.issuingEntityEn,
+      createdAt: doc.createdAt,
+    };
+    await prisma.document.upsert({
+      where: { id: doc.id },
+      update: shared,
+      create: {
+        id: doc.id,
+        tenantId: tenant.id,
+        objectKey: `${tenant.id}/documents/${studentProfile.id}/${doc.id}.pdf.enc`,
+        encryptionKeyRef: "local-env-key-v1",
+        ...shared,
+      },
+    });
+  }
 
   // ── Demo assessment + support plan + tool activations ───────────────
   const assessment = await prisma.assessment.upsert({
@@ -305,9 +424,64 @@ async function main() {
     },
   });
 
+  // ── Faculty resources shared with the primary student ────────────────
+  const facultyResourcesData = [
+    {
+      id: "00000000-0000-0000-0000-0000000f0001",
+      title: "ملخص إحصاء 201 – الأسبوع الرابع",
+      titleEn: "STAT 201 Summary – Week 4",
+      filename: "stat201-week4-summary.pdf",
+      category: "simplified_content" as const,
+      note: "ملف مخصص لك",
+      noteEn: "File customized for you",
+    },
+    {
+      id: "00000000-0000-0000-0000-0000000f0002",
+      title: "شرائح المحاضرة السابعة",
+      titleEn: "Lecture 7 Slides",
+      filename: "cs301-lecture7-slides.pdf",
+      category: "visual_adjustment" as const,
+      note: null,
+      noteEn: null,
+    },
+  ];
+  for (const res of facultyResourcesData) {
+    const shared = {
+      tenantId: tenant.id,
+      uploadedByUserId: facultyUser.id,
+      studentProfileId: studentProfile.id,
+      courseCode: "CS301",
+      objectKey: `${tenant.id}/faculty-resources/${studentProfile.id}/${res.filename}`,
+      originalFilename: res.filename,
+      mimeType: "application/pdf",
+      sizeBytes: 180_224,
+      title: res.title,
+      titleEn: res.titleEn,
+      category: res.category,
+      note: res.note,
+      noteEn: res.noteEn,
+    };
+    await prisma.facultyResource.upsert({
+      where: { id: res.id },
+      update: shared,
+      create: { id: res.id, ...shared },
+    });
+  }
+
   // ── Demo usage event + mentor alert ─────────────────────────────────
-  const usageEvent = await prisma.usageEvent.create({
-    data: {
+  // Fixed ids (like the demoDocuments block above) so reseeding updates
+  // this one demo alert in place instead of accumulating a fresh
+  // duplicate row every run.
+  const usageEvent = await prisma.usageEvent.upsert({
+    where: { id: "00000000-0000-0000-0000-00000ue0001" },
+    update: {
+      tenantId: tenant.id,
+      studentProfileId: studentProfile.id,
+      eventType: "focus_mode_session_missed",
+      payload: { sessionsMissedInRow: 3 },
+    },
+    create: {
+      id: "00000000-0000-0000-0000-00000ue0001",
       tenantId: tenant.id,
       studentProfileId: studentProfile.id,
       eventType: "focus_mode_session_missed",
@@ -316,17 +490,30 @@ async function main() {
     },
   });
 
-  await prisma.mentorAlert.create({
-    data: {
-      tenantId: tenant.id,
-      studentProfileId: studentProfile.id,
-      assignedSpecialistId: specialistUser.id,
-      triggeredByUsageEventId: usageEvent.id,
-      alertType: "engagement_drop",
-      severity: "medium",
-      status: "open",
-      message: "الطالب لم يستخدم وضع التركيز في آخر 3 جلسات متتالية.",
-    },
+  const mentorAlertShared = {
+    tenantId: tenant.id,
+    studentProfileId: studentProfile.id,
+    assignedSpecialistId: specialistUser.id,
+    triggeredByUsageEventId: usageEvent.id,
+    alertType: "engagement_drop",
+    severity: "medium" as const,
+    message: "الطالب لم يستخدم وضع التركيز في آخر 3 جلسات متتالية.",
+    messageEn: "The student hasn't used Focus Mode in the last 3 consecutive sessions.",
+  };
+  await prisma.mentorAlert.upsert({
+    where: { id: "00000000-0000-0000-0000-00000ma0001" },
+    update: mentorAlertShared,
+    create: { id: "00000000-0000-0000-0000-00000ma0001", status: "open", ...mentorAlertShared },
+  });
+
+  // Clean up stale duplicate demo alerts created by earlier non-idempotent
+  // seed runs (before this upsert existed) — real leftover rows, not fake
+  // data, but they shouldn't keep multiplying every reseed.
+  await prisma.mentorAlert.deleteMany({
+    where: { tenantId: tenant.id, id: { not: "00000000-0000-0000-0000-00000ma0001" }, alertType: "engagement_drop" },
+  });
+  await prisma.usageEvent.deleteMany({
+    where: { tenantId: tenant.id, id: { not: "00000000-0000-0000-0000-00000ue0001" }, eventType: "focus_mode_session_missed" },
   });
 
   // ── Audit trail for the seed's own document review ──────────────────
@@ -344,9 +531,9 @@ async function main() {
   console.log({
     tenant: tenant.nameEn,
     demoLogins: {
-      student: "student@demo.shadow.sa",
+      student: "441204567@student.ksu.edu.sa",
       faculty: "faculty@demo.shadow.sa",
-      specialist: "specialist@demo.shadow.sa",
+      specialist: "h.alzahrani@ksu.edu.sa",
       admin: "admin@demo.shadow.sa",
       password: DEMO_PASSWORD,
     },

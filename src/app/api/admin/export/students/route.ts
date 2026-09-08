@@ -1,21 +1,9 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { requireRole, AuthError } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { logAudit } from "@/lib/audit";
 import { toCsv } from "@/lib/csv";
-
-const REQUEST_STATUS_LABELS: Record<string, string> = {
-  pending: "قيد الانتظار",
-  under_review: "قيد المراجعة",
-  approved: "مقبول",
-  rejected: "مرفوض",
-};
-
-const PLAN_STATUS_LABELS: Record<string, string> = {
-  draft: "مسودة",
-  approved: "معتمدة",
-  expired: "منتهية",
-};
 
 /**
  * GET /api/admin/export/students — CSV export for admins.
@@ -39,6 +27,19 @@ export async function GET() {
     throw err;
   }
 
+  const t = await getTranslations("Common.csvExports");
+  const REQUEST_STATUS_LABELS: Record<string, string> = {
+    pending: t("requestStatusPending"),
+    under_review: t("requestStatusUnderReview"),
+    approved: t("requestStatusApproved"),
+    rejected: t("requestStatusRejected"),
+  };
+  const PLAN_STATUS_LABELS: Record<string, string> = {
+    draft: t("planStatusDraft"),
+    approved: t("planStatusApproved"),
+    expired: t("planStatusExpired"),
+  };
+
   const db = getTenantScopedPrisma(ctx.tenantId);
 
   const students = await db.studentProfile.findMany({
@@ -56,12 +57,12 @@ export async function GET() {
     orderBy: { createdAt: "asc" },
   });
 
-  const headers = ["اسم الطالب", "حالة الطلب", "تاريخ التسجيل", "حالة خطة الدعم"];
+  const headers = [t("headerStudentName"), t("headerRequestStatus"), t("headerRegistrationDate"), t("headerPlanStatus")];
   const rows = students.map((s) => [
     s.user.email,
     REQUEST_STATUS_LABELS[s.requestStatus] ?? s.requestStatus,
     s.createdAt.toISOString().slice(0, 10),
-    s.supportPlans[0] ? PLAN_STATUS_LABELS[s.supportPlans[0].status] ?? s.supportPlans[0].status : "لا توجد خطة",
+    s.supportPlans[0] ? PLAN_STATUS_LABELS[s.supportPlans[0].status] ?? s.supportPlans[0].status : t("noPlan"),
   ]);
 
   const csv = toCsv(headers, rows);

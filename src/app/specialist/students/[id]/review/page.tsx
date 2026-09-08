@@ -6,23 +6,37 @@ import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { assertSpecialistAssigned } from "@/lib/specialist-access";
 import { logAudit } from "@/lib/audit";
 import { formatDate } from "@/lib/format-date";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EchoCard } from "@/components/ui/echo-card";
-import { buttonVariants } from "@/components/ui/button";
+import { localize } from "@/lib/localize";
 import { cn } from "@/lib/utils";
-import { FileText } from "lucide-react";
-import { ReviewForm } from "./review-form";
-import type { ToolCodeValue } from "@/lib/tool-codes";
 import { AppShell } from "@/components/layout/app-shell";
 import { getSpecialistNavItems } from "@/components/layout/nav-items";
+import { InfoTab } from "./info-tab";
+import { DocumentsTab } from "./documents-tab";
+import { PlanTab } from "./plan-tab";
+import { ChevronLeft } from "lucide-react";
+import type { ToolCodeValue } from "@/lib/tool-codes";
+import type { RequestStatus } from "@prisma/client";
+
+const TABS = ["info", "documents", "plan"] as const;
+type Tab = (typeof TABS)[number];
 
 /**
- * Batch 3: the assess and plan screens merged into ONE "مراجعة وثيقة"
- * document-review screen, reached by clicking a queue row (see
- * /specialist/queue's "review"/"assess" links, and the old /assess and
- * /plan routes, which now just redirect here — see their page.tsx files).
+ * Case File view — replaces the old "مراجعة وثيقة" single-scroll screen
+ * (long checkbox list, no tabs) with the 3-tab layout: student info +
+ * internal assessment, documents, support plan. Reached exclusively via the
+ * queue table's single "مراجعة" action now (the separate "تفاصيل" page/
+ * route this used to link to is gone — its real content is folded into the
+ * "معلومات الطالب" tab below).
  */
-export default async function ReviewStudentPage({ params }: { params: Promise<{ id: string }> }) {
+const DOCS_PAGE_SIZE = 5;
+
+export default async function CaseFilePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string; docPage?: string }>;
+}) {
   const { id: studentProfileId } = await params;
   const ctx = await requireRole("specialist", "admin");
   await assertSpecialistAssigned(ctx, studentProfileId);
@@ -32,12 +46,16 @@ export default async function ReviewStudentPage({ params }: { params: Promise<{ 
   const tDocumentStatus = await getTranslations("Common.documentStatus");
   const tSupportLevel = await getTranslations("Common.supportLevel");
   const locale = await getLocale();
+  const { tab: tabParam, docPage: docPageParam } = await searchParams;
+  const tab: Tab = TABS.includes(tabParam as Tab) ? (tabParam as Tab) : "info";
+  const docPage = Math.max(1, Number(docPageParam) || 1);
 
   const student = await db.studentProfile.findUnique({
     where: { id: studentProfileId },
-    include: { user: { select: { email: true, fullName: true } } },
+    include: { user: { select: { email: true, fullName: true, fullNameEn: true } } },
   });
   if (!student) notFound();
+  const studentName = localize(student.user.fullName, student.user.fullNameEn, locale);
 
   await logAudit({
     tenantId: ctx.tenantId,
@@ -56,17 +74,17 @@ export default async function ReviewStudentPage({ params }: { params: Promise<{ 
       orderBy: { assessedAt: "desc" },
       include: { condition: { include: { category: true } }, supportLevel: true },
     }),
-    // Same download route the specialist detail page already uses
-    // (GET /api/documents/:id — specialist/admin-only, audit-logged per
-    // open). Only the 5 most recent are shown here; the full history is
-    // still on /specialist/students/[id].
     db.document.findMany({
       where: { studentProfileId, deletedAt: null },
       orderBy: { createdAt: "desc" },
-      take: 5,
-      select: { id: true, originalFilename: true, createdAt: true, status: true },
+      select: { id: true, originalFilename: true, originalFilenameEn: true, createdAt: true, status: true },
     }),
   ]);
+
+  const documentsLocalized = documents.map((d) => ({
+    ...d,
+    originalFilename: localize(d.originalFilename, d.originalFilenameEn, locale),
+  }));
 
   const categories = categoriesRaw.map((c) => ({
     id: c.id,
@@ -104,125 +122,134 @@ export default async function ReviewStudentPage({ params }: { params: Promise<{ 
         id: planRaw.id,
         status: planRaw.status,
         initialEnabledCodes: planRaw.toolActivations.map((ta) => ta.toolCode) as ToolCodeValue[],
+        initialConfigs: Object.fromEntries(
+          planRaw.toolActivations.map((ta) => [ta.toolCode, (ta.config ?? {}) as { courses?: string; startDate?: string; visible?: string }])
+        ) as Record<ToolCodeValue, { courses?: string; startDate?: string; visible?: string }>,
       }
     : null;
 
+  const STATUS_LABEL: Record<RequestStatus, string> = {
+    pending: t("statusPending"),
+    under_review: t("statusPending"),
+    approved: t("statusDone"),
+    rejected: t("statusReturned"),
+  };
+
   const navItems = await getSpecialistNavItems();
+
+  function tabHref(tb: Tab) {
+    return tb === "info" ? `/specialist/students/${studentProfileId}/review` : `/specialist/students/${studentProfileId}/review?tab=${tb}`;
+  }
+
+  const totalDocuments = documentsLocalized.length;
+  const totalDocPages = Math.max(1, Math.ceil(totalDocuments / DOCS_PAGE_SIZE));
+  const currentDocPage = Math.min(docPage, totalDocPages);
+  const pagedDocuments = documentsLocalized.slice((currentDocPage - 1) * DOCS_PAGE_SIZE, currentDocPage * DOCS_PAGE_SIZE);
+
+  function docPageHref(targetPage: number) {
+    return `/specialist/students/${studentProfileId}/review?tab=documents&docPage=${targetPage}`;
+  }
 
   return (
     <AppShell
       navItems={navItems}
       role={ctx.role}
       userEmail={ctx.userEmail ?? ""}
+      userName={ctx.userFullName ?? ""}
       tenantName={ctx.tenantName ?? ""}
       title={t("title")}
-      subtitle={student.user.fullName}
+      subtitle=""
     >
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          {/* Batch 8: dir="ltr" on an inline span, not the block <p> —
-              see admin/audit-log/page.tsx. */}
-          <p className="text-base font-semibold text-foreground">{student.user.fullName}</p>
-          <p className="text-sm text-muted-foreground">
-            <span dir="ltr">{student.user.email}</span>
-          </p>
+      <div className="mx-auto max-w-5xl space-y-5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Link
+            href="/specialist/queue"
+            className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="size-[15px] rtl:rotate-180" />
+            {t("casesBreadcrumb")}
+          </Link>
+          <span className="text-xl font-extrabold text-foreground">{studentName}</span>
+          <span className="size-[5px] shrink-0 rounded-full bg-muted-foreground" />
+          <span className="text-[13px] font-bold text-accent">{STATUS_LABEL[student.requestStatus]}</span>
         </div>
-        <Link href={`/specialist/students/${studentProfileId}`} className={cn(buttonVariants({ variant: "outline" }))}>
-          {t("fullHistoryButton")}
-        </Link>
-      </div>
 
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
-        {/* Document-info panel: the one EchoCard on this screen. flex-[1.7]
-            matches the reference file's isDoc layout ratio exactly (its
-            hero-row dashboard cards use 1.6; this document-review screen
-            uses 1.7 for its doc-info panel specifically). */}
-        <EchoCard className="lg:flex-[1.7]">
-          <Card className="h-full rounded-[24px]">
-            <CardHeader>
-              <CardTitle className="text-base">{t("documentsTitle")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {/* Preview placeholder — matches the mockup's visual treatment
-                  exactly ("document preview served from secure storage").
-                  Real PDF rendering is out of scope for this batch; the
-                  actual open/download affordance below each row already
-                  reuses the real GET /api/documents/:id route (commit
-                  fac6a48), so nothing about document access regresses. */}
-              {/* h-[220px]: closer to the reference file's 280px preview
-                  box height (kept full-width rather than a fixed 216px, so
-                  it reads correctly at any card width instead of just the
-                  mock's fixed 1440px canvas). rounded-[16px] rather than
-                  the default rounded-lg to match the reference's document-
-                  facts card corner treatment. */}
-              <div className="flex h-[220px] items-center justify-center rounded-[16px] border border-dashed border-border bg-muted/40 text-center text-xs text-muted-foreground">
-                {t("previewPlaceholder")}
-              </div>
-              {documents.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">{t("noDocuments")}</p>
-              ) : (
-                <ul className="divide-y divide-border">
-                  {documents.map((doc) => (
-                    <li key={doc.id} className="flex items-center justify-between gap-3 py-3">
-                      <div className="flex min-w-0 items-start gap-2">
-                        <FileText className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                        <div className="min-w-0">
-                          <p className="text-pretty text-sm font-medium">{doc.originalFilename}</p>
-                          {/* Batch 7: not a table cell (no TableHead to
-                              misalign against), but the same anti-pattern
-                              — only the date portion needs LTR ordering;
-                              the translated status word should follow the
-                              page's natural direction, not be forced
-                              left. */}
-                          <p className="text-xs text-muted-foreground">
-                            <span dir="ltr">{formatDate(doc.createdAt, locale)}</span> ·{" "}
-                            {tDocumentStatus(doc.status === "reviewed" ? "reviewed" : "pending")}
-                          </p>
-                        </div>
-                      </div>
-                      <a
-                        href={`/api/documents/${doc.id}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={cn(buttonVariants({ size: "sm", variant: "outline" }), "shrink-0")}
-                      >
-                        {t("openButton")}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+        <div className="flex gap-0.5 border-b border-border">
+          {TABS.map((tb) => (
+            <Link
+              key={tb}
+              href={tabHref(tb)}
+              className={cn(
+                "-mb-px flex min-h-11 items-center border-b-[2.5px] px-[18px] text-sm font-bold",
+                tb === tab ? "border-accent text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
               )}
-            </CardContent>
-          </Card>
-        </EchoCard>
+            >
+              {t(`tab_${tb}`)}
+            </Link>
+          ))}
+        </div>
 
-        <Card className="lg:flex-1">
-          <CardHeader>
-            <CardTitle className="text-base">{t("classifyTitle")}</CardTitle>
-            <p className="text-xs text-muted-foreground">{t("classifySub")}</p>
-          </CardHeader>
-          <CardContent>
-            <ReviewForm
-              studentProfileId={studentProfileId}
-              categories={categories}
-              supportLevels={supportLevels}
-              latestAssessment={latestAssessment}
-              plan={plan}
-            />
-          </CardContent>
-        </Card>
+        {tab === "info" && (
+          <InfoTab
+            fields={[
+              { label: t("fieldName"), value: studentName },
+              { label: t("fieldStudentNumber"), value: student.studentNumber || "—" },
+              { label: t("fieldMajor"), value: localize(student.major, student.majorEn, locale) },
+              { label: t("fieldStage"), value: localize(student.academicStage, student.academicStageEn, locale) },
+              // No "academic advisor" field exists anywhere in this schema
+              // (StudentProfile has no advisor relation/column) — shown as
+              // "—" rather than invented, same as every other missing-data
+              // case this session.
+              { label: t("fieldAdvisor"), value: "—" },
+              { label: t("fieldRequestDate"), value: formatDate(student.createdAt, locale) },
+            ]}
+            studentProfileId={studentProfileId}
+            categories={categories}
+            supportLevels={supportLevels}
+            latestAssessment={latestAssessment}
+          />
+        )}
+
+        {tab === "documents" && (
+          <DocumentsTab
+            documents={pagedDocuments}
+            locale={locale}
+            labels={{
+              tableName: t("tableFile"),
+              tableDate: t("tableUploadDate"),
+              tableStatus: t("tableStatus"),
+              tableAction: t("openButton"),
+              reviewed: tDocumentStatus("reviewed"),
+              pending: tDocumentStatus("pending"),
+              needsUpdate: tDocumentStatus("needs_update"),
+              viewButton: t("openButton"),
+              noDocuments: t("noDocuments"),
+            }}
+            pagination={
+              totalDocuments > 0
+                ? {
+                    prevHref: currentDocPage > 1 ? docPageHref(currentDocPage - 1) : null,
+                    nextHref: currentDocPage < totalDocPages ? docPageHref(currentDocPage + 1) : null,
+                    showingLabel: t("docsShowingCount", {
+                      from: (currentDocPage - 1) * DOCS_PAGE_SIZE + 1,
+                      to: Math.min(currentDocPage * DOCS_PAGE_SIZE, totalDocuments),
+                      total: totalDocuments,
+                    }),
+                  }
+                : null
+            }
+          />
+        )}
+
+        {tab === "plan" && (
+          <PlanTab
+            studentProfileId={studentProfileId}
+            supportLevels={supportLevels}
+            latestAssessmentId={latestAssessment?.id ?? null}
+            plan={plan}
+          />
+        )}
       </div>
-
-      {/* Hidden note: real boundary — this screen (classification, plan
-          approval) is visible only to the specialist assigned to this
-          student (or an admin, who has university-wide access but no
-          classify/approve UI of their own elsewhere). */}
-      <p className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span aria-hidden="true" className="size-[7px] shrink-0 rounded-full bg-muted-foreground" />
-        {t("hiddenNote")}
-      </p>
-    </div>
     </AppShell>
   );
 }

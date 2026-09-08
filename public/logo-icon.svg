@@ -1,31 +1,22 @@
-<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="شادو">
+  <rect width="512" height="512" rx="118" fill="#1E2A3A"></rect>
+  <g transform="translate(256,268) scale(0.74) translate(-256,-256)">
   <defs>
-    <linearGradient id="navyGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#25384C"></stop>
-      <stop offset="100%" stop-color="#182231"></stop>
+    <linearGradient id="arcG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F7F3EC"></stop>
+      <stop offset="1" stop-color="#E3D9C8"></stop>
     </linearGradient>
-    <linearGradient id="terracottaGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#C56E43"></stop>
-      <stop offset="100%" stop-color="#AB5730"></stop>
+    <linearGradient id="bodyG" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#E5A17C"></stop>
+      <stop offset="1" stop-color="#C97A50"></stop>
     </linearGradient>
-    <filter id="softShadow3" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#0D1520" flood-opacity="0.4"></feDropShadow>
-    </filter>
-    <filter id="barShadow3" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#5C2E15" flood-opacity="0.4"></feDropShadow>
-    </filter>
   </defs>
-
-  <rect x="32" y="32" width="448" height="448" rx="100" fill="url(#navyGrad3)" filter="url(#softShadow3)"></rect>
-  <rect x="32" y="32" width="448" height="180" rx="100" fill="#FFFFFF" opacity="0.025"></rect>
-
-  
-  <path d="M 128 330&#xA;           L 128 330&#xA;           C 150 330, 158 268, 182 268&#xA;           C 206 268, 210 330, 232 330&#xA;           C 254 330, 258 262, 282 262&#xA;           C 306 262, 310 330, 332 330&#xA;           C 354 330, 362 330, 384 330" fill="none" stroke="#F1ECE1" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"></path>
-
-  
-  <g filter="url(#barShadow3)">
-    <rect x="167" y="164" width="26" height="62" rx="13" fill="url(#terracottaGrad3)"></rect>
-    <rect x="243" y="140" width="26" height="86" rx="13" fill="url(#terracottaGrad3)"></rect>
-    <rect x="319" y="164" width="26" height="62" rx="13" fill="url(#terracottaGrad3)"></rect>
+  <g fill="none" stroke="url(#arcG)" stroke-width="40" stroke-linecap="round">
+    <path d="M 22 300 A 234 250 0 0 1 490 300"></path>
+    <path d="M 66 470 C 58 404 62 344 92 300 A 164 180 0 0 1 420 300 C 450 344 454 404 446 470"></path>
+    <path d="M 148 458 C 144 398 150 340 180 300 A 76 105 0 0 1 332 300 C 362 340 368 398 364 458"></path>
+  </g>
+  <ellipse cx="256" cy="266" rx="30" ry="33" fill="#F7F3EC"></ellipse>
+  <rect x="224" y="314" width="64" height="195" rx="32" fill="url(#bodyG)"></rect>
   </g>
 </svg>

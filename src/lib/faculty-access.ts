@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getTenantScopedPrisma } from "./tenant-db";
 import type { RequestContext } from "./session";
 
@@ -11,7 +12,7 @@ import type { RequestContext } from "./session";
  * fits this call pattern better than a page-navigation 404.
  */
 export class FacultyAccessError extends Error {
-  constructor(message = "لا تملك صلاحية الوصول لهذا الطالب في هذا المقرر") {
+  constructor(message: string) {
     super(message);
     this.name = "FacultyAccessError";
   }
@@ -41,7 +42,8 @@ export async function assertFacultyLinkedToStudent(
   });
 
   if (!link) {
-    throw new FacultyAccessError();
+    const tErrors = await getTranslations("Common.errors");
+    throw new FacultyAccessError(tErrors("notAuthorizedStudentCourse"));
   }
 }
 
@@ -65,7 +67,8 @@ export async function assertFacultyTeachesCourse(ctx: RequestContext, courseCode
   });
 
   if (!link) {
-    throw new FacultyAccessError();
+    const tErrors = await getTranslations("Common.errors");
+    throw new FacultyAccessError(tErrors("notAuthorizedStudentCourse"));
   }
 }
 
@@ -85,7 +88,8 @@ export async function assertStudentEnrolledInCourse(
   const db = getTenantScopedPrisma(ctx.tenantId);
   const studentProfile = await db.studentProfile.findUnique({ where: { userId: ctx.userId } });
   if (!studentProfile) {
-    throw new FacultyAccessError("الملف الشخصي غير موجود");
+    const tErrors = await getTranslations("Common.errors");
+    throw new FacultyAccessError(tErrors("studentProfileNotFound"));
   }
 
   const link = await db.facultyCourseLink.findFirst({
@@ -97,6 +101,7 @@ export async function assertStudentEnrolledInCourse(
   });
 
   if (!link) {
-    throw new FacultyAccessError();
+    const tErrors = await getTranslations("Common.errors");
+    throw new FacultyAccessError(tErrors("notAuthorizedStudentCourse"));
   }
 }

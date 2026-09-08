@@ -27,6 +27,11 @@ export interface MobileJwtClaims {
   userId: string;
   tenantId: string;
   role: UserRole;
+  // The User.tokenVersion this token was minted under — compared against
+  // the live DB value on every use (see api-auth.ts's getMobileRequestContext
+  // and the refresh endpoint), so bumping the column instantly invalidates
+  // every outstanding token for that user regardless of its own expiry.
+  tokenVersion: number;
 }
 
 export async function signAccessToken(claims: MobileJwtClaims): Promise<string> {
@@ -55,6 +60,7 @@ export async function verifyMobileToken(token: string): Promise<VerifiedMobileTo
     userId: payload.userId as string,
     tenantId: payload.tenantId as string,
     role: payload.role as UserRole,
+    tokenVersion: payload.tokenVersion as number,
     type: payload.type as "access" | "refresh",
   };
 }

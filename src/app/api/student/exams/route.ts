@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { requireApiRole } from "@/lib/api-auth";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 
@@ -19,6 +20,7 @@ import { getTenantScopedPrisma } from "@/lib/tenant-db";
  * "تم التسليم" without a second round-trip per exam.
  */
 export async function GET(request: Request) {
+  const tErrors = await getTranslations("Common.errors");
   const auth = await requireApiRole(request, "student");
   if (!auth.ok) return auth.response;
   const { ctx } = auth;
@@ -27,7 +29,7 @@ export async function GET(request: Request) {
 
   const studentProfile = await db.studentProfile.findUnique({ where: { userId: ctx.userId } });
   if (!studentProfile) {
-    return NextResponse.json({ error: "الملف الشخصي غير موجود" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("studentProfileNotFound") }, { status: 404 });
   }
 
   const links = await db.facultyCourseLink.findMany({

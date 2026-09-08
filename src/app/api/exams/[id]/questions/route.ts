@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { requireApiRole } from "@/lib/api-auth";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { assertStudentEnrolledInCourse, FacultyAccessError } from "@/lib/faculty-access";
@@ -20,6 +21,7 @@ import { assertStudentEnrolledInCourse, FacultyAccessError } from "@/lib/faculty
  * enrollment, and not a draft/scheduled exam even if enrolled.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const tErrors = await getTranslations("Common.errors");
   const { id } = await params;
 
   const auth = await requireApiRole(request, "student");
@@ -37,14 +39,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   // scheduled exam, a soft-deleted exam, and a genuinely nonexistent id
   // all return the identical 404 — never distinguishable from outside.
   if (!exam || exam.deletedAt || !exam.availableAt || exam.availableAt.getTime() > Date.now()) {
-    return NextResponse.json({ error: "لم يتم العثور على الاختبار" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("examNotFound") }, { status: 404 });
   }
 
   try {
     await assertStudentEnrolledInCourse(ctx, exam.facultyUserId, exam.courseCode);
   } catch (err) {
     if (err instanceof FacultyAccessError) {
-      return NextResponse.json({ error: "لم يتم العثور على الاختبار" }, { status: 404 });
+      return NextResponse.json({ error: tErrors("examNotFound") }, { status: 404 });
     }
     throw err;
   }

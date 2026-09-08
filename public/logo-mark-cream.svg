@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="شادو">
+  <defs>
+    <linearGradient id="arcG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F7F3EC"></stop>
+      <stop offset="1" stop-color="#E3D9C8"></stop>
+    </linearGradient>
+    <linearGradient id="bodyG" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#E5A17C"></stop>
+      <stop offset="1" stop-color="#C97A50"></stop>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#arcG)" stroke-width="40" stroke-linecap="round">
+    <path d="M 22 300 A 234 250 0 0 1 490 300"></path>
+    <path d="M 66 470 C 58 404 62 344 92 300 A 164 180 0 0 1 420 300 C 450 344 454 404 446 470"></path>
+    <path d="M 148 458 C 144 398 150 340 180 300 A 76 105 0 0 1 332 300 C 362 340 368 398 364 458"></path>
+  </g>
+  <ellipse cx="256" cy="266" rx="30" ry="33" fill="#F7F3EC"></ellipse>
+  <rect x="224" y="314" width="64" height="195" rx="32" fill="url(#bodyG)"></rect>
+</svg>

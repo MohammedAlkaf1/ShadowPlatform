@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { requireRole, AuthError } from "@/lib/session";
 import { assertFacultyTeachesCourse, FacultyAccessError } from "@/lib/faculty-access";
 import { extractLectureKeytermsFromPdf } from "@/lib/ai";
+import { verifyFileContent } from "@/lib/file-validation";
 import { logAudit } from "@/lib/audit";
 
 // Dedicated env var, NOT shared with MAX_FACULTY_RESOURCE_SIZE_BYTES or
@@ -25,6 +27,7 @@ const MAX_PDF_SIZE_BYTES = Number(process.env.MAX_LECTURE_KEYTERM_PDF_SIZE_BYTES
  * "generate-then-separately-save" split.
  */
 export async function POST(request: Request) {
+  const tErrors = await getTranslations("Common.errors");
   let ctx;
   try {
     ctx = await requireRole("faculty");
@@ -37,23 +40,23 @@ export async function POST(request: Request) {
 
   const formData = await request.formData().catch(() => null);
   if (!formData) {
-    return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("invalidData") }, { status: 400 });
   }
 
   const file = formData.get("file");
   const courseCode = formData.get("courseCode");
 
   if (!(file instanceof File) || typeof courseCode !== "string" || !courseCode) {
-    return NextResponse.json({ error: "الرجاء إرفاق ملف PDF واختيار مقرر" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("attachPdfAndChooseCourse") }, { status: 400 });
   }
   if (file.type !== "application/pdf") {
-    return NextResponse.json({ error: "يُسمح فقط برفع ملفات PDF" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("pdfOnly") }, { status: 400 });
   }
   if (file.size > MAX_PDF_SIZE_BYTES) {
     const maxMb = Math.round(MAX_PDF_SIZE_BYTES / 1_048_576);
     const fileMb = (file.size / 1_048_576).toFixed(1);
     return NextResponse.json(
-      { error: `حجم الملف (${fileMb} ميجابايت) يتجاوز الحد المسموح (${maxMb} ميجابايت)` },
+      { error: tErrors("fileSizeExceedsLimit", { fileMb, maxMb }) },
       { status: 400 }
     );
   }
@@ -68,12 +71,15 @@ export async function POST(request: Request) {
   }
 
   const pdfBytes = Buffer.from(await file.arrayBuffer());
+  if (!(await verifyFileContent(pdfBytes, "application/pdf"))) {
+    return NextResponse.json({ error: tErrors("pdfOnly") }, { status: 400 });
+  }
 
   let terms;
   try {
     terms = await extractLectureKeytermsFromPdf(pdfBytes);
   } catch {
-    return NextResponse.json({ error: "تعذر استخراج المصطلحات من الملف، حاول مرة أخرى" }, { status: 502 });
+    return NextResponse.json({ error: tErrors("keytermExtractionFailed") }, { status: 502 });
   }
 
   await logAudit({

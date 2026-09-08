@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { AppShell } from "@/components/layout/app-shell";
 import { getFacultyNavItems } from "@/components/layout/nav-items";
 import { formatDateTime } from "@/lib/format-date";
+import { localize } from "@/lib/localize";
 import { BarChart3 } from "lucide-react";
 import { PublishButton } from "./publish-button";
 import { ShowResultsToggle } from "./show-results-toggle";
@@ -59,8 +60,9 @@ export default async function ExamDetailPage({ params }: { params: Promise<{ id:
       navItems={navItems}
       role={ctx.role}
       userEmail={ctx.userEmail ?? ""}
+      userName={ctx.userFullName ?? ""}
       tenantName={ctx.tenantName ?? ""}
-      title={exam.title}
+      title={localize(exam.title, exam.titleEn, locale)}
       subtitle={`${t("courseLabel")}: ${exam.courseCode}`}
     >
       <div className="space-y-5">

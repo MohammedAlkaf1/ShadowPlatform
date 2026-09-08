@@ -6,6 +6,23 @@ import {
 } from "@aws-sdk/client-s3";
 
 /**
+ * Extracts a SAFE extension (dot + up to 10 alnum chars) from a
+ * client-supplied filename, for use as a suffix in a server-built S3 object
+ * key. `originalFilename` is fully attacker-controlled (the browser sends
+ * whatever `file.name` it wants), so naively slicing everything after the
+ * last "." — e.g. "evil.txt/../../../etc/passwd" — would smuggle "/" and
+ * ".." into the object key. Some S3-compatible backends (this project's own
+ * local MinIO included) store objects as real files on disk keyed by path,
+ * where an unsanitized "../" segment can escape the intended prefix. Real
+ * AWS S3 doesn't resolve "..", but this must be safe for every backend the
+ * app can be deployed against, not just the one used in production.
+ */
+function safeExtension(originalFilename: string): string {
+  const match = /\.([a-zA-Z0-9]{1,10})$/.exec(originalFilename);
+  return match ? `.${match[1]}` : "";
+}
+
+/**
  * S3-compatible client, pointed at MinIO for local dev (see docker-compose.yml)
  * and at a real S3-compatible bucket in production via env vars.
  *
@@ -43,8 +60,7 @@ export function buildFacultyResourceObjectKey(
   resourceId: string,
   originalFilename: string
 ): string {
-  const ext = originalFilename.includes(".") ? originalFilename.slice(originalFilename.lastIndexOf(".")) : "";
-  return `${tenantId}/faculty-resources/${studentProfileId}/${resourceId}${ext}`;
+  return `${tenantId}/faculty-resources/${studentProfileId}/${resourceId}${safeExtension(originalFilename)}`;
 }
 
 /**
@@ -64,8 +80,7 @@ export function buildExamAnswerAudioObjectKey(
   answerId: string,
   originalFilename: string
 ): string {
-  const ext = originalFilename.includes(".") ? originalFilename.slice(originalFilename.lastIndexOf(".")) : "";
-  return `${tenantId}/exam-answers/${examSubmissionId}/${answerId}${ext}`;
+  return `${tenantId}/exam-answers/${examSubmissionId}/${answerId}${safeExtension(originalFilename)}`;
 }
 
 export async function putEncryptedObject(objectKey: string, body: Buffer): Promise<void> {

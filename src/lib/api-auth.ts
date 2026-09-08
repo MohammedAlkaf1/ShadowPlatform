@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import type { UserRole } from "@prisma/client";
 import { extractBearerToken, verifyMobileToken } from "./mobile-jwt";
 import { prisma } from "./prisma";
@@ -21,7 +22,13 @@ export async function getMobileRequestContext(request: Request): Promise<Request
     if (claims.type !== "access") return null;
 
     const user = await prisma.user.findUnique({ where: { id: claims.userId } });
-    if (!user || !user.active || user.deletedAt || user.tenantId !== claims.tenantId) {
+    if (
+      !user ||
+      !user.active ||
+      user.deletedAt ||
+      user.tenantId !== claims.tenantId ||
+      user.tokenVersion !== claims.tokenVersion
+    ) {
       return null;
     }
 
@@ -31,12 +38,14 @@ export async function getMobileRequestContext(request: Request): Promise<Request
   }
 }
 
-export function unauthorizedResponse(message = "غير مصرح"): NextResponse {
-  return NextResponse.json({ error: message }, { status: 401 });
+export async function unauthorizedResponse(message?: string): Promise<NextResponse> {
+  const resolvedMessage = message ?? (await getTranslations("Common.errors"))("unauthorized");
+  return NextResponse.json({ error: resolvedMessage }, { status: 401 });
 }
 
-export function forbiddenResponse(message = "لا تملك صلاحية الوصول"): NextResponse {
-  return NextResponse.json({ error: message }, { status: 403 });
+export async function forbiddenResponse(message?: string): Promise<NextResponse> {
+  const resolvedMessage = message ?? (await getTranslations("Common.errors"))("notAuthorizedResource");
+  return NextResponse.json({ error: resolvedMessage }, { status: 403 });
 }
 
 export type ApiRoleResult =
@@ -51,10 +60,10 @@ export type ApiRoleResult =
 export async function requireMobileRole(request: Request, ...roles: UserRole[]): Promise<ApiRoleResult> {
   const ctx = await getMobileRequestContext(request);
   if (!ctx) {
-    return { ok: false, response: unauthorizedResponse() };
+    return { ok: false, response: await unauthorizedResponse() };
   }
   if (roles.length > 0 && !roles.includes(ctx.role)) {
-    return { ok: false, response: forbiddenResponse(), ctx };
+    return { ok: false, response: await forbiddenResponse(), ctx };
   }
   return { ok: true, ctx };
 }
@@ -83,10 +92,10 @@ export async function getAnyRequestContext(request: Request): Promise<RequestCon
 export async function requireApiRole(request: Request, ...roles: UserRole[]): Promise<ApiRoleResult> {
   const ctx = await getAnyRequestContext(request);
   if (!ctx) {
-    return { ok: false, response: unauthorizedResponse() };
+    return { ok: false, response: await unauthorizedResponse() };
   }
   if (roles.length > 0 && !roles.includes(ctx.role)) {
-    return { ok: false, response: forbiddenResponse(), ctx };
+    return { ok: false, response: await forbiddenResponse(), ctx };
   }
   return { ok: true, ctx };
 }

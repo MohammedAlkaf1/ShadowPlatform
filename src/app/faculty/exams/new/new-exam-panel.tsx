@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { PencilLine, Sparkles, Plus, Trash2, UploadCloud } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { PencilLine, Sparkles, Plus, Trash2, Upload } from "lucide-react";
 
 interface DraftOption {
   text: string;
@@ -34,7 +35,7 @@ function emptyQuestion(): DraftQuestion {
   };
 }
 
-type Mode = "choose" | "manual" | "ai";
+type Mode = "manual" | "ai";
 
 // Real measured stage split for a 30+ slide PDF: reading the file is
 // near-instant (<100ms), the Gemini call is ~30-45s end to end and doesn't
@@ -59,7 +60,7 @@ export function NewExamPanel({ courseCodes }: { courseCodes: string[] }) {
   const t = useTranslations("FacultyExams");
   const router = useRouter();
 
-  const [mode, setMode] = useState<Mode>("choose");
+  const [mode, setMode] = useState<Mode>("manual");
   const [title, setTitle] = useState("");
   const [courseCode, setCourseCode] = useState<string>(courseCodes[0] ?? "");
   const [questions, setQuestions] = useState<DraftQuestion[]>([]);
@@ -242,8 +243,11 @@ export function NewExamPanel({ courseCodes }: { courseCodes: string[] }) {
     }
   }
 
-  if (mode === "choose") {
-    return (
+  return (
+    <div className="space-y-5">
+      {/* Mode switcher: pinned at the top always, not just before a mode is
+          picked — the shared editor below never replaces it, so the
+          instructor can switch manual/AI at any point. */}
       <div className="grid gap-4 sm:grid-cols-2">
         <Card
           role="button"
@@ -252,7 +256,10 @@ export function NewExamPanel({ courseCodes }: { courseCodes: string[] }) {
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") setMode("manual");
           }}
-          className="min-h-44 cursor-pointer transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50"
+          className={cn(
+            "min-h-32 cursor-pointer transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50",
+            mode === "manual" && "border-2 border-orange-800/60"
+          )}
         >
           <CardHeader>
             <PencilLine className="size-6 text-primary" />
@@ -267,7 +274,10 @@ export function NewExamPanel({ courseCodes }: { courseCodes: string[] }) {
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") setMode("ai");
           }}
-          className="min-h-44 cursor-pointer transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50"
+          className={cn(
+            "min-h-32 cursor-pointer transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50",
+            mode === "ai" && "border-2 border-orange-800/60"
+          )}
         >
           <CardHeader>
             <Sparkles className="size-6 text-primary" />
@@ -276,11 +286,7 @@ export function NewExamPanel({ courseCodes }: { courseCodes: string[] }) {
           </CardHeader>
         </Card>
       </div>
-    );
-  }
 
-  return (
-    <div className="space-y-5">
       <Card>
         <CardHeader>
           <CardTitle className="text-base">{mode === "ai" ? t("optionAiTitle") : t("optionManualTitle")}</CardTitle>
@@ -318,19 +324,24 @@ export function NewExamPanel({ courseCodes }: { courseCodes: string[] }) {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="ai-file">{t("aiUploadLabel")}</Label>
-                  <Input
+                  <button
+                    type="button"
+                    onClick={() => aiFileInputRef.current?.click()}
+                    className="flex min-h-9 w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-3 text-sm text-start hover:bg-muted"
+                  >
+                    <span className={cn("truncate", !aiFileName && "text-muted-foreground")}>
+                      {aiFileName ?? t("aiNoFileChosen")}
+                    </span>
+                    <Upload className="size-4 shrink-0 text-muted-foreground" />
+                  </button>
+                  <input
                     id="ai-file"
                     ref={aiFileInputRef}
                     type="file"
+                    className="hidden"
                     accept=".pdf,application/pdf"
                     onChange={(e) => setAiFileName(e.target.files?.[0]?.name ?? null)}
                   />
-                  {aiFileName && (
-                    <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <UploadCloud className="size-3.5" />
-                      {aiFileName}
-                    </p>
-                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="ai-count">{t("aiQuestionCountLabel")}</Label>
@@ -348,7 +359,14 @@ export function NewExamPanel({ courseCodes }: { courseCodes: string[] }) {
                 <Label htmlFor="ai-language">{t("aiLanguageLabel")}</Label>
                 <Select value={aiLanguage} onValueChange={(v) => setAiLanguage(v as "ar" | "en")}>
                   <SelectTrigger id="ai-language" className="w-full sm:w-56">
-                    <SelectValue />
+                    {/* Rendered directly (not via <SelectValue />) — the
+                        headless select resolves its trigger label from each
+                        item's registered `label` prop, which only exists
+                        once the popup's items have mounted at least once;
+                        with a non-empty default value selected before that,
+                        the trigger fell back to the raw stored value ("ar")
+                        instead of the Arabic label. */}
+                    <span>{aiLanguage === "ar" ? t("aiLanguageArabic") : t("aiLanguageEnglish")}</span>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ar">{t("aiLanguageArabic")}</SelectItem>

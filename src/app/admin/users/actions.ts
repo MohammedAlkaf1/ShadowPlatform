@@ -2,6 +2,7 @@
 
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { logAudit } from "@/lib/audit";
@@ -16,9 +17,10 @@ export interface ActionResult {
 
 export async function createUser(input: unknown): Promise<ActionResult> {
   const ctx = await requireRole("admin");
+  const tErrors = await getTranslations("Common.errors");
   const parsed = createUserSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "بيانات غير صالحة" };
+    return { ok: false, error: tErrors("invalidData") };
   }
   const { email, fullName, password, role, studentNumber } = parsed.data;
   const emailLower = email.toLowerCase();
@@ -26,7 +28,7 @@ export async function createUser(input: unknown): Promise<ActionResult> {
   const db = getTenantScopedPrisma(ctx.tenantId);
   const existing = await db.user.findFirst({ where: { email: emailLower } });
   if (existing) {
-    return { ok: false, error: "يوجد مستخدم بهذا البريد الإلكتروني مسبقاً" };
+    return { ok: false, error: tErrors("emailAlreadyExists") };
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -58,7 +60,7 @@ export async function createUser(input: unknown): Promise<ActionResult> {
     resourceType: "User",
   });
 
-  revalidatePath("/admin/users");
+  revalidatePath("/admin/user-management");
   return { ok: true };
 }
 
@@ -69,11 +71,21 @@ const updateRoleSchema = z.object({
 
 export async function updateUserRole(input: unknown): Promise<ActionResult> {
   const ctx = await requireRole("admin");
+  const tErrors = await getTranslations("Common.errors");
   const parsed = updateRoleSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "بيانات غير صالحة" };
+  if (!parsed.success) return { ok: false, error: tErrors("invalidData") };
 
   const db = getTenantScopedPrisma(ctx.tenantId);
-  await db.user.update({ where: { id: parsed.data.userId }, data: { role: parsed.data.role as UserRole } });
+  // Bump tokenVersion alongside the role change: getMobileRequestContext
+  // already re-derives role fresh from the DB on every request (never
+  // trusts the JWT's own role claim), so this isn't needed for the role
+  // change to take effect — it's defense-in-depth so any outstanding token
+  // minted under the old role is forced through a fresh login/refresh
+  // rather than silently continuing to work.
+  await db.user.update({
+    where: { id: parsed.data.userId },
+    data: { role: parsed.data.role as UserRole, tokenVersion: { increment: 1 } },
+  });
 
   await logAudit({
     tenantId: ctx.tenantId,
@@ -83,7 +95,7 @@ export async function updateUserRole(input: unknown): Promise<ActionResult> {
     resourceId: parsed.data.userId,
   });
 
-  revalidatePath("/admin/users");
+  revalidatePath("/admin/user-management");
   return { ok: true };
 }
 
@@ -97,15 +109,21 @@ export async function updateUserRole(input: unknown): Promise<ActionResult> {
  */
 export async function setUserActive(userId: string, active: boolean): Promise<ActionResult> {
   const ctx = await requireRole("admin");
+  const tErrors = await getTranslations("Common.errors");
   const db = getTenantScopedPrisma(ctx.tenantId);
 
   const user = await db.user.findUnique({ where: { id: userId }, include: { studentProfile: true } });
-  if (!user) return { ok: false, error: "المستخدم غير موجود" };
+  if (!user) return { ok: false, error: tErrors("userNotFound") };
 
   await db.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: userId },
-      data: { active, deletedAt: active ? null : new Date() },
+      // Same defense-in-depth reasoning as updateUserRole above — the
+      // `active`/`deletedAt` check in getMobileRequestContext already blocks
+      // a disabled account's tokens immediately; bumping tokenVersion too
+      // means re-enabling the account later doesn't silently resurrect any
+      // pre-disablement token that happened to still be unexpired.
+      data: { active, deletedAt: active ? null : new Date(), tokenVersion: { increment: 1 } },
     });
 
     if (!active && user.role === "student" && user.studentProfile) {
@@ -129,7 +147,7 @@ export async function setUserActive(userId: string, active: boolean): Promise<Ac
     targetStudentProfileId: user.studentProfile?.id ?? null,
   });
 
-  revalidatePath("/admin/users");
+  revalidatePath("/admin/user-management");
   return { ok: true };
 }
 
@@ -140,15 +158,16 @@ const assignSpecialistSchema = z.object({
 
 export async function assignSpecialist(input: unknown): Promise<ActionResult> {
   const ctx = await requireRole("admin");
+  const tErrors = await getTranslations("Common.errors");
   const parsed = assignSpecialistSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "بيانات غير صالحة" };
+  if (!parsed.success) return { ok: false, error: tErrors("invalidData") };
 
   const db = getTenantScopedPrisma(ctx.tenantId);
   const { specialistUserId, studentProfileId } = parsed.data;
 
   const specialist = await db.user.findUnique({ where: { id: specialistUserId } });
   if (!specialist || specialist.role !== "specialist") {
-    return { ok: false, error: "المستخدم المحدد ليس مختصاً" };
+    return { ok: false, error: tErrors("userNotSpecialist") };
   }
 
   await db.specialistAssignment.upsert({

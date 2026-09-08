@@ -11,7 +11,7 @@ describe("POST /api/events — batch acceptance and rate limiting", () => {
   let student: Awaited<ReturnType<typeof tokenFor>>;
 
   beforeAll(async () => {
-    student = await tokenFor("student@demo.shadow.sa");
+    student = await tokenFor("441204567@student.ksu.edu.sa");
     resetRateLimitStore();
   });
 

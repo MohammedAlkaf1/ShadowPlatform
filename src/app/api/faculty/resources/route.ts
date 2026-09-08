@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
+import { getTranslations } from "next-intl/server";
 import { requireRole, AuthError } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { assertFacultyLinkedToStudent, FacultyAccessError } from "@/lib/faculty-access";
 import { putPlainObject, buildFacultyResourceObjectKey, deleteObject } from "@/lib/s3";
+import { verifyFileContent } from "@/lib/file-validation";
 import { logAudit } from "@/lib/audit";
 import type { FacultyResourceCategory } from "@prisma/client";
 
@@ -37,6 +39,7 @@ function extensionOf(filename: string): string {
  * FacultyResource has no admin read path in this phase at all.
  */
 export async function GET(request: Request) {
+  const tErrors = await getTranslations("Common.errors");
   let ctx;
   try {
     ctx = await requireRole("faculty");
@@ -51,7 +54,7 @@ export async function GET(request: Request) {
   const studentProfileId = searchParams.get("studentProfileId");
   const courseCode = searchParams.get("courseCode");
   if (!studentProfileId || !courseCode) {
-    return NextResponse.json({ error: "studentProfileId و courseCode مطلوبان" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("studentProfileIdAndCourseCodeRequired") }, { status: 400 });
   }
 
   try {
@@ -95,6 +98,7 @@ export async function GET(request: Request) {
  * caller, REPLACES that row's file/metadata instead of creating a new row).
  */
 export async function POST(request: Request) {
+  const tErrors = await getTranslations("Common.errors");
   let ctx;
   try {
     ctx = await requireRole("faculty");
@@ -107,7 +111,7 @@ export async function POST(request: Request) {
 
   const formData = await request.formData().catch(() => null);
   if (!formData) {
-    return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("invalidData") }, { status: 400 });
   }
 
   const file = formData.get("file");
@@ -127,7 +131,7 @@ export async function POST(request: Request) {
     !courseCode ||
     !title.trim()
   ) {
-    return NextResponse.json({ error: "الرجاء تعبئة جميع الحقول المطلوبة" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("requiredFieldsMissing") }, { status: 400 });
   }
 
   const category =
@@ -141,12 +145,12 @@ export async function POST(request: Request) {
   const expectedMime = ALLOWED_TYPES[ext];
   if (!expectedMime || file.type !== expectedMime) {
     return NextResponse.json(
-      { error: "الملفات المسموحة فقط: PDF، PPTX، DOCX، PNG" },
+      { error: tErrors("facultyResourceFileTypeNotAllowed") },
       { status: 400 }
     );
   }
   if (file.size > MAX_SIZE_BYTES) {
-    return NextResponse.json({ error: "حجم الملف يتجاوز الحد المسموح" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("fileTooLarge") }, { status: 400 });
   }
 
   try {
@@ -160,6 +164,9 @@ export async function POST(request: Request) {
 
   const db = getTenantScopedPrisma(ctx.tenantId);
   const plaintext = Buffer.from(await file.arrayBuffer());
+  if (!(await verifyFileContent(plaintext, expectedMime))) {
+    return NextResponse.json({ error: tErrors("facultyResourceFileTypeNotAllowed") }, { status: 400 });
+  }
 
   // Replace path: the resource must exist, belong to THIS faculty member,
   // and still be for this exact student/course — re-checked here even
@@ -175,7 +182,7 @@ export async function POST(request: Request) {
       existing.studentProfileId !== studentProfileId ||
       existing.courseCode !== courseCode
     ) {
-      return NextResponse.json({ error: "لم يتم العثور على الملف المطلوب استبداله" }, { status: 404 });
+      return NextResponse.json({ error: tErrors("resourceToReplaceNotFound") }, { status: 404 });
     }
 
     const newObjectKey = buildFacultyResourceObjectKey(ctx.tenantId, studentProfileId, resourceId, file.name);

@@ -1,3 +1,5 @@
+import { randomUUID, createHash } from "crypto";
+import { headers } from "next/headers";
 import { prisma } from "./prisma";
 
 export type AuditAction =
@@ -23,6 +25,7 @@ export type AuditAction =
   | "view_audit_log"
   | "export_report"
   | "view_document_denied"
+  | "review_document"
   | "upload_faculty_resource"
   | "view_faculty_resource"
   | "delete_faculty_resource"
@@ -40,7 +43,9 @@ export type AuditAction =
   // prisma/schema.prisma's LectureKeyterm model comment and src/lib/ai.ts.
   | "extract_lecture_keywords_ai"
   | "approve_lecture_keyterms"
-  | "delete_lecture_keyterm";
+  | "delete_lecture_keyterm"
+  // "Sign out everywhere" — see mobile-jwt.ts's tokenVersion doc comment.
+  | "logout_all_devices";
 
 export interface AuditLogInput {
   tenantId: string;
@@ -50,6 +55,12 @@ export interface AuditLogInput {
   resourceId?: string | null;
   targetStudentProfileId?: string | null;
   ipAddress?: string | null;
+  // Both optional — callers that already resolved a RequestContext can pass
+  // ctx.userSessionId; everyone else gets it filled in below via headers()/
+  // auth(), which work from any Server Component, Server Action, or Route
+  // Handler in this Next.js version.
+  userAgent?: string | null;
+  sessionId?: string | null;
 }
 
 /**
@@ -60,15 +71,58 @@ export interface AuditLogInput {
  * are short machine-readable labels only.
  */
 export async function logAudit(input: AuditLogInput): Promise<void> {
+  let ipAddress = input.ipAddress ?? null;
+  let userAgent = input.userAgent ?? null;
+  let sessionId = input.sessionId ?? null;
+
+  if (ipAddress === null || userAgent === null || sessionId === null) {
+    try {
+      const headerStore = await headers();
+      if (ipAddress === null) {
+        const forwardedFor = headerStore.get("x-forwarded-for");
+        ipAddress = forwardedFor ? (forwardedFor.split(",")[0]?.trim() ?? null) : headerStore.get("x-real-ip");
+      }
+      if (userAgent === null) userAgent = headerStore.get("user-agent");
+    } catch {
+      // Called outside a request-scoped context (shouldn't happen for any
+      // real call site today) — leave these null rather than throwing, the
+      // audit write itself must never fail because of missing metadata.
+    }
+    if (sessionId === null) {
+      try {
+        const { auth } = await import("@/auth");
+        const session = await auth();
+        sessionId = session?.user?.sessionId ?? null;
+      } catch {
+        // Same fail-open reasoning as above.
+      }
+    }
+  }
+
+  const id = randomUUID();
+  const createdAt = new Date();
+  const logHash = createHash("sha256")
+    .update(
+      [id, input.tenantId, input.actorUserId, input.action, input.resourceType, input.resourceId ?? "", createdAt.toISOString()].join(
+        "|"
+      )
+    )
+    .digest("hex");
+
   await prisma.auditLog.create({
     data: {
+      id,
+      createdAt,
       tenantId: input.tenantId,
       actorUserId: input.actorUserId,
       action: input.action,
       resourceType: input.resourceType,
       resourceId: input.resourceId ?? null,
       targetStudentProfileId: input.targetStudentProfileId ?? null,
-      ipAddress: input.ipAddress ?? null,
+      ipAddress,
+      userAgent,
+      sessionId,
+      logHash,
     },
   });
 }

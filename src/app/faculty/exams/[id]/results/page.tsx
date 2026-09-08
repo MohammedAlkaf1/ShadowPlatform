@@ -9,6 +9,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { AppShell } from "@/components/layout/app-shell";
 import { getFacultyNavItems } from "@/components/layout/nav-items";
 import { formatDateTime } from "@/lib/format-date";
+import { localize } from "@/lib/localize";
 import { ArrowRight } from "lucide-react";
 
 /**
@@ -37,7 +38,7 @@ export default async function ExamResultsPage({ params }: { params: Promise<{ id
     where: { examId: id },
     orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }],
     include: {
-      student: { select: { fullName: true, email: true } },
+      student: { select: { fullName: true, fullNameEn: true, email: true } },
       answers: { select: { selectedOption: { select: { isCorrect: true } } } },
     },
   });
@@ -49,9 +50,10 @@ export default async function ExamResultsPage({ params }: { params: Promise<{ id
       navItems={navItems}
       role={ctx.role}
       userEmail={ctx.userEmail ?? ""}
+      userName={ctx.userFullName ?? ""}
       tenantName={ctx.tenantName ?? ""}
       title={t("resultsTitle")}
-      subtitle={exam.title}
+      subtitle={localize(exam.title, exam.titleEn, locale)}
     >
       <div className="space-y-5">
         <Link
@@ -83,7 +85,7 @@ export default async function ExamResultsPage({ params }: { params: Promise<{ id
                   {submissions.map((s) => (
                     <TableRow key={s.id}>
                       <TableCell className="whitespace-normal break-words">
-                        <p>{s.student.fullName}</p>
+                        <p>{localize(s.student.fullName, s.student.fullNameEn, locale)}</p>
                         <p className="text-xs text-muted-foreground">
                           <span dir="ltr">{s.student.email}</span>
                         </p>

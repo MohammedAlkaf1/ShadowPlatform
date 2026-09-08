@@ -1,4 +1,6 @@
 import { auth } from "@/auth";
+import { getLocale, getTranslations } from "next-intl/server";
+import { localize } from "@/lib/localize";
 import type { UserRole } from "@prisma/client";
 
 export interface RequestContext {
@@ -12,7 +14,9 @@ export interface RequestContext {
   // caller of that path needs them (AppShell, the only consumer, is
   // web-only).
   userEmail?: string;
+  userFullName?: string;
   tenantName?: string;
+  userSessionId?: string;
 }
 
 /**
@@ -41,22 +45,31 @@ export async function getRequestContext(): Promise<RequestContext | null> {
   if (!session?.user?.id || !session.user.tenantId || !session.user.role) {
     return null;
   }
+  // Real English rendering of the signed-in user's own name/university —
+  // both come straight off the JWT (fullNameEn/tenantNameEn, set at
+  // sign-in from User.fullNameEn/Tenant.nameEn) alongside their Arabic
+  // originals, never machine-translated here.
+  const locale = await getLocale();
   return {
     userId: session.user.id,
     tenantId: session.user.tenantId,
     role: session.user.role,
     userEmail: session.user.email ?? "",
-    tenantName: session.user.tenantName ?? "",
+    userFullName: localize(session.user.fullName ?? "", session.user.fullNameEn, locale),
+    tenantName: localize(session.user.tenantName ?? "", session.user.tenantNameEn, locale),
+    userSessionId: session.user.sessionId ?? "",
   };
 }
 
 export async function requireRole(...roles: UserRole[]): Promise<RequestContext> {
   const ctx = await getRequestContext();
   if (!ctx) {
-    throw new AuthError("UNAUTHENTICATED", "لم يتم تسجيل الدخول");
+    const tErrors = await getTranslations("Common.errors");
+    throw new AuthError("UNAUTHENTICATED", tErrors("notAuthenticated"));
   }
   if (!roles.includes(ctx.role)) {
-    throw new AuthError("FORBIDDEN", "لا تملك صلاحية الوصول لهذا المورد");
+    const tErrors = await getTranslations("Common.errors");
+    throw new AuthError("FORBIDDEN", tErrors("notAuthorizedResource"));
   }
   return ctx;
 }

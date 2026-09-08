@@ -3,14 +3,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionPanel } from "@/components/ui/accordion";
-import { Sparkles, Plus, UploadCloud, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Sparkles, Plus, Upload, X } from "lucide-react";
 
 interface SavedKeyterm {
   id: string;
@@ -35,22 +36,32 @@ function TermChip({
   term: string;
   source: "AI_EXTRACTED" | "MANUAL";
   t: ReturnType<typeof useTranslations>;
-  onRemove: () => void;
+  // Approved glossary terms are permanent entries, not editable draft rows —
+  // omit onRemove entirely for those instead of just disabling the button,
+  // so there's no dead ✕ affordance on a chip nothing can delete from here.
+  onRemove?: () => void;
 }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/40 py-1 ps-3 pe-1.5 text-sm">
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/40 py-1 ps-3 text-sm",
+        onRemove ? "pe-1.5" : "pe-3"
+      )}
+    >
       <span dir="ltr">{term}</span>
-      <Badge variant={source === "AI_EXTRACTED" ? "secondary" : "outline"} className="text-[10px]">
+      <Badge variant="secondary" className="bg-foreground/[.08] text-[10px] text-foreground">
         {source === "AI_EXTRACTED" ? t("sourceAi") : t("sourceManual")}
       </Badge>
-      <button
-        type="button"
-        title={t("removeTermButton")}
-        onClick={onRemove}
-        className="rounded-full p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-      >
-        <X className="size-3.5" />
-      </button>
+      {onRemove && (
+        <button
+          type="button"
+          title={t("removeTermButton")}
+          onClick={onRemove}
+          className="rounded-full p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+        >
+          <X className="size-3.5" />
+        </button>
+      )}
     </span>
   );
 }
@@ -237,22 +248,6 @@ export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
     }
   }
 
-  async function handleDeleteSaved(id: string) {
-    const prev = saved;
-    setSaved((s) => s.filter((k) => k.id !== id));
-    try {
-      const res = await fetch(`/api/faculty/keyterms/${id}`, { method: "DELETE" });
-      if (!res.ok) {
-        setSaved(prev);
-        const body = await res.json().catch(() => ({}));
-        toast.error(body.error ?? t("errorSaveFailed"));
-      }
-    } catch {
-      setSaved(prev);
-      toast.error(t("errorSaveFailed"));
-    }
-  }
-
   return (
     <div className="space-y-5">
       <Card>
@@ -281,33 +276,39 @@ export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
             <Sparkles className="size-4 text-primary" />
             {t("extractSectionTitle")}
           </CardTitle>
-          <CardDescription className="text-pretty">{t("extractSectionDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="chapter-title">{t("chapterTitleLabel")}</Label>
-            <Input
-              id="chapter-title"
-              value={chapterTitle}
-              onChange={(e) => setChapterTitle(e.target.value)}
-              placeholder={t("chapterTitlePlaceholder")}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="keyterm-file">{t("uploadLabel")}</Label>
-            <Input
-              id="keyterm-file"
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,application/pdf"
-              onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
-            />
-            {fileName && (
-              <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                <UploadCloud className="size-3.5" />
-                {fileName}
-              </p>
-            )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="chapter-title">{t("chapterTitleLabel")}</Label>
+              <Input
+                id="chapter-title"
+                value={chapterTitle}
+                onChange={(e) => setChapterTitle(e.target.value)}
+                placeholder={t("chapterTitlePlaceholder")}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="keyterm-file">{t("uploadLabel")}</Label>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex min-h-9 w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-3 text-sm text-start hover:bg-muted"
+              >
+                <span className={cn("truncate", !fileName && "text-muted-foreground")}>
+                  {fileName ?? t("noFileChosen")}
+                </span>
+                <Upload className="size-4 shrink-0 text-muted-foreground" />
+              </button>
+              <input
+                id="keyterm-file"
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".pdf,application/pdf"
+                onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
+              />
+            </div>
           </div>
           <Button type="button" variant="outline" disabled={extracting} onClick={handleExtract}>
             {extracting ? t("extractingButton") : t("extractButton")}
@@ -316,11 +317,14 @@ export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
           <CardTitle className="text-base">
             {chapterTitle.trim() ? t("draftSectionTitleWithChapter", { chapterTitle: chapterTitle.trim() }) : t("draftSectionTitle")}
           </CardTitle>
-          <CardDescription className="text-pretty">{t("draftSectionDescription")}</CardDescription>
+          {/* The one accent/terracotta action on this screen. */}
+          <Button type="button" variant="accent" disabled={saving || draft.length === 0} onClick={handleApprove}>
+            {saving ? t("savingButton") : t("approveButton", { count: draft.length })}
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-end gap-2">
@@ -356,21 +360,15 @@ export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
               ))}
             </ul>
           )}
-
-          {draft.length > 0 && (
-            <div>
-              {/* The one accent/terracotta action on this screen. */}
-              <Button type="button" variant="accent" disabled={saving} onClick={handleApprove}>
-                {saving ? t("savingButton") : t("approveButton", { count: draft.length })}
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("savedSectionTitle", { courseCode })}</CardTitle>
+        <CardHeader className="flex flex-row items-center gap-2.5">
+          <CardTitle className="text-base">{t("savedSectionTitle")}</CardTitle>
+          <span className="rounded-full bg-foreground/[.08] px-[9px] py-[3px] text-[11.5px] font-bold text-muted-foreground">
+            {t("totalTermCount", { count: saved.length })}
+          </span>
         </CardHeader>
         <CardContent>
           {loadingSaved ? (
@@ -393,7 +391,9 @@ export function KeytermsPanel({ courseCodes }: { courseCodes: string[] }) {
                     <ul className="flex flex-wrap gap-2">
                       {group.terms.map((k) => (
                         <li key={k.id}>
-                          <TermChip term={k.term} source={k.source} t={t} onRemove={() => handleDeleteSaved(k.id)} />
+                          {/* Approved terms are permanent glossary entries —
+                              no onRemove, so TermChip renders without the ✕. */}
+                          <TermChip term={k.term} source={k.source} t={t} />
                         </li>
                       ))}
                     </ul>

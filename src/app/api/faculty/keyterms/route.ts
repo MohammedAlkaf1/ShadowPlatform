@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
 import { requireRole, AuthError } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { assertFacultyTeachesCourse, FacultyAccessError } from "@/lib/faculty-access";
@@ -36,6 +37,7 @@ const saveTermsSchema = z.object({
  * only ever returns approved terms).
  */
 export async function GET(request: Request) {
+  const tErrors = await getTranslations("Common.errors");
   let ctx;
   try {
     ctx = await requireRole("faculty");
@@ -49,7 +51,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const courseCode = searchParams.get("courseCode");
   if (!courseCode) {
-    return NextResponse.json({ error: "courseCode مطلوب" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("courseCodeRequired") }, { status: 400 });
   }
 
   const db = getTenantScopedPrisma(ctx.tenantId);
@@ -79,6 +81,7 @@ export async function GET(request: Request) {
  * the term adds to the glossary, it never wipes it.
  */
 export async function POST(request: Request) {
+  const tErrors = await getTranslations("Common.errors");
   let ctx;
   try {
     ctx = await requireRole("faculty");
@@ -92,7 +95,7 @@ export async function POST(request: Request) {
   const json = await request.json().catch(() => null);
   const parsed = saveTermsSchema.safeParse(json);
   if (!parsed.success) {
-    return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("invalidData") }, { status: 400 });
   }
   const { courseCode, chapterTitle, terms } = parsed.data;
 

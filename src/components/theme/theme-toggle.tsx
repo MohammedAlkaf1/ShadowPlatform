@@ -2,6 +2,7 @@
 
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
+import { Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -19,11 +20,27 @@ import { cn } from "@/lib/utils";
  * label/dot until `resolvedTheme` resolves avoids a hydration mismatch
  * and matches the ThemeProvider's own `defaultTheme="light"`.
  */
-export function ThemeToggle({ className }: { className?: string }) {
+export function ThemeToggle({ className, iconOnly }: { className?: string; iconOnly?: boolean }) {
   const { resolvedTheme, setTheme } = useTheme();
   const t = useTranslations("ThemeToggle");
 
   const isDark = resolvedTheme === "dark";
+
+  if (iconOnly) {
+    return (
+      <button
+        type="button"
+        onClick={() => setTheme(isDark ? "light" : "dark")}
+        aria-label={t("label")}
+        className={cn(
+          "inline-flex size-9 items-center justify-center rounded-xl border border-border bg-background text-foreground transition-colors hover:bg-muted",
+          className
+        )}
+      >
+        {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      </button>
+    );
+  }
 
   return (
     <button

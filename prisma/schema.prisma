@@ -38,6 +38,12 @@ enum RequestStatus {
 enum DocumentStatus {
   pending
   reviewed
+  // Set by a specialist on a specific document that needs the student to
+  // resubmit it (e.g. an outdated/incomplete form) — distinct from
+  // "pending" (not reviewed yet) and separate from StudentProfile's own
+  // "rejected" RequestStatus, which is about the whole request, not one
+  // document.
+  needs_update
 }
 
 enum SupportPlanStatus {
@@ -155,8 +161,22 @@ model User {
   tenantId     String
   email        String
   fullName     String
+  // English rendering of fullName — nullable because it isn't collected
+  // for every account (e.g. self-registered students); UI falls back to
+  // fullName when absent instead of guessing a translation.
+  fullNameEn   String?
   passwordHash String
   role         UserRole
+  // Bumped to invalidate every mobile access/refresh JWT issued before the
+  // increment, independent of the token's own expiry — the mechanism behind
+  // "sign out everywhere" (POST /api/auth/logout) and a defense-in-depth
+  // revalidation on admin role changes / account disablement. Every mobile
+  // JWT carries the tokenVersion it was minted under as a claim; both the
+  // access-token path (getMobileRequestContext) and the refresh endpoint
+  // reject a token whose claim no longer matches this column. The web
+  // session (NextAuth cookie) is unaffected — it's a separate credential
+  // family with its own short-lived JWT session, not covered by this.
+  tokenVersion Int       @default(0)
   active       Boolean   @default(true)
   locale       Locale    @default(ar)
   deletedAt    DateTime?
@@ -191,7 +211,9 @@ model StudentProfile {
   tenantId      String
   studentNumber String
   major         String
+  majorEn         String?
   academicStage String
+  academicStageEn String?
   phone         String
   requestStatus RequestStatus @default(pending)
   verified      Boolean       @default(false)
@@ -298,10 +320,28 @@ model Document {
   uploadedByUserId String
   objectKey        String
   originalFilename String
+  // English rendering of originalFilename — nullable because a real
+  // uploaded file's name is the student's own and has no translation (the
+  // UI falls back to originalFilename when absent); only the seeded demo
+  // documents populate this, same ar/en pairing convention as
+  // documentType/issuingEntity below.
+  originalFilenameEn String?
   mimeType         String
   sizeBytes        Int
   encryptionKeyRef String
   status           DocumentStatus @default(pending)
+  // Optional metadata a specialist can read off the document while
+  // classifying it (e.g. "medical report", "King Khalid University
+  // Hospital"). Nullable because the upload flow doesn't collect these yet
+  // for older/other documents — shown as "—" in the UI when absent. *En
+  // variants follow the same ar/en pairing convention as every other
+  // localized field in this schema (User.fullNameEn, StudentProfile.majorEn,
+  // etc.) — needed because these are free-text values, not enum codes a
+  // translation file could key off of.
+  documentType     String?
+  documentTypeEn   String?
+  issuingEntity    String?
+  issuingEntityEn  String?
   deletedAt        DateTime?
   createdAt        DateTime       @default(now())
 
@@ -428,6 +468,13 @@ model MentorAlert {
   severity                AlertSeverity
   status                  AlertStatus   @default(open)
   message                 String
+  // English rendering of `message` — this row is always system-generated
+  // (from a UsageEvent trend, never specialist-typed free text), so unlike
+  // Document.documentType/issuingEntity it always has a translation
+  // available; nullable only for symmetry with the rest of this schema's
+  // *En columns and to tolerate any pre-existing row from before this
+  // column existed.
+  messageEn               String?
   createdAt               DateTime      @default(now())
 
   tenant                Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -481,8 +528,13 @@ model FacultyResource {
   mimeType         String
   sizeBytes        Int
   title            String
+  // English rendering of title/note — nullable, same rationale as
+  // Document.originalFilenameEn: a real faculty-typed title/note has no
+  // translation, only the seeded demo rows populate these.
+  titleEn          String?
   category         FacultyResourceCategory?
   note             String?
+  noteEn           String?
   createdAt        DateTime                 @default(now())
   deletedAt        DateTime?
 
@@ -507,6 +559,14 @@ model AuditLog {
   resourceType           String
   resourceId             String?
   ipAddress              String?
+  // Session-details panel (admin audit-log expandable row): captured
+  // best-effort from the request/session at write time, so rows written
+  // before this field existed are simply null — never backfilled/faked.
+  userAgent              String?
+  sessionId              String?
+  // SHA-256 fingerprint of this row's own immutable fields, computed once
+  // at write time — a real integrity check, not a display placeholder.
+  logHash                String?
   createdAt              DateTime @default(now())
 
   tenant               Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -543,6 +603,10 @@ model Exam {
   id            String     @id @default(uuid())
   tenantId      String
   title         String
+  // English rendering of title — nullable, same ar/en pairing convention as
+  // Document.originalFilenameEn: a real faculty-typed exam title has no
+  // translation, only demo/test exams populate this.
+  titleEn       String?
   facultyUserId String
   courseCode    String // matches FacultyCourseLink.courseCode - no separate Course entity exists
   source        ExamSource

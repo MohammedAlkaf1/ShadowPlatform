@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
 import { requireRole, AuthError } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { assertFacultyTeachesCourse, FacultyAccessError } from "@/lib/faculty-access";
@@ -80,6 +81,7 @@ export async function GET() {
  * assertFacultyTeachesCourse), not just role=faculty.
  */
 export async function POST(request: Request) {
+  const tErrors = await getTranslations("Common.errors");
   let ctx;
   try {
     ctx = await requireRole("faculty");
@@ -93,7 +95,7 @@ export async function POST(request: Request) {
   const json = await request.json().catch(() => null);
   const parsed = createExamSchema.safeParse(json);
   if (!parsed.success) {
-    return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("invalidData") }, { status: 400 });
   }
   const { title, courseCode, questions, source, availableAt, showResultsToStudents } = parsed.data;
 
@@ -104,7 +106,7 @@ export async function POST(request: Request) {
     const correctCount = q.options.filter((o) => o.isCorrect).length;
     if (correctCount !== 1) {
       return NextResponse.json(
-        { error: "كل سؤال يجب أن يحتوي على إجابة صحيحة واحدة بالضبط" },
+        { error: tErrors("examQuestionNeedsOneCorrectAnswer") },
         { status: 400 }
       );
     }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { requireRole, AuthError } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { logAudit } from "@/lib/audit";
@@ -11,6 +12,7 @@ import { logAudit } from "@/lib/audit";
  * this faculty member doesn't own.
  */
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const tErrors = await getTranslations("Common.errors");
   const { id } = await params;
 
   let ctx;
@@ -26,7 +28,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const db = getTenantScopedPrisma(ctx.tenantId);
   const keyterm = await db.lectureKeyterm.findUnique({ where: { id } });
   if (!keyterm || keyterm.deletedAt || keyterm.facultyUserId !== ctx.userId) {
-    return NextResponse.json({ error: "لم يتم العثور على المصطلح" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("keytermNotFound") }, { status: 404 });
   }
 
   await db.lectureKeyterm.update({ where: { id }, data: { deletedAt: new Date() } });

@@ -22,7 +22,7 @@ describe("Exam permissions (voice-driven exam-taking, MCQ Phase 1)", () => {
   let faculty: User; // seeded faculty@demo.shadow.sa, linked to CS301
   let facultyCourseCode: string;
   let secondFaculty: User; // unrelated faculty member, no link to CS301
-  let enrolledStudent: User; // seeded student@demo.shadow.sa, linked to faculty's CS301
+  let enrolledStudent: User; // seeded 441204567@student.ksu.edu.sa, linked to faculty's CS301
   let unenrolledStudent: User; // brand-new student, zero FacultyCourseLink at all
 
   let manualExamId: string;
@@ -32,7 +32,7 @@ describe("Exam permissions (voice-driven exam-taking, MCQ Phase 1)", () => {
     if (!facultyUser) throw new Error("Seed the demo faculty user before running this test.");
     faculty = facultyUser;
 
-    const studentUser = await prisma.user.findFirst({ where: { email: "student@demo.shadow.sa" } });
+    const studentUser = await prisma.user.findFirst({ where: { email: "441204567@student.ksu.edu.sa" } });
     if (!studentUser) throw new Error("Seed the demo student user before running this test.");
     enrolledStudent = studentUser;
 

@@ -4,6 +4,7 @@ import { requireMobileRole } from "@/lib/api-auth";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { encryptBuffer, DOCUMENT_ENCRYPTION_KEY_REF } from "@/lib/encryption";
 import { putEncryptedObject, buildDocumentObjectKey } from "@/lib/s3";
+import { verifyFileContent } from "@/lib/file-validation";
 import { logAudit } from "@/lib/audit";
 
 const MAX_UPLOAD_SIZE_BYTES = Number(process.env.MAX_UPLOAD_SIZE_BYTES ?? 15_728_640);
@@ -33,13 +34,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "حجم الملف يتجاوز الحد المسموح" }, { status: 400 });
   }
 
+  const plaintext = Buffer.from(await file.arrayBuffer());
+  if (!(await verifyFileContent(plaintext, file.type))) {
+    return NextResponse.json({ error: "يُسمح فقط برفع ملفات PDF" }, { status: 400 });
+  }
+
   const db = getTenantScopedPrisma(ctx.tenantId);
   const studentProfile = await db.studentProfile.findUnique({ where: { userId: ctx.userId } });
   if (!studentProfile) {
     return NextResponse.json({ error: "الملف الشخصي غير موجود" }, { status: 404 });
   }
 
-  const plaintext = Buffer.from(await file.arrayBuffer());
   const ciphertext = encryptBuffer(plaintext);
 
   const documentId = randomUUID();

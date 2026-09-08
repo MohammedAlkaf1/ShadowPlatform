@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertRowActions } from "./alert-row-actions";
 import { AppShell } from "@/components/layout/app-shell";
 import { getSpecialistNavItems } from "@/components/layout/nav-items";
+import { localize } from "@/lib/localize";
 
 const SEVERITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
 const SEVERITY_TONE: Record<string, string> = {
@@ -21,10 +22,13 @@ export default async function SpecialistAlertsPage() {
   const t = await getTranslations("SpecialistAlerts");
   const tSeverity = await getTranslations("Common.alertSeverity");
   const tStatus = await getTranslations("Common.alertStatus");
+  const locale = await getLocale();
 
   const alerts = await db.mentorAlert.findMany({
     where: ctx.role === "admin" ? {} : { assignedSpecialistId: ctx.userId },
-    include: { studentProfile: { include: { user: { select: { email: true, fullName: true } } } } },
+    include: {
+      studentProfile: { include: { user: { select: { email: true, fullName: true, fullNameEn: true } } } },
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -41,6 +45,7 @@ export default async function SpecialistAlertsPage() {
       navItems={navItems}
       role={ctx.role}
       userEmail={ctx.userEmail ?? ""}
+      userName={ctx.userFullName ?? ""}
       tenantName={ctx.tenantName ?? ""}
       title={t("title")}
       subtitle={t("subtitle")}
@@ -79,7 +84,9 @@ export default async function SpecialistAlertsPage() {
                       <TableCell>
                         {/* Batch 8: dir="ltr" on an inline span, not the
                             block <p> — see admin/audit-log/page.tsx. */}
-                        <p className="text-sm font-medium">{alert.studentProfile.user.fullName}</p>
+                        <p className="text-sm font-medium">
+                          {localize(alert.studentProfile.user.fullName, alert.studentProfile.user.fullNameEn, locale)}
+                        </p>
                         <p className="text-xs text-muted-foreground">{alert.studentProfile.studentNumber}</p>
                         <p className="text-xs text-muted-foreground">
                           <span dir="ltr">{alert.studentProfile.user.email}</span>
@@ -91,7 +98,9 @@ export default async function SpecialistAlertsPage() {
                       <TableCell className="font-mono text-xs text-muted-foreground">
                         <span dir="ltr">{alert.alertType}</span>
                       </TableCell>
-                      <TableCell className="max-w-xs whitespace-pre-wrap text-sm">{alert.message}</TableCell>
+                      <TableCell className="max-w-xs whitespace-pre-wrap text-sm">
+                        {localize(alert.message, alert.messageEn, locale)}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="secondary">{tStatus(alert.status)}</Badge>
                       </TableCell>

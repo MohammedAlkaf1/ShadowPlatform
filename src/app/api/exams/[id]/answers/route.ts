@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
+import { getTranslations } from "next-intl/server";
 import { requireApiRole } from "@/lib/api-auth";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { assertStudentEnrolledInCourse, FacultyAccessError } from "@/lib/faculty-access";
@@ -27,6 +28,7 @@ const MAX_AUDIO_SIZE_BYTES = 10_485_760; // 10MB - generous for a short spoken c
  * flagged explicitly in the feature report.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const tErrors = await getTranslations("Common.errors");
   const { id: examId } = await params;
 
   const auth = await requireApiRole(request, "student");
@@ -35,7 +37,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const formData = await request.formData().catch(() => null);
   if (!formData) {
-    return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("invalidData") }, { status: 400 });
   }
 
   const questionId = formData.get("questionId");
@@ -43,27 +45,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const audioFile = formData.get("voiceConfirmationAudio");
 
   if (typeof questionId !== "string" || !questionId || typeof selectedOptionId !== "string" || !selectedOptionId) {
-    return NextResponse.json({ error: "questionId و selectedOptionId مطلوبان" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("questionIdAndSelectedOptionIdRequired") }, { status: 400 });
   }
   if (audioFile !== null && !(audioFile instanceof File)) {
-    return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("invalidData") }, { status: 400 });
   }
   if (audioFile instanceof File && audioFile.size > MAX_AUDIO_SIZE_BYTES) {
-    return NextResponse.json({ error: "حجم الملف الصوتي يتجاوز الحد المسموح" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("audioFileTooLarge") }, { status: 400 });
   }
 
   const db = getTenantScopedPrisma(ctx.tenantId);
 
   const exam = await db.exam.findUnique({ where: { id: examId } });
   if (!exam || exam.deletedAt || !exam.availableAt || exam.availableAt.getTime() > Date.now()) {
-    return NextResponse.json({ error: "لم يتم العثور على الاختبار" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("examNotFound") }, { status: 404 });
   }
 
   try {
     await assertStudentEnrolledInCourse(ctx, exam.facultyUserId, exam.courseCode);
   } catch (err) {
     if (err instanceof FacultyAccessError) {
-      return NextResponse.json({ error: "لم يتم العثور على الاختبار" }, { status: 404 });
+      return NextResponse.json({ error: tErrors("examNotFound") }, { status: 404 });
     }
     throw err;
   }
@@ -76,11 +78,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     include: { options: true },
   });
   if (!question) {
-    return NextResponse.json({ error: "لم يتم العثور على السؤال" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("questionNotFound") }, { status: 404 });
   }
   const option = question.options.find((o) => o.id === selectedOptionId);
   if (!option) {
-    return NextResponse.json({ error: "لم يتم العثور على الخيار" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("optionNotFound") }, { status: 404 });
   }
 
   // Lazily create the ExamSubmission on first answer — @@unique([examId,

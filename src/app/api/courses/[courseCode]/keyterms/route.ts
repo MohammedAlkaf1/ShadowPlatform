@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { requireApiRole } from "@/lib/api-auth";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 
@@ -31,6 +32,7 @@ import { getTenantScopedPrisma } from "@/lib/tenant-db";
  * array here, same as before chapterTitle existed.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ courseCode: string }> }) {
+  const tErrors = await getTranslations("Common.errors");
   const { courseCode } = await params;
 
   const auth = await requireApiRole(request, "student");
@@ -41,7 +43,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ cour
 
   const studentProfile = await db.studentProfile.findUnique({ where: { userId: ctx.userId } });
   if (!studentProfile) {
-    return NextResponse.json({ error: "الملف الشخصي غير موجود" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("studentProfileNotFound") }, { status: 404 });
   }
 
   const links = await db.facultyCourseLink.findMany({
@@ -52,7 +54,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ cour
     // Same "don't confirm existence" posture as the rest of this API: a
     // courseCode the student isn't enrolled in returns 404, indistinguishable
     // from a courseCode nobody has ever created keyterms for.
-    return NextResponse.json({ error: "لم يتم العثور على المقرر" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("courseNotFound") }, { status: 404 });
   }
 
   const keyterms = await db.lectureKeyterm.findMany({

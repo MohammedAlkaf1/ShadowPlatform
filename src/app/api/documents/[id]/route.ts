@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { requireApiRole } from "@/lib/api-auth";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { getEncryptedObject } from "@/lib/s3";
@@ -6,7 +7,8 @@ import { decryptBuffer } from "@/lib/encryption";
 import { logAudit, getRequestIp } from "@/lib/audit";
 
 /**
- * GET /api/documents/:id — specialist-only download.
+ * GET /api/documents/:id — specialist/admin download, or a student opening
+ * their own document.
  *
  * Serves BOTH the mobile app (Bearer JWT) and the web app (NextAuth
  * session cookie) via requireApiRole, which tries a mobile JWT first and
@@ -42,8 +44,9 @@ import { logAudit, getRequestIp } from "@/lib/audit";
  * id still returns 404.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const tErrors = await getTranslations("Common.errors");
   const { id: documentId } = await params;
-  const auth = await requireApiRole(request, "specialist", "admin");
+  const auth = await requireApiRole(request, "specialist", "admin", "student");
   if (!auth.ok) {
     if (auth.ctx) {
       await logAudit({
@@ -70,10 +73,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       resourceId: documentId,
       ipAddress: getRequestIp(request),
     });
-    return NextResponse.json({ error: "المستند غير موجود" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("documentNotFound") }, { status: 404 });
   }
 
-  if (ctx.role !== "admin") {
+  if (ctx.role === "student") {
+    const ownProfile = await db.studentProfile.findUnique({ where: { userId: ctx.userId } });
+    if (!ownProfile || ownProfile.id !== document.studentProfileId) {
+      await logAudit({
+        tenantId: ctx.tenantId,
+        actorUserId: ctx.userId,
+        action: "view_document_denied",
+        resourceType: "Document",
+        resourceId: document.id,
+        targetStudentProfileId: document.studentProfileId,
+        ipAddress: getRequestIp(request),
+      });
+      return NextResponse.json({ error: tErrors("notAuthorizedForDocument") }, { status: 403 });
+    }
+  } else if (ctx.role !== "admin") {
     const assignment = await db.specialistAssignment.findFirst({
       where: { specialistUserId: ctx.userId, studentProfileId: document.studentProfileId },
     });
@@ -87,7 +104,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         targetStudentProfileId: document.studentProfileId,
         ipAddress: getRequestIp(request),
       });
-      return NextResponse.json({ error: "لا تملك صلاحية الوصول لهذا المستند" }, { status: 403 });
+      return NextResponse.json({ error: tErrors("notAuthorizedForDocument") }, { status: 403 });
     }
   }
 
@@ -104,7 +121,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     ipAddress: getRequestIp(request),
   });
 
-  if (document.status === "pending") {
+  // Opening your own document isn't a specialist review — only flip
+  // pending → reviewed when a specialist/admin is the one opening it.
+  if (document.status === "pending" && ctx.role !== "student") {
     await db.document.update({ where: { id: document.id }, data: { status: "reviewed" } });
   }
 

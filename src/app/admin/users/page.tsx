@@ -1,49 +1,52 @@
-import { getTranslations } from "next-intl/server";
+import Link from "next/link";
+import { getTranslations, getLocale } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { formatDateTime } from "@/lib/format-date";
+import { buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NavIcon } from "@/components/layout/nav-icon";
+import { cn } from "@/lib/utils";
 import { AssignSpecialistForm } from "./assign-specialist-form";
-import { ManageUsersPanel } from "./manage-users-panel";
 import { AppShell } from "@/components/layout/app-shell";
 import { getAdminNavItems } from "@/components/layout/nav-items";
+import { localize } from "@/lib/localize";
 
-/**
- * Batch 3: restructured to match the mockup's "تعيين مختص" screen — a
- * two-panel layout instead of the old stacked create-user / full-table /
- * assign-form page. Same route (/admin/users) and same server actions
- * (actions.ts, untouched); only the presentation changed. The nav label
- * moved from "User Management" to "Assign specialist" to match the
- * mockup's 3-item admin nav (see admin/layout.tsx).
- *
- * Batch 7 (issues D/E/F): batch 6 had briefly split this into a
- * collapsible "إدارة المستخدمين" card PLUS a separate compact
- * "المستخدمون" read-only list card with its own search filter — two
- * places showing overlapping user data. Collapsed back into ONE always-
- * expanded "إدارة المستخدمين" card (left column, below the assign form),
- * with the search filter now filtering that real management table
- * directly (ManageUsersPanel) instead of a separate read-only copy. The
- * right column is gone entirely.
- */
-export default async function AdminUsersPage() {
+const CASE_TABS = ["all", "pending", "assigned"] as const;
+type CaseTab = (typeof CASE_TABS)[number];
+
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string; q?: string; student?: string }>;
+}) {
   const ctx = await requireRole("admin");
   const db = getTenantScopedPrisma(ctx.tenantId);
   const t = await getTranslations("AdminUsers");
   const tRoles = await getTranslations("Common.roles");
+  const locale = await getLocale();
+  const { tab: tabParam, q, student: selectedStudentId } = await searchParams;
+  const tab: CaseTab = CASE_TABS.includes(tabParam as CaseTab) ? (tabParam as CaseTab) : "all";
 
-  const users = await db.user.findMany({
-    orderBy: { createdAt: "asc" },
-    include: { studentProfile: { select: { id: true, studentNumber: true, requestStatus: true } } },
-  });
+  const [users, assignments, documentCounts] = await Promise.all([
+    db.user.findMany({
+      orderBy: { createdAt: "asc" },
+      include: { studentProfile: { select: { id: true, studentNumber: true, requestStatus: true, createdAt: true } } },
+    }),
+    db.specialistAssignment.findMany({
+      include: {
+        specialist: { select: { email: true, fullName: true, fullNameEn: true } },
+        studentProfile: { include: { user: { select: { email: true, fullName: true, fullNameEn: true } } } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    db.document.groupBy({ by: ["studentProfileId"], where: { deletedAt: null }, _count: { _all: true } }),
+  ]);
 
-  const assignments = await db.specialistAssignment.findMany({
-    include: {
-      specialist: { select: { email: true, fullName: true } },
-      studentProfile: { include: { user: { select: { email: true, fullName: true } } } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const docCountByStudentId = new Map(documentCounts.map((d) => [d.studentProfileId, d._count._all]));
+  const specialistByStudentId = new Map(
+    assignments.map((a) => [a.studentProfileId, localize(a.specialist.fullName, a.specialist.fullNameEn, locale)])
+  );
 
   const caseloadBySpecialistId = new Map<string, number>();
   for (const a of assignments) {
@@ -54,27 +57,47 @@ export default async function AdminUsersPage() {
     .filter((u) => u.role === "specialist" && u.active)
     .map((u) => ({
       id: u.id,
-      label: `${u.fullName} (${u.email}) — ${t("specialistCurrentLoad", { count: caseloadBySpecialistId.get(u.id) ?? 0 })}`,
+      label: `${localize(u.fullName, u.fullNameEn, locale)} - ${ctx.tenantName ?? ""} (${t("specialistLoadCount", { count: caseloadBySpecialistId.get(u.id) ?? 0 })})`,
     }));
 
-  const students = users
-    .filter((u) => u.role === "student" && u.active && u.studentProfile)
-    .map((u) => ({
-      id: u.studentProfile!.id,
-      label: `${u.fullName} (${u.studentProfile!.studentNumber || "—"}) — ${u.email}`,
-    }));
+  const allStudents = users.filter((u) => u.role === "student" && u.active && u.studentProfile);
 
-  const assignedStudentProfileIds = new Set(assignments.map((a) => a.studentProfileId));
-  const needsAssignmentStudentProfileIds = new Set(
-    users
-      .filter(
-        (u) =>
-          u.role === "student" &&
-          u.studentProfile &&
-          (u.studentProfile.requestStatus === "pending" || !assignedStudentProfileIds.has(u.studentProfile.id))
-      )
-      .map((u) => u.studentProfile!.id)
-  );
+  let cases = allStudents.map((u) => ({
+    id: u.studentProfile!.id,
+    name: localize(u.fullName, u.fullNameEn, locale),
+    org: ctx.tenantName ?? "",
+    docsCount: docCountByStudentId.get(u.studentProfile!.id) ?? 0,
+    specialistName: specialistByStudentId.get(u.studentProfile!.id) ?? null,
+  }));
+
+  if (tab === "pending") cases = cases.filter((c) => !c.specialistName);
+  if (tab === "assigned") cases = cases.filter((c) => c.specialistName);
+  if (q) {
+    const needle = q.toLowerCase();
+    cases = cases.filter((c) => c.name.toLowerCase().includes(needle));
+  }
+  // Reference: pending-assignment cases surface above already-assigned ones.
+  cases.sort((a, b) => Number(!!a.specialistName) - Number(!!b.specialistName));
+
+  const students = allStudents.map((u) => ({
+    id: u.studentProfile!.id,
+    label: `${localize(u.fullName, u.fullNameEn, locale)} - ${ctx.tenantName ?? ""}`,
+  }));
+  const selectedStudent = selectedStudentId ? students.find((s) => s.id === selectedStudentId) : undefined;
+  const pendingCaseStudents = allStudents.filter((u) => !specialistByStudentId.has(u.studentProfile!.id));
+  const pendingCasesCount = pendingCaseStudents.length;
+  const notificationItems = pendingCaseStudents.slice(0, 6).map((u) => ({
+    title: t("notificationNeedsAssignment", { name: localize(u.fullName, u.fullNameEn, locale) }),
+    time: formatDateTime(u.studentProfile!.createdAt, locale),
+  }));
+
+  function tabHref(tb: CaseTab) {
+    const params = new URLSearchParams();
+    if (tb !== "all") params.set("tab", tb);
+    if (q) params.set("q", q);
+    const qs = params.toString();
+    return qs ? `/admin/users?${qs}` : "/admin/users";
+  }
 
   const navItems = await getAdminNavItems();
 
@@ -83,125 +106,109 @@ export default async function AdminUsersPage() {
       navItems={navItems}
       role={ctx.role}
       userEmail={ctx.userEmail ?? ""}
+      userName={ctx.userFullName ?? ""}
       tenantName={ctx.tenantName ?? ""}
       title={t("title")}
       subtitle={t("subtitle")}
+      notificationCount={pendingCasesCount}
+      notificationItems={notificationItems}
     >
-    <div className="space-y-6">
-      {/* Batch 8 (new issue 2): was variant="destructive" (red) — see
-          admin/stats/page.tsx's comment for why: the reference palette has
-          no red at all, and this is an action item, not an error. */}
-      {needsAssignmentStudentProfileIds.size > 0 && (
-        <Badge variant="secondary" className="bg-accent/15 text-sm text-accent">
-          {t("needsAssignmentCount", { count: needsAssignmentStudentProfileIds.size })}
-        </Badge>
-      )}
+      <div className="mb-5 overflow-hidden rounded-[18px] border border-border bg-card shadow-[0_8px_18px_rgba(30,42,58,0.1),0_2px_4px_rgba(30,42,58,0.06)] dark:shadow-[0_10px_24px_rgba(0,0,0,0.36)]">
+        <div className="flex flex-wrap items-end justify-between gap-4 px-5 pt-[18px] pb-3.5">
+          <p className="text-[17px] font-extrabold">{t("casesTitle")}</p>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <form method="GET" className="relative min-w-[210px]">
+              {tab !== "all" && <input type="hidden" name="tab" value={tab} />}
+              <NavIcon name="search" className="absolute start-3.5 top-1/2 size-[17px] -translate-y-1/2 text-muted-foreground" />
+              <Input type="search" name="q" defaultValue={q ?? ""} placeholder={t("caseSearchPlaceholder")} className="h-10 rounded-[11px] ps-9" />
+            </form>
+            <div className="flex gap-[3px] rounded-[11px] bg-foreground/[.08] p-[3px]">
+              {CASE_TABS.map((tb) => (
+                <Link
+                  key={tb}
+                  href={tabHref(tb)}
+                  className={cn(
+                    "flex min-h-[34px] items-center rounded-lg px-3.5 text-[12.5px] font-bold",
+                    tb === tab ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                  )}
+                >
+                  {t(`caseTab_${tb}`)}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
 
-      {/* No EchoCard on this screen — the mockup's "تعيين مختص" view has no
-          bento hero card at all (no stat number makes sense here), same as
-          the audit-log screen. Batch 7: single column now — the separate
-          right-side users-list card is gone (issue E), merged into the
-          "إدارة المستخدمين" card below. */}
-      <div className="flex flex-col gap-5">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{t("assignSpecialistTitle")}</CardTitle>
-            <p className="text-xs text-muted-foreground">{t("assignSpecialistNote")}</p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <AssignSpecialistForm specialists={specialists} students={students} />
-
-            {assignments.length > 0 && (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("tableSpecialist")}</TableHead>
-                      <TableHead>{t("tableStudent")}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {assignments.map((a) => (
-                      <TableRow key={a.id}>
-                        {/* whitespace-normal + break-words: TableCell's
-                            default is whitespace-nowrap, which is fine
-                            for normal names/emails but this table can
-                            show a long unbroken placeholder identifier
-                            (e.g. a stray fixture's fallback name) that
-                            would otherwise force this single cell's
-                            column to expand without bound, squeezing the
-                            whole row and reading as misaligned/jumbled —
-                            reported as "مخبص". This wraps long content
-                            within the column instead.
-                            Batch 8 CORRECTION: the earlier "already
-                            correct, must be the stray-fixture-rows issue"
-                            note here was WRONG — there was a genuine,
-                            screenshot-confirmed RTL bug: dir="ltr" directly
-                            on the block-level email <p> resolves
-                            text-align:start against ITS OWN direction,
-                            independent of its sibling <p>{name}</p>, which
-                            resolves against the page's real RTL direction
-                            — so under Arabic the two <p> lines land on
-                            OPPOSITE physical sides instead of stacking.
-                            English masked this by coincidence (dir="ltr"
-                            happens to match the page's own LTR direction
-                            there). Fixed by moving dir="ltr" onto an
-                            inline <span> nested inside a dir-less <p>, so
-                            the <p>'s own alignment always matches its
-                            sibling regardless of language. */}
-                        <TableCell className="whitespace-normal break-words">
-                          <p>{a.specialist.fullName}</p>
-                          <p className="text-xs text-muted-foreground">
-                            <span dir="ltr">{a.specialist.email}</span>
-                          </p>
-                        </TableCell>
-                        <TableCell className="whitespace-normal break-words">
-                          <p>{a.studentProfile.user.fullName}</p>
-                          <p className="text-xs text-muted-foreground">
-                            <span dir="ltr">{a.studentProfile.user.email}</span>
-                          </p>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+        <div className="flex items-center gap-4 bg-muted/40 px-5 py-2.5">
+          <p className="flex-[2] text-[11px] font-bold text-muted-foreground">{t("caseStudent")}</p>
+          <p className="flex-[1.1] text-[11px] font-bold text-muted-foreground">{t("caseDocs")}</p>
+          <p className="flex-[1.6] text-[11px] font-bold text-muted-foreground">{t("caseSpecialist")}</p>
+          <p className="flex-[1.3] text-[11px] font-bold text-muted-foreground">{t("caseStatus")}</p>
+          <p className="flex-1 text-end text-[11px] font-bold text-muted-foreground">{t("tableActions")}</p>
+        </div>
+        {cases.length === 0 ? (
+          <p className="px-5 py-11 text-center text-sm text-muted-foreground">{t("noCases")}</p>
+        ) : (
+          cases.map((c) => (
+            <div key={c.id} className="flex items-center gap-4 border-b border-border px-5 py-3.5 last:border-0">
+              <div className="flex-[2]">
+                <p className="text-[13.5px] font-bold">{c.name}</p>
+                <p className="text-xs text-muted-foreground">{c.org}</p>
               </div>
-            )}
-
-            {/* Hidden note: this screen never reads a student's
-                classification/support level anywhere — assignment doesn't
-                need it, matching the mockup's own note for this screen. */}
-            <p className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span aria-hidden="true" className="size-[7px] shrink-0 rounded-full bg-muted-foreground" />
-              {t("hiddenNote")}
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Batch 7 (issues D/E/F): always-expanded now (no <details>
-            disclosure), and the ONLY user list on this page — the search
-            filter that used to live in a separate compact list card now
-            filters this real management table directly. */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t("manageUsersTitle")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ManageUsersPanel
-              users={users.map((u) => ({
-                id: u.id,
-                fullName: u.fullName,
-                email: u.email,
-                role: u.role,
-                roleLabel: tRoles(u.role),
-                active: u.active,
-                needsAssignment: u.studentProfile != null && needsAssignmentStudentProfileIds.has(u.studentProfile.id),
-              }))}
-            />
-          </CardContent>
-        </Card>
+              <p className="flex-[1.1] text-[13px] text-muted-foreground">{t("caseDocsCount", { count: c.docsCount })}</p>
+              <p className="flex-[1.6] text-[13px] font-bold">{c.specialistName ?? "—"}</p>
+              <div className="flex-[1.3]">
+                <span
+                  className={cn(
+                    "inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-bold",
+                    c.specialistName
+                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {c.specialistName ? t("caseStatusAssigned") : t("caseStatusPending")}
+                </span>
+              </div>
+              <div className="flex flex-1 justify-end">
+                <Link
+                  href={`/admin/users?student=${c.id}#assign-form`}
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }), "rounded-lg")}
+                >
+                  {c.specialistName ? t("caseReassign") : t("caseAssign")}
+                </Link>
+              </div>
+            </div>
+          ))
+        )}
       </div>
-    </div>
+
+      <div className="flex flex-col items-start gap-5 lg:flex-row">
+        <div id="assign-form" className="w-full self-stretch rounded-[22px] border border-border bg-card p-6 shadow-[0_8px_18px_rgba(30,42,58,0.1),0_2px_4px_rgba(30,42,58,0.06)] dark:shadow-[0_10px_24px_rgba(0,0,0,0.36)] lg:flex-1">
+          <p className="text-lg font-extrabold">{t("assignSpecialistTitle")}</p>
+          <div className="mt-5">
+            <AssignSpecialistForm specialists={specialists} students={students} selectedStudent={selectedStudent} />
+          </div>
+        </div>
+
+        <div className="w-full self-stretch rounded-[22px] border border-border bg-card p-6 shadow-[0_8px_18px_rgba(30,42,58,0.1),0_2px_4px_rgba(30,42,58,0.06)] dark:shadow-[0_10px_24px_rgba(0,0,0,0.36)] lg:w-[420px] lg:flex-none">
+          <p className="text-base font-extrabold">{t("usersTitle")}</p>
+          <div className="mt-3.5 flex flex-col">
+            {users.map((u) => (
+              <div key={u.id} className="border-b border-border py-3.5 last:border-0">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="shrink-0 text-xs font-bold text-muted-foreground">
+                    {tRoles.has(u.role) ? tRoles(u.role) : u.role}
+                  </span>
+                  <span className="text-end text-sm font-bold">{localize(u.fullName, u.fullNameEn, locale)}</span>
+                </div>
+                <p className="mt-0.5 text-end text-xs text-muted-foreground">
+                  <span dir="ltr">{u.email}</span>
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </AppShell>
   );
 }

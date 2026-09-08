@@ -1,12 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { encryptBuffer, DOCUMENT_ENCRYPTION_KEY_REF } from "@/lib/encryption";
 import { putEncryptedObject, buildDocumentObjectKey } from "@/lib/s3";
+import { verifyFileContent } from "@/lib/file-validation";
 import { logAudit } from "@/lib/audit";
 import { randomUUID } from "crypto";
+import { MAX_UPLOAD_SIZE_BYTES } from "./constants";
 
 // Moved verbatim from the old src/app/student/documents/actions.ts (batch 3
 // restructuring — the inline upload flow became this dedicated page). Same
@@ -14,8 +17,16 @@ import { randomUUID } from "crypto";
 // the revalidatePath targets changed to match the new unified dashboard
 // route (/student/status now shows the file list that /student/documents
 // used to own).
+//
+// MAX_UPLOAD_SIZE_BYTES lives in ./constants (not here) because a "use
+// server" file may only export async functions — a plain exported const
+// breaks Next's server-action validation.
 
-const MAX_UPLOAD_SIZE_BYTES = Number(process.env.MAX_UPLOAD_SIZE_BYTES ?? 15_728_640);
+const ACCEPTED_MIME_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
 
 export interface UploadResult {
   ok: boolean;
@@ -25,27 +36,32 @@ export interface UploadResult {
 export async function uploadDocument(formData: FormData): Promise<UploadResult> {
   const ctx = await requireRole("student");
   const db = getTenantScopedPrisma(ctx.tenantId);
+  const tErrors = await getTranslations("Common.errors");
 
   const file = formData.get("file");
   if (!(file instanceof File)) {
-    return { ok: false, error: "الرجاء اختيار ملف" };
+    return { ok: false, error: tErrors("selectFile") };
   }
-  if (file.type !== "application/pdf") {
-    return { ok: false, error: "يُسمح فقط برفع ملفات PDF" };
+  if (!ACCEPTED_MIME_TYPES.includes(file.type)) {
+    return { ok: false, error: tErrors("pdfOrWordOnly") };
   }
   if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-    return { ok: false, error: "حجم الملف يتجاوز الحد المسموح" };
+    return { ok: false, error: tErrors("fileTooLarge") };
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const plaintext = Buffer.from(arrayBuffer);
+  if (!(await verifyFileContent(plaintext, file.type))) {
+    return { ok: false, error: tErrors("pdfOrWordOnly") };
   }
 
   const studentProfile = await db.studentProfile.findUnique({
     where: { userId: ctx.userId },
   });
   if (!studentProfile) {
-    return { ok: false, error: "لم يتم العثور على الملف الشخصي للطالب" };
+    return { ok: false, error: tErrors("studentProfileNotFound") };
   }
 
-  const arrayBuffer = await file.arrayBuffer();
-  const plaintext = Buffer.from(arrayBuffer);
   const ciphertext = encryptBuffer(plaintext);
 
   const documentId = randomUUID();

@@ -1,6 +1,7 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
+import { localize } from "@/lib/localize";
 import { FacultyUploadPanel } from "./upload-panel";
 import { AppShell } from "@/components/layout/app-shell";
 import { getFacultyNavItems } from "@/components/layout/nav-items";
@@ -23,23 +24,21 @@ export default async function FacultyUploadPage({
   const ctx = await requireRole("faculty");
   const db = getTenantScopedPrisma(ctx.tenantId);
   const t = await getTranslations("FacultyUpload");
+  const locale = await getLocale();
   const params = await searchParams;
 
   const links = await db.facultyCourseLink.findMany({
     where: { facultyUserId: ctx.userId },
-    include: { studentProfile: { include: { user: { select: { email: true, fullName: true } } } } },
+    include: { studentProfile: { include: { user: { select: { email: true, fullName: true, fullNameEn: true } } } } },
     orderBy: [{ courseCode: "asc" }],
   });
 
-  const linkOptions = links.map((l) => ({
-    id: l.id,
-    studentProfileId: l.studentProfileId,
-    courseCode: l.courseCode,
-    label: `${l.studentProfile.user.fullName} — ${l.courseCode} (${l.studentProfile.user.email})`,
-  }));
-
-  const initialLinkId =
-    params.link && linkOptions.some((o) => o.id === params.link) ? params.link : (linkOptions[0]?.id ?? null);
+  // The picker dropdown is gone — target selection now happens on
+  // /faculty/students (each roster row's "الملفات" button deep-links here
+  // with ?link=<id>). Landing here without one (e.g. straight from the nav)
+  // just targets the first course link, same as the old dropdown's default.
+  const selectedLink =
+    (params.link ? links.find((l) => l.id === params.link) : null) ?? links[0] ?? null;
 
   const navItems = await getFacultyNavItems();
 
@@ -48,20 +47,26 @@ export default async function FacultyUploadPage({
       navItems={navItems}
       role={ctx.role}
       userEmail={ctx.userEmail ?? ""}
+      userName={ctx.userFullName ?? ""}
       tenantName={ctx.tenantName ?? ""}
       title={t("title")}
       subtitle={t("subtitle")}
     >
     <div className="space-y-6">
-      <FacultyUploadPanel links={linkOptions} initialLinkId={initialLinkId} />
-
-      {/* Hidden note: same real boundary as /faculty/students — see that
-          page's comment. Repeated here since this is now a standalone
-          screen a faculty member can land on directly from the nav. */}
-      <p className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span aria-hidden="true" className="size-[7px] shrink-0 rounded-full bg-muted-foreground" />
-        {t("hiddenNote")}
-      </p>
+      {selectedLink ? (
+        <FacultyUploadPanel
+          link={{
+            id: selectedLink.id,
+            studentProfileId: selectedLink.studentProfileId,
+            courseCode: selectedLink.courseCode,
+            studentName: localize(selectedLink.studentProfile.user.fullName, selectedLink.studentProfile.user.fullNameEn, locale),
+          }}
+        />
+      ) : (
+        <p className="rounded-2xl border border-border bg-card py-8 text-center text-sm text-muted-foreground">
+          {t("noCourseLinks")}
+        </p>
+      )}
     </div>
     </AppShell>
   );

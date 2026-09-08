@@ -15,7 +15,12 @@ export async function getDemoUser(email: string): Promise<User> {
 
 export async function tokenFor(email: string): Promise<{ token: string; user: User }> {
   const user = await getDemoUser(email);
-  const token = await signAccessToken({ userId: user.id, tenantId: user.tenantId, role: user.role });
+  const token = await signAccessToken({
+    userId: user.id,
+    tenantId: user.tenantId,
+    role: user.role,
+    tokenVersion: user.tokenVersion,
+  });
   return { token, user };
 }
 

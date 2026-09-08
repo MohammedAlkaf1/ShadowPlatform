@@ -32,6 +32,7 @@ export default async function FacultyKeytermsPage() {
       navItems={navItems}
       role={ctx.role}
       userEmail={ctx.userEmail ?? ""}
+      userName={ctx.userFullName ?? ""}
       tenantName={ctx.tenantName ?? ""}
       title={t("title")}
       subtitle={t("subtitle")}

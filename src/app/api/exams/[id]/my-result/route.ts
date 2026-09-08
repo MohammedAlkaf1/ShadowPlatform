@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { requireApiRole } from "@/lib/api-auth";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { assertStudentEnrolledInCourse, FacultyAccessError } from "@/lib/faculty-access";
@@ -23,6 +24,7 @@ import { assertStudentEnrolledInCourse, FacultyAccessError } from "@/lib/faculty
  * also gets `{ "available": false }` — nothing to show until they finish.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const tErrors = await getTranslations("Common.errors");
   const { id: examId } = await params;
 
   const auth = await requireApiRole(request, "student");
@@ -33,14 +35,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const exam = await db.exam.findUnique({ where: { id: examId } });
 
   if (!exam || exam.deletedAt || !exam.availableAt || exam.availableAt.getTime() > Date.now()) {
-    return NextResponse.json({ error: "لم يتم العثور على الاختبار" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("examNotFound") }, { status: 404 });
   }
 
   try {
     await assertStudentEnrolledInCourse(ctx, exam.facultyUserId, exam.courseCode);
   } catch (err) {
     if (err instanceof FacultyAccessError) {
-      return NextResponse.json({ error: "لم يتم العثور على الاختبار" }, { status: 404 });
+      return NextResponse.json({ error: tErrors("examNotFound") }, { status: 404 });
     }
     throw err;
   }

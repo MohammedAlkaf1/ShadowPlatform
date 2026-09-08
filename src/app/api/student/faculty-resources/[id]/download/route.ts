@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { getMobileRequestContext } from "@/lib/api-auth";
 import { getRequestContext, type RequestContext } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
@@ -26,27 +27,28 @@ async function resolveStudentContext(request: Request): Promise<RequestContext |
 }
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const tErrors = await getTranslations("Common.errors");
   const { id } = await params;
 
   const ctx = await resolveStudentContext(request);
   if (!ctx) {
-    return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
+    return NextResponse.json({ error: tErrors("unauthorized") }, { status: 401 });
   }
 
   const db = getTenantScopedPrisma(ctx.tenantId);
   const studentProfile = await db.studentProfile.findUnique({ where: { userId: ctx.userId } });
   if (!studentProfile) {
-    return NextResponse.json({ error: "الملف الشخصي غير موجود" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("studentProfileNotFound") }, { status: 404 });
   }
 
   const resource = await db.facultyResource.findUnique({ where: { id } });
   if (!resource || resource.deletedAt) {
-    return NextResponse.json({ error: "لم يتم العثور على الملف" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("resourceNotFound") }, { status: 404 });
   }
   if (resource.studentProfileId !== studentProfile.id) {
     // Deliberately the SAME 404 as "doesn't exist" — never confirm to a
     // student that a resource id belongs to someone else.
-    return NextResponse.json({ error: "لم يتم العثور على الملف" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("resourceNotFound") }, { status: 404 });
   }
 
   const bytes = await getPlainObject(resource.objectKey);

@@ -5,7 +5,7 @@ const ROLE_HOME: Record<string, string> = {
   student: "/student/status",
   faculty: "/faculty/students",
   specialist: "/specialist/queue",
-  admin: "/admin/stats",
+  admin: "/admin",
 };
 
 export default async function Home() {

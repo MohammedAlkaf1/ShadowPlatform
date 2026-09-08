@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { requireRole, AuthError } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
+import { localize } from "@/lib/localize";
 
 /**
  * GET /api/faculty/exams/:id/results — every student who has an
@@ -13,6 +15,7 @@ import { getTenantScopedPrisma } from "@/lib/tenant-db";
  * doesn't own, same posture as the sibling routes.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const tErrors = await getTranslations("Common.errors");
   const { id: examId } = await params;
 
   let ctx;
@@ -28,7 +31,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const db = getTenantScopedPrisma(ctx.tenantId);
   const exam = await db.exam.findUnique({ where: { id: examId } });
   if (!exam || exam.deletedAt || exam.facultyUserId !== ctx.userId) {
-    return NextResponse.json({ error: "لم يتم العثور على الاختبار" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("examNotFound") }, { status: 404 });
   }
 
   const totalQuestions = await db.question.count({ where: { examId } });
@@ -37,7 +40,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     where: { examId },
     orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }],
     include: {
-      student: { select: { fullName: true, email: true } },
+      student: { select: { fullName: true, fullNameEn: true, email: true } },
       // Correct count is re-derived from the answers themselves (not just
       // trusting the stored `score`) so the "X/Y" breakdown always matches
       // what `score` was computed from — see the completion-time scoring
@@ -46,10 +49,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     },
   });
 
+  const locale = await getLocale();
   return NextResponse.json({
     results: submissions.map((s) => ({
       submissionId: s.id,
-      studentName: s.student.fullName,
+      studentName: localize(s.student.fullName, s.student.fullNameEn, locale),
       studentEmail: s.student.email,
       status: s.status,
       submittedAt: s.completedAt,

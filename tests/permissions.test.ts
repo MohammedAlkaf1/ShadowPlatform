@@ -27,9 +27,9 @@ describe("permission and tenant/role isolation (Phase 2 required suite)", () => 
   let student2DocumentId: string;
 
   beforeAll(async () => {
-    student1 = await tokenFor("student@demo.shadow.sa");
+    student1 = await tokenFor("441204567@student.ksu.edu.sa");
     student2 = await tokenFor("student2@demo.shadow.sa");
-    specialist = await tokenFor("specialist@demo.shadow.sa");
+    specialist = await tokenFor("h.alzahrani@ksu.edu.sa");
     faculty = await tokenFor("faculty@demo.shadow.sa");
 
     // Enforce (not just assert) the fixture this whole suite depends on: the

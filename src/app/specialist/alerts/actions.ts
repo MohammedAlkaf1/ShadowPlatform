@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { logAudit } from "@/lib/audit";
@@ -21,8 +22,9 @@ async function assertOwnsAlert(ctx: { userId: string; role: string; tenantId: st
 
 export async function acknowledgeAlert(alertId: string): Promise<AlertActionResult> {
   const ctx = await requireRole("specialist", "admin");
+  const tErrors = await getTranslations("Common.errors");
   const found = await assertOwnsAlert(ctx, alertId);
-  if (!found) return { ok: false, error: "لم يتم العثور على التنبيه" };
+  if (!found) return { ok: false, error: tErrors("alertNotFound") };
 
   await found.db.mentorAlert.update({ where: { id: alertId }, data: { status: "acknowledged" } });
 
@@ -54,16 +56,15 @@ const resolveSchema = z.object({
  */
 export async function resolveAlert(input: unknown): Promise<AlertActionResult> {
   const ctx = await requireRole("specialist", "admin");
+  const tErrors = await getTranslations("Common.errors");
   const parsed = resolveSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "بيانات غير صالحة" };
+  if (!parsed.success) return { ok: false, error: tErrors("invalidData") };
 
   const found = await assertOwnsAlert(ctx, parsed.data.alertId);
-  if (!found) return { ok: false, error: "لم يتم العثور على التنبيه" };
+  if (!found) return { ok: false, error: tErrors("alertNotFound") };
 
   const reason = parsed.data.reason?.trim();
-  const newMessage = reason
-    ? `${found.alert.message}\n\n[تمت المعالجة] ${reason}`
-    : found.alert.message;
+  const newMessage = reason ? `${found.alert.message}\n\n[${tErrors("alertResolvedNote")}] ${reason}` : found.alert.message;
 
   await found.db.mentorAlert.update({
     where: { id: parsed.data.alertId },

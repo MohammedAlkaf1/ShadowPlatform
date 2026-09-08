@@ -5,7 +5,63 @@ import createNextIntlPlugin from "next-intl/plugin";
 // URL-based i18n routing — see src/i18n/request.ts for why.
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
+// This app has zero third-party runtime resources: fonts are self-hosted
+// via next/font (no fonts.gstatic.com request), there are no analytics/CDN
+// scripts, and all file storage (S3/MinIO) and AI (Gemini) calls happen
+// server-side only — the browser never talks to them directly (see
+// src/lib/s3.ts's own comment: "no client-side presigned URLs"). That means
+// a same-origin-only CSP is a real fit here, not a generic template.
+const isDev = process.env.NODE_ENV !== "production";
+
+// API-only CSP: JSON responses never execute a script, so a static
+// same-origin policy (no nonce machinery needed) is sufficient here.
+// Page routes get a stronger, per-request NONCE-based CSP instead — see
+// middleware.ts's buildCsp, which replaces 'unsafe-inline' on script-src
+// with a real per-request nonce (empirically verified against both `next
+// dev` and a real `next build && next start`, after 'unsafe-inline' alone
+// was proven necessary — see the git history on this file for that
+// investigation). Only page routes can carry a nonce all the way from
+// middleware through to Next's own script tags, so /api/* keeps this
+// simpler static policy.
+const API_CSP = [
+  "default-src 'self'",
+  isDev ? "script-src 'self' 'unsafe-eval'" : "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join("; ");
+
+const SHARED_SECURITY_HEADERS = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // No camera/mic/geolocation/payment use anywhere in this web app — the
+  // voice-driven exam features are mobile-app-only (see api-auth.ts's
+  // mobile-vs-web split); the browser never calls getUserMedia.
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  // HSTS only makes sense once the deployment is actually served over
+  // HTTPS (it's a no-op, not harmful, over plain HTTP in local dev) —
+  // included unconditionally since production for this app is always HTTPS.
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+];
+
 const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      // /api/* gets its own static CSP here (middleware.ts's matcher
+      // deliberately excludes /api/*, same as its auth logic — see that
+      // file's own comment).
+      { source: "/api/:path*", headers: [{ key: "Content-Security-Policy", value: API_CSP }, ...SHARED_SECURITY_HEADERS] },
+      // Everything else (pages) gets the shared non-CSP headers here; CSP
+      // itself comes from middleware.ts so it can carry a per-request nonce.
+      { source: "/:path*", headers: SHARED_SECURITY_HEADERS },
+    ];
+  },
   /**
    * `next dev` and `next build`/`next start` default to the SAME output
    * directory (`.next`). If a production build ever runs while a dev

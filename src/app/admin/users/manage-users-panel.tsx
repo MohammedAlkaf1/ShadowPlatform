@@ -4,9 +4,10 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { NavIcon } from "@/components/layout/nav-icon";
 import { CreateUserForm } from "./create-user-form";
 import { UserRowActions } from "./user-row-actions";
+import { cn } from "@/lib/utils";
 import type { UserRole } from "@prisma/client";
 
 interface ManageUserRow {
@@ -15,9 +16,12 @@ interface ManageUserRow {
   email: string;
   role: UserRole;
   roleLabel: string;
+  org: string;
   active: boolean;
   needsAssignment: boolean;
 }
+
+const ROLE_FILTERS: (UserRole | "all")[] = ["all", "admin", "faculty", "specialist", "student"];
 
 /**
  * Batch 7 (issues D/E/F): the old design had TWO separate cards — a
@@ -36,30 +40,53 @@ interface ManageUserRow {
  */
 export function ManageUsersPanel({ users }: { users: ManageUserRow[] }) {
   const t = useTranslations("AdminUsers");
-  const tActions = useTranslations("Common.actions");
+  const tRoles = useTranslations("Common.roles");
   const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter((u) => u.fullName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
-  }, [users, query]);
+    return users.filter((u) => {
+      if (roleFilter !== "all" && u.role !== roleFilter) return false;
+      if (!q) return true;
+      return u.fullName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+    });
+  }, [users, query, roleFilter]);
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="mb-2 text-sm font-semibold">{t("addUserTitle")}</p>
-        <CreateUserForm />
-      </div>
+      <CreateUserForm />
 
-      <Input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={t("searchUsersPlaceholder")}
-        aria-label={t("searchUsersPlaceholder")}
-        className="min-h-11 rounded-[14px]"
-      />
+      <div className="flex flex-wrap items-center gap-2.5">
+        <div className="relative min-w-[200px] max-w-[280px] flex-1">
+          <NavIcon name="search" className="absolute start-3.5 top-1/2 size-[17px] -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("searchUsersPlaceholder")}
+            aria-label={t("searchUsersPlaceholder")}
+            className="h-10 rounded-[11px] ps-9"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {ROLE_FILTERS.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => setRoleFilter(r)}
+              className={cn(
+                "flex min-h-9 items-center rounded-full border px-3.5 text-[12.5px] font-bold transition-colors",
+                r === roleFilter
+                  ? "border-transparent bg-foreground text-background"
+                  : "border-border bg-background text-muted-foreground hover:bg-muted"
+              )}
+            >
+              {r === "all" ? t("roleFilterAll") : tRoles(r)}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {filtered.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted-foreground">{t("noUsersForSearch")}</p>
@@ -69,9 +96,10 @@ export function ManageUsersPanel({ users }: { users: ManageUserRow[] }) {
             <TableHeader>
               <TableRow>
                 <TableHead>{t("tableUser")}</TableHead>
+                <TableHead>{t("tableOrg")}</TableHead>
                 <TableHead>{t("tableRole")}</TableHead>
                 <TableHead>{t("tableStatus")}</TableHead>
-                <TableHead className="w-56">{t("tableActions")}</TableHead>
+                <TableHead className="text-end">{t("tableActions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -81,41 +109,35 @@ export function ManageUsersPanel({ users }: { users: ManageUserRow[] }) {
               {filtered.map((u) => (
                 <TableRow key={u.id} className={u.needsAssignment ? "bg-accent/5" : undefined}>
                   {/* Name on top, email stacked directly below in the same
-                      cell. Role shown ONCE, as its own Badge — never
-                      duplicated into the name text (see prisma/seed.ts's
-                      batch-7 fix). Batch 8: dir="ltr" is on an inline span
+                      cell. Batch 8: dir="ltr" is on an inline span
                       nested inside the email <p>, NOT on the <p> itself —
                       see admin/audit-log/page.tsx's comment for why a
                       dir="ltr" block-level <p> breaks RTL alignment
-                      against its sibling <p> (this was the actual,
-                      screenshot-confirmed root cause of the "email on the
-                      wrong side" bug, invisible to class-string
-                      comparison). */}
+                      against its sibling <p>. */}
                   <TableCell className="font-medium">
                     <p>{u.fullName}</p>
                     <p className="text-xs font-normal text-muted-foreground">
                       <span dir="ltr">{u.email}</span>
                     </p>
                   </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{u.org}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{u.roleLabel}</Badge>
+                    <span className="inline-block rounded-md bg-foreground/[.08] px-2.5 py-1 text-xs font-bold text-muted-foreground">
+                      {u.roleLabel}
+                    </span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge variant={u.active ? "secondary" : "destructive"}>
-                        {u.active ? tActions("active") : tActions("disabled")}
-                      </Badge>
-                      {/* Batch 8 (new issue 2): was variant="destructive"
-                          (red) — see admin/stats/page.tsx's comment. */}
-                      {u.needsAssignment && (
-                        <Badge variant="secondary" className="bg-accent/15 text-accent">
-                          {t("needsAssignmentBadge")}
-                        </Badge>
+                    <span
+                      className={cn(
+                        "inline-flex items-center text-xs font-bold",
+                        u.active ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"
                       )}
-                    </div>
+                    >
+                      {u.active ? t("statusActive") : t("statusDisabled")}
+                    </span>
                   </TableCell>
                   <TableCell>
-                    <UserRowActions userId={u.id} role={u.role} active={u.active} />
+                    <UserRowActions userId={u.id} active={u.active} />
                   </TableCell>
                 </TableRow>
               ))}

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { assertSpecialistAssigned } from "@/lib/specialist-access";
@@ -31,9 +32,10 @@ export interface ReviewActionResult {
 
 export async function createAssessment(formData: unknown): Promise<ReviewActionResult> {
   const ctx = await requireRole("specialist", "admin");
+  const tErrors = await getTranslations("Common.errors");
   const parsed = assessmentSchema.safeParse(formData);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "بيانات غير صالحة" };
+    return { ok: false, error: tErrors("invalidData") };
   }
   const { studentProfileId, conditionId, supportLevelId, notes } = parsed.data;
 
@@ -43,7 +45,7 @@ export async function createAssessment(formData: unknown): Promise<ReviewActionR
 
   const student = await db.studentProfile.findUnique({ where: { id: studentProfileId } });
   if (!student) {
-    return { ok: false, error: "لم يتم العثور على الطالب" };
+    return { ok: false, error: tErrors("studentNotFound") };
   }
 
   await db.assessment.create({
@@ -90,9 +92,10 @@ const savePlanSchema = z.object({
 /** Creates the plan (as draft) if it doesn't exist yet, and syncs tool activations. */
 export async function saveSupportPlan(input: unknown): Promise<ReviewActionResult> {
   const ctx = await requireRole("specialist", "admin");
+  const tErrors = await getTranslations("Common.errors");
   const parsed = savePlanSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, error: "بيانات غير صالحة" };
+    return { ok: false, error: tErrors("invalidData") };
   }
   const { studentProfileId, assessmentId, enabledToolCodes } = parsed.data;
   await assertSpecialistAssigned(ctx, studentProfileId);
@@ -101,7 +104,7 @@ export async function saveSupportPlan(input: unknown): Promise<ReviewActionResul
 
   const assessment = await db.assessment.findUnique({ where: { id: assessmentId } });
   if (!assessment || assessment.studentProfileId !== studentProfileId) {
-    return { ok: false, error: "لم يتم العثور على التقييم" };
+    return { ok: false, error: tErrors("assessmentNotFound") };
   }
 
   let plan = await db.supportPlan.findFirst({ where: { assessmentId } });
@@ -121,7 +124,7 @@ export async function saveSupportPlan(input: unknown): Promise<ReviewActionResul
   }
 
   if (plan.status === "approved") {
-    return { ok: false, error: "لا يمكن تعديل الأدوات بعد اعتماد الخطة. يمكنك مراجعة المستوى بدلاً من ذلك." };
+    return { ok: false, error: tErrors("planLockedTools") };
   }
 
   for (const code of TOOL_CODES) {
@@ -137,14 +140,59 @@ export async function saveSupportPlan(input: unknown): Promise<ReviewActionResul
   return { ok: true };
 }
 
-export async function approveSupportPlan(planId: string, studentProfileId: string): Promise<ReviewActionResult> {
+const planItemConfigSchema = z.object({
+  planId: z.string().guid(),
+  toolCode: z.enum(TOOL_CODES),
+  studentProfileId: z.string().guid(),
+  courses: z.string().max(200).optional(),
+  startDate: z.string().max(40).optional(),
+  visible: z.string().max(40).optional(),
+});
+
+/**
+ * Persists the per-plan-item "target courses / start date / visibility"
+ * fields the design reference shows on each support-plan card, via the
+ * pencil-edit button — real data stored in ToolActivation.config (the one
+ * schema field built for exactly this: arbitrary per-tool JSON), not
+ * invented columns.
+ */
+export async function updatePlanItemConfig(input: unknown): Promise<ReviewActionResult> {
   const ctx = await requireRole("specialist", "admin");
+  const tErrors = await getTranslations("Common.errors");
+  const parsed = planItemConfigSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: tErrors("invalidData") };
+  }
+  const { planId, toolCode, studentProfileId, courses, startDate, visible } = parsed.data;
   await assertSpecialistAssigned(ctx, studentProfileId);
 
   const db = getTenantScopedPrisma(ctx.tenantId);
   const plan = await db.supportPlan.findUnique({ where: { id: planId } });
   if (!plan || plan.studentProfileId !== studentProfileId) {
-    return { ok: false, error: "لم يتم العثور على الخطة" };
+    return { ok: false, error: tErrors("planNotFound") };
+  }
+  if (plan.status === "approved") {
+    return { ok: false, error: tErrors("planLockedItems") };
+  }
+
+  await db.toolActivation.update({
+    where: { supportPlanId_toolCode: { supportPlanId: planId, toolCode } },
+    data: { config: { courses: courses ?? null, startDate: startDate ?? null, visible: visible ?? null } },
+  });
+
+  revalidateReviewPaths(studentProfileId);
+  return { ok: true };
+}
+
+export async function approveSupportPlan(planId: string, studentProfileId: string): Promise<ReviewActionResult> {
+  const ctx = await requireRole("specialist", "admin");
+  await assertSpecialistAssigned(ctx, studentProfileId);
+  const tErrors = await getTranslations("Common.errors");
+
+  const db = getTenantScopedPrisma(ctx.tenantId);
+  const plan = await db.supportPlan.findUnique({ where: { id: planId } });
+  if (!plan || plan.studentProfileId !== studentProfileId) {
+    return { ok: false, error: tErrors("planNotFound") };
   }
 
   await db.supportPlan.update({
@@ -185,9 +233,10 @@ const reviseLevelSchema = z.object({
 
 export async function reviseSupportLevel(input: unknown): Promise<ReviewActionResult> {
   const ctx = await requireRole("specialist", "admin");
+  const tErrors = await getTranslations("Common.errors");
   const parsed = reviseLevelSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, error: "بيانات غير صالحة" };
+    return { ok: false, error: tErrors("invalidData") };
   }
   const { studentProfileId, supportPlanId, newSupportLevelId, reason } = parsed.data;
   await assertSpecialistAssigned(ctx, studentProfileId);
@@ -195,7 +244,7 @@ export async function reviseSupportLevel(input: unknown): Promise<ReviewActionRe
   const db = getTenantScopedPrisma(ctx.tenantId);
   const plan = await db.supportPlan.findUnique({ where: { id: supportPlanId } });
   if (!plan || plan.studentProfileId !== studentProfileId) {
-    return { ok: false, error: "لم يتم العثور على الخطة" };
+    return { ok: false, error: tErrors("planNotFound") };
   }
 
   await db.planRevision.create({
@@ -230,11 +279,12 @@ export async function reviseSupportLevel(input: unknown): Promise<ReviewActionRe
 export async function returnRequestToStudent(studentProfileId: string): Promise<ReviewActionResult> {
   const ctx = await requireRole("specialist", "admin");
   await assertSpecialistAssigned(ctx, studentProfileId);
+  const tErrors = await getTranslations("Common.errors");
 
   const db = getTenantScopedPrisma(ctx.tenantId);
   const student = await db.studentProfile.findUnique({ where: { id: studentProfileId } });
   if (!student) {
-    return { ok: false, error: "لم يتم العثور على الطالب" };
+    return { ok: false, error: tErrors("studentNotFound") };
   }
 
   await db.studentProfile.update({

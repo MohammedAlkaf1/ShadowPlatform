@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { NavItem } from "./app-shell";
+import { NavIcon } from "./nav-icon";
 
 /**
  * Split out from AppShell (a Server Component) specifically because active-
@@ -25,7 +26,7 @@ export function NavLinks({ navItems }: { navItems: NavItem[] }) {
   return (
     <nav className="flex flex-col gap-1 p-3">
       {navItems.map((item) => {
-        const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+        const isActive = pathname === item.href || (!item.exact && pathname?.startsWith(`${item.href}/`));
         return (
           <Link
             key={item.href}
@@ -41,10 +42,11 @@ export function NavLinks({ navItems }: { navItems: NavItem[] }) {
             <span
               aria-hidden="true"
               className={cn(
-                "size-1.5 shrink-0 rounded-full transition-colors",
-                isActive ? "bg-sidebar-foreground" : "bg-transparent"
+                "h-5 w-[3px] shrink-0 rounded-full transition-colors",
+                isActive ? "bg-accent" : "bg-transparent"
               )}
             />
+            <NavIcon name={item.icon} className={cn("shrink-0", !isActive && "opacity-70")} />
             <span className="break-words">{item.label}</span>
           </Link>
         );

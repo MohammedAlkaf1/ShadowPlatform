@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
 import { requireApiRole } from "@/lib/api-auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { synthesizeSpeech } from "@/lib/ai";
@@ -64,6 +65,7 @@ function pcmToWav(pcm: Buffer, sampleRateHz: number): Buffer {
  * about it depends on which exam or question the text came from.
  */
 export async function POST(request: Request) {
+  const tErrors = await getTranslations("Common.errors");
   const auth = await requireApiRole(request, "student");
   if (!auth.ok) return auth.response;
   const { ctx } = auth;
@@ -71,7 +73,7 @@ export async function POST(request: Request) {
   const rateLimit = checkRateLimit(`tts:${ctx.userId}`, TTS_RATE_LIMIT);
   if (!rateLimit.allowed) {
     return NextResponse.json(
-      { error: "عدد الطلبات كبير جداً، الرجاء المحاولة لاحقاً" },
+      { error: tErrors("tooManyRequests") },
       {
         status: 429,
         headers: {
@@ -86,14 +88,14 @@ export async function POST(request: Request) {
   const json = await request.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
-    return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("invalidData") }, { status: 400 });
   }
 
   let audio;
   try {
     audio = await synthesizeSpeech(parsed.data.text);
   } catch {
-    return NextResponse.json({ error: "تعذر توليد الصوت، حاول مرة أخرى" }, { status: 502 });
+    return NextResponse.json({ error: tErrors("ttsGenerationFailed") }, { status: 502 });
   }
 
   const wav = pcmToWav(audio.pcm, audio.sampleRateHz);

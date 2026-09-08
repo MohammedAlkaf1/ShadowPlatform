@@ -30,6 +30,7 @@ export default async function NewExamPage() {
       navItems={navItems}
       role={ctx.role}
       userEmail={ctx.userEmail ?? ""}
+      userName={ctx.userFullName ?? ""}
       tenantName={ctx.tenantName ?? ""}
       title={t("newTitle")}
       subtitle={t("newSubtitle")}

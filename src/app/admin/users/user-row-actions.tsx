@@ -2,40 +2,29 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { updateUserRole, setUserActive } from "./actions";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import type { UserRole } from "@prisma/client";
+import { setUserActive } from "./actions";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-const ROLE_VALUES: UserRole[] = ["student", "faculty", "specialist", "admin"];
+interface Props {
+  userId: string;
+  active: boolean;
+}
 
-export function UserRowActions({ userId, role, active }: { userId: string; role: UserRole; active: boolean }) {
+/**
+ * Reference's row actions are two plain buttons — "تفاصيل" (details) and
+ * "تعطيل"/"تنشيط" (disable/enable, tinted red/green). "تفاصيل" now
+ * navigates to the user's real full-page profile (/admin/profile?userId=)
+ * instead of opening a modal over the table — same destination as clicking
+ * the sidebar's own profile card.
+ */
+export function UserRowActions({ userId, active }: Props) {
   const router = useRouter();
   const t = useTranslations("AdminUsers");
-  const tRoles = useTranslations("Common.roles");
-  const tActions = useTranslations("Common.actions");
   const [loading, setLoading] = useState(false);
-
-  async function handleRoleChange(newRole: string | null) {
-    if (!newRole || newRole === role) return;
-    setLoading(true);
-    const result = await updateUserRole({ userId, role: newRole });
-    setLoading(false);
-    if (!result.ok) {
-      toast.error(result.error ?? t("errorRoleUpdateFailed"));
-      return;
-    }
-    toast.success(t("successRoleUpdated"));
-    router.refresh();
-  }
 
   async function handleToggleActive() {
     setLoading(true);
@@ -50,21 +39,22 @@ export function UserRowActions({ userId, role, active }: { userId: string; role:
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Select value={role} onValueChange={handleRoleChange}>
-        <SelectTrigger className="h-8 w-36">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {ROLE_VALUES.map((r) => (
-            <SelectItem key={r} value={r}>
-              {tRoles(r)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Button size="sm" variant={active ? "outline" : "default"} disabled={loading} onClick={handleToggleActive}>
-        {active ? tActions("deactivate") : tActions("activate")}
+    <div className="flex items-center justify-end gap-2">
+      <Link href={`/admin/profile?userId=${userId}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "rounded-lg")}>
+        {t("detailsButton")}
+      </Link>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={loading}
+        onClick={handleToggleActive}
+        className={
+          active
+            ? "rounded-lg border-transparent bg-destructive/10 text-destructive hover:bg-destructive/20"
+            : "rounded-lg border-transparent bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400"
+        }
+      >
+        {active ? t("disableButton") : t("enableButton")}
       </Button>
     </div>
   );

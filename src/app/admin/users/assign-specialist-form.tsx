@@ -20,11 +20,28 @@ interface Option {
   label: string;
 }
 
-export function AssignSpecialistForm({ specialists, students }: { specialists: Option[]; students: Option[] }) {
+/**
+ * Reference's isAssign form is a single narrow (max-width 470px) stacked
+ * column — student field first, specialist second, button last — not the
+ * old 3-column single-row grid. When a case row above was clicked
+ * (`selectedStudent` set), the student field becomes a fixed read-only
+ * display (matching the reference exactly) instead of an empty dropdown;
+ * without a pre-selection it falls back to a real dropdown so the form is
+ * still usable on its own.
+ */
+export function AssignSpecialistForm({
+  specialists,
+  students,
+  selectedStudent,
+}: {
+  specialists: Option[];
+  students: Option[];
+  selectedStudent?: Option;
+}) {
   const router = useRouter();
   const t = useTranslations("AdminUsers");
   const [specialistUserId, setSpecialistUserId] = useState("");
-  const [studentProfileId, setStudentProfileId] = useState("");
+  const [studentProfileId, setStudentProfileId] = useState(selectedStudent?.id ?? "");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -45,7 +62,28 @@ export function AssignSpecialistForm({ specialists, students }: { specialists: O
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-3 sm:items-end">
+    <form onSubmit={handleSubmit} className="flex max-w-[470px] flex-col gap-4">
+      <div className="space-y-2">
+        <Label>{t("studentLabel")}</Label>
+        {selectedStudent ? (
+          <div className="flex h-11 items-center rounded-xl border border-input bg-muted/40 px-3.5 text-sm font-medium">
+            {selectedStudent.label}
+          </div>
+        ) : (
+          <Select value={studentProfileId} onValueChange={(v) => setStudentProfileId(v ?? "")}>
+            <SelectTrigger>
+              <SelectValue placeholder={t("studentPlaceholder")} />
+            </SelectTrigger>
+            <SelectContent>
+              {students.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
       <div className="space-y-2">
         <Label>{t("specialistLabel")}</Label>
         <Select value={specialistUserId} onValueChange={(v) => setSpecialistUserId(v ?? "")}>
@@ -61,28 +99,10 @@ export function AssignSpecialistForm({ specialists, students }: { specialists: O
           </SelectContent>
         </Select>
       </div>
-      <div className="space-y-2">
-        <Label>{t("studentLabel")}</Label>
-        <Select value={studentProfileId} onValueChange={(v) => setStudentProfileId(v ?? "")}>
-          <SelectTrigger>
-            <SelectValue placeholder={t("studentPlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            {students.map((s) => (
-              <SelectItem key={s.id} value={s.id}>
-                {s.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      {/* The one terracotta action on this screen — matches the mockup's
-          "عيّن المختص" button. Nothing else on /admin/users is accent
-          (create-user/role/activate controls are all default/outline,
-          tucked behind the "manage users" disclosure). */}
-      {/* min-h-[52px]: matches the reference file's assign-button height
-          exactly (min-height:52px), rather than the generic 44px minimum. */}
-      <Button type="submit" variant="accent" disabled={loading} className="min-h-[52px]">
+      {/* The one terracotta action on this screen — matches the reference's
+          "عيّن المختص" button. min-h-[52px]: the reference's exact
+          assign-button height. */}
+      <Button type="submit" variant="accent" disabled={loading} className="min-h-[52px] rounded-xl">
         {loading ? t("assigning") : t("assignButton")}
       </Button>
     </form>

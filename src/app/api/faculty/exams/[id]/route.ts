@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
 import { requireRole, AuthError } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { logAudit } from "@/lib/audit";
@@ -12,6 +13,7 @@ import { logAudit } from "@/lib/audit";
  * view it; there is no admin/specialist read path.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const tErrors = await getTranslations("Common.errors");
   const { id } = await params;
 
   let ctx;
@@ -31,7 +33,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   });
 
   if (!exam || exam.deletedAt || exam.facultyUserId !== ctx.userId) {
-    return NextResponse.json({ error: "لم يتم العثور على الاختبار" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("examNotFound") }, { status: 404 });
   }
 
   return NextResponse.json({
@@ -77,6 +79,7 @@ const updateExamSchema = z.object({
  * scheduled vs published) can change post-creation.
  */
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const tErrors = await getTranslations("Common.errors");
   const { id } = await params;
 
   let ctx;
@@ -92,7 +95,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const json = await request.json().catch(() => null);
   const parsed = updateExamSchema.safeParse(json);
   if (!parsed.success) {
-    return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("invalidData") }, { status: 400 });
   }
   const { title, questions, availableAt, showResultsToStudents } = parsed.data;
 
@@ -100,7 +103,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const correctCount = q.options.filter((o) => o.isCorrect).length;
     if (correctCount !== 1) {
       return NextResponse.json(
-        { error: "كل سؤال يجب أن يحتوي على إجابة صحيحة واحدة بالضبط" },
+        { error: tErrors("examQuestionNeedsOneCorrectAnswer") },
         { status: 400 }
       );
     }
@@ -109,7 +112,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const db = getTenantScopedPrisma(ctx.tenantId);
   const exam = await db.exam.findUnique({ where: { id } });
   if (!exam || exam.deletedAt || exam.facultyUserId !== ctx.userId) {
-    return NextResponse.json({ error: "لم يتم العثور على الاختبار" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("examNotFound") }, { status: 404 });
   }
 
   const wasUnpublished = !exam.availableAt;

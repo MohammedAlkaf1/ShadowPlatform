@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { requireRole, AuthError } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { assertFacultyLinkedToStudent, FacultyAccessError } from "@/lib/faculty-access";
@@ -13,6 +14,7 @@ import { logAudit } from "@/lib/audit";
  * student/course.
  */
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const tErrors = await getTranslations("Common.errors");
   const { id } = await params;
 
   let ctx;
@@ -28,10 +30,10 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const db = getTenantScopedPrisma(ctx.tenantId);
   const resource = await db.facultyResource.findUnique({ where: { id } });
   if (!resource || resource.deletedAt) {
-    return NextResponse.json({ error: "لم يتم العثور على الملف" }, { status: 404 });
+    return NextResponse.json({ error: tErrors("resourceNotFound") }, { status: 404 });
   }
   if (resource.uploadedByUserId !== ctx.userId) {
-    return NextResponse.json({ error: "لا تملك صلاحية حذف هذا الملف" }, { status: 403 });
+    return NextResponse.json({ error: tErrors("notAuthorizedToDeleteResource") }, { status: 403 });
   }
 
   try {

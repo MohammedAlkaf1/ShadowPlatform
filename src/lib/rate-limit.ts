@@ -72,3 +72,16 @@ export function checkRateLimit(key: string, options: RateLimitOptions): RateLimi
 export function resetRateLimitStore(): void {
   store.clear();
 }
+
+/**
+ * Best-effort client IP for rate-limit keys — same x-forwarded-for/x-real-ip
+ * precedence as src/lib/audit.ts's own extraction, duplicated here rather
+ * than shared since audit.ts's version is async (reads next/headers) and
+ * this one takes a plain Request directly (route handlers already have it
+ * on hand, no need for the headers() indirection).
+ */
+export function getClientIp(request: Request): string {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) return forwardedFor.split(",")[0]?.trim() ?? "unknown";
+  return request.headers.get("x-real-ip") ?? "unknown";
+}

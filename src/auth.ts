@@ -1,10 +1,16 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { LOCALE_COOKIE_NAME, SUPPORTED_LOCALES } from "@/lib/locale";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import type { Locale } from "@prisma/client";
+
+// Same threshold as the mobile login endpoint (/api/auth/login) — keyed by
+// IP so rotating the target email doesn't dodge the limit.
+const LOGIN_RATE_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 };
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -36,6 +42,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "كلمة المرور", type: "password" },
       },
       async authorize(rawCredentials, request) {
+        const ip = request instanceof Request ? getClientIp(request) : "unknown";
+        const rateLimit = checkRateLimit(`auth-login:${ip}`, LOGIN_RATE_LIMIT);
+        if (!rateLimit.allowed) return null;
+
         const parsed = credentialsSchema.safeParse(rawCredentials);
         if (!parsed.success) return null;
         const { email, password } = parsed.data;
@@ -74,14 +84,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // round trip just to display the email/tenant name in the sidebar.
         // That was two avoidable DB queries on every single navigation;
         // this way it's one extra query, paid once per login instead.
-        const tenant = await prisma.tenant.findUnique({ where: { id: user.tenantId }, select: { name: true } });
+        const tenant = await prisma.tenant.findUnique({ where: { id: user.tenantId }, select: { name: true, nameEn: true } });
 
         return {
           id: user.id,
           tenantId: user.tenantId,
           role: user.role,
           email: user.email,
+          fullName: user.fullName,
+          fullNameEn: user.fullNameEn ?? "",
           tenantName: tenant?.name ?? "",
+          tenantNameEn: tenant?.nameEn ?? "",
         };
       },
     }),
@@ -93,7 +106,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.tenantId = user.tenantId;
         token.role = user.role;
         token.email = user.email;
+        token.fullName = user.fullName;
+        token.fullNameEn = user.fullNameEn;
         token.tenantName = user.tenantName;
+        token.tenantNameEn = user.tenantNameEn;
+        // Minted once at sign-in and carried for the JWT's lifetime — a real,
+        // stable per-login-session identifier (audit-log "رقم الجلسة"), not
+        // a display placeholder. Distinct from the JWT's own encoding, so it
+        // survives token rotation.
+        token.sessionId = randomUUID();
       }
       return token;
     },
@@ -102,7 +123,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.tenantId = token.tenantId;
       session.user.role = token.role;
       session.user.email = token.email ?? "";
+      session.user.fullName = token.fullName;
+      session.user.fullNameEn = token.fullNameEn;
       session.user.tenantName = token.tenantName;
+      session.user.tenantNameEn = token.tenantNameEn;
+      session.user.sessionId = token.sessionId;
       return session;
     },
   },

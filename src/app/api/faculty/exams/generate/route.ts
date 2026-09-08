@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { requireRole, AuthError } from "@/lib/session";
 import { assertFacultyTeachesCourse, FacultyAccessError } from "@/lib/faculty-access";
 import { generateExamQuestionsFromPdf, type ExamQuestionLanguage } from "@/lib/ai";
+import { verifyFileContent } from "@/lib/file-validation";
 import { logAudit } from "@/lib/audit";
 
 // Dedicated env var, NOT shared with MAX_FACULTY_RESOURCE_SIZE_BYTES (an
@@ -25,6 +27,7 @@ const MAX_PDF_SIZE_BYTES = Number(process.env.MAX_EXAM_PDF_SIZE_BYTES ?? 52_428_
  * teacher explicitly clicks save/publish) persists anything.
  */
 export async function POST(request: Request) {
+  const tErrors = await getTranslations("Common.errors");
   const t0 = Date.now();
   let ctx;
   try {
@@ -38,7 +41,7 @@ export async function POST(request: Request) {
 
   const formData = await request.formData().catch(() => null);
   if (!formData) {
-    return NextResponse.json({ error: "بيانات غير صالحة" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("invalidData") }, { status: 400 });
   }
 
   const file = formData.get("file");
@@ -47,20 +50,20 @@ export async function POST(request: Request) {
   const languageRaw = formData.get("language");
 
   if (!(file instanceof File) || typeof courseCode !== "string" || !courseCode) {
-    return NextResponse.json({ error: "الرجاء إرفاق ملف PDF واختيار مقرر" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("attachPdfAndChooseCourse") }, { status: 400 });
   }
   if (languageRaw !== "ar" && languageRaw !== "en") {
-    return NextResponse.json({ error: "الرجاء اختيار لغة الأسئلة" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("chooseQuestionLanguage") }, { status: 400 });
   }
   const language: ExamQuestionLanguage = languageRaw;
   if (file.type !== "application/pdf") {
-    return NextResponse.json({ error: "يُسمح فقط برفع ملفات PDF" }, { status: 400 });
+    return NextResponse.json({ error: tErrors("pdfOnly") }, { status: 400 });
   }
   if (file.size > MAX_PDF_SIZE_BYTES) {
     const maxMb = Math.round(MAX_PDF_SIZE_BYTES / 1_048_576);
     const fileMb = (file.size / 1_048_576).toFixed(1);
     return NextResponse.json(
-      { error: `حجم الملف (${fileMb} ميجابايت) يتجاوز الحد المسموح (${maxMb} ميجابايت)` },
+      { error: tErrors("fileSizeExceedsLimit", { fileMb, maxMb }) },
       { status: 400 }
     );
   }
@@ -79,18 +82,21 @@ export async function POST(request: Request) {
 
   const tReceived = Date.now();
   const pdfBytes = Buffer.from(await file.arrayBuffer());
+  if (!(await verifyFileContent(pdfBytes, "application/pdf"))) {
+    return NextResponse.json({ error: tErrors("pdfOnly") }, { status: 400 });
+  }
   const tRead = Date.now();
 
   let questions;
   try {
     questions = await generateExamQuestionsFromPdf(pdfBytes, approxQuestionCount, language);
   } catch {
-    return NextResponse.json({ error: "تعذر توليد الأسئلة من الملف، حاول مرة أخرى" }, { status: 502 });
+    return NextResponse.json({ error: tErrors("examGenerationFailed") }, { status: 502 });
   }
   const tGemini = Date.now();
 
   if (questions.length === 0) {
-    return NextResponse.json({ error: "تعذر توليد الأسئلة من الملف، حاول مرة أخرى" }, { status: 502 });
+    return NextResponse.json({ error: tErrors("examGenerationFailed") }, { status: 502 });
   }
 
   await logAudit({

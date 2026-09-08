@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { FileText } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { getSpecialistNavItems } from "@/components/layout/nav-items";
+import { localize } from "@/lib/localize";
 
 export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: studentProfileId } = await params;
@@ -30,9 +31,12 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   const student = await db.studentProfile.findUnique({
     where: { id: studentProfileId },
-    include: { user: { select: { email: true, fullName: true } } },
+    include: { user: { select: { email: true, fullName: true, fullNameEn: true } } },
   });
   if (!student) notFound();
+  const studentName = localize(student.user.fullName, student.user.fullNameEn, locale);
+  const studentMajor = localize(student.major, student.majorEn, locale);
+  const studentStage = localize(student.academicStage, student.academicStageEn, locale);
 
   await logAudit({
     tenantId: ctx.tenantId,
@@ -69,7 +73,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     db.document.findMany({
       where: { studentProfileId, deletedAt: null },
       orderBy: { createdAt: "desc" },
-      select: { id: true, originalFilename: true, createdAt: true, status: true },
+      select: { id: true, originalFilename: true, originalFilenameEn: true, createdAt: true, status: true },
     }),
   ]);
 
@@ -80,7 +84,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const planRevisions = supportPlans.length
     ? await prisma.planRevision.findMany({
         where: { supportPlanId: { in: supportPlans.map((p) => p.id) } },
-        include: { newSupportLevel: true, revisedBy: { select: { email: true, fullName: true } } },
+        include: { newSupportLevel: true, revisedBy: { select: { email: true, fullName: true, fullNameEn: true } } },
         orderBy: { createdAt: "desc" },
       })
     : [];
@@ -97,21 +101,22 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       navItems={navItems}
       role={ctx.role}
       userEmail={ctx.userEmail ?? ""}
+      userName={ctx.userFullName ?? ""}
       tenantName={ctx.tenantName ?? ""}
       title={t("title")}
-      subtitle={`${student.user.fullName} — ${student.studentNumber}`}
+      subtitle={`${studentName} — ${student.studentNumber}`}
     >
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           {/* Batch 8: dir="ltr" on an inline span, not the block <p> —
               see admin/audit-log/page.tsx. */}
-          <p className="text-base font-semibold text-foreground">{student.user.fullName}</p>
+          <p className="text-base font-semibold text-foreground">{studentName}</p>
           <p className="text-sm text-muted-foreground">
             <span dir="ltr">{student.user.email}</span>
           </p>
           <p className="text-sm text-muted-foreground">
-            {student.studentNumber} — {student.major} — {student.academicStage}
+            {student.studentNumber} — {studentMajor} — {studentStage}
           </p>
         </div>
         <div className="flex gap-2">
@@ -150,7 +155,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                   <TableRow key={doc.id}>
                     <TableCell className="flex items-center gap-2 font-medium">
                       <FileText className="size-4 text-muted-foreground" />
-                      {doc.originalFilename}
+                      {localize(doc.originalFilename, doc.originalFilenameEn, locale)}
                     </TableCell>
                     {/* Batch 7: see table.tsx's updated comment — the cell
                         itself must not force dir="ltr"; only the date text
@@ -268,7 +273,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                     </p>
                     <p className="text-muted-foreground">{rev.reason}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {rev.revisedBy.fullName}{" "}
+                      {localize(rev.revisedBy.fullName, rev.revisedBy.fullNameEn, locale)}{" "}
                       <span dir="ltr">— {formatDateTime(rev.createdAt, locale)}</span>
                     </p>
                   </li>

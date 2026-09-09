@@ -63,24 +63,24 @@ const nextConfig: NextConfig = {
     ];
   },
   /**
-   * `next dev` and `next build`/`next start` default to the SAME output
-   * directory (`.next`). If a production build ever runs while a dev
-   * server is still live (or vice versa), the dev server's in-memory
-   * compiler state gets orphaned from the on-disk chunk manifest it's
-   * serving from, and the browser fails with:
-   *   "ChunkLoadError: Loading chunk app/<route>/layout failed."
-   * for any route the dev server has to freshly (re)compile after that —
-   * while already-warm routes can appear to keep working, which is exactly
-   * what makes this confusing to diagnose (it looks role/route-specific,
-   * but it's actually about which routes were compiled before vs after the
-   * directory got clobbered).
+   * Deliberately NOT overridden — stays Next.js's standard `.next`.
    *
-   * Giving production builds their own directory makes this class of bug
-   * structurally impossible instead of relying on developers (or agents)
-   * to always fully stop `next dev` before running `next build`/`next
-   * start`.
+   * This used to split production builds into a separate `.next-prod`
+   * directory, to avoid a `next dev` server's in-memory compiler state
+   * getting orphaned from the on-disk chunk manifest if a production build
+   * ran on the same machine while `next dev` was still live (surfaces as
+   * "ChunkLoadError: Loading chunk app/<route>/layout failed"). That's a
+   * local single-machine workflow hazard, avoidable by just stopping
+   * `next dev` before running a local production build/start.
+   *
+   * It broke real deployment: hosting platforms that auto-detect a Next.js
+   * app's build output (Hostinger's Node.js "Deploy Web App" included) look
+   * for the standard `.next` directory, not a project-specific rename —
+   * the build succeeded but deployment failed with "No output directory
+   * found" because output was never where the platform expected it.
+   * Matching the standard convention here is what every Next.js host
+   * assumes.
    */
-  distDir: process.env.NODE_ENV === "production" ? ".next-prod" : ".next",
 
   // ESLint is a devDependency (lint is run separately via `npm run lint`,
   // not shipped in the production install) — Hostinger's production

@@ -63,6 +63,11 @@ export class StorageError extends Error {
     super("Storage operation failed");
     this.name = "StorageError";
     this.cause = cause;
+    // Never shown to the end user (they only ever see the generic
+    // "storageUnavailable" message) — this is the one place the actual
+    // underlying reason (wrong endpoint/credentials/bucket, network
+    // failure, etc.) gets recorded server-side for diagnosis.
+    console.error("[s3] storage operation failed:", cause);
   }
 }
 

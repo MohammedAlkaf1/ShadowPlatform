@@ -81,6 +81,28 @@ const nextConfig: NextConfig = {
    * start`.
    */
   distDir: process.env.NODE_ENV === "production" ? ".next-prod" : ".next",
+
+  // ESLint is a devDependency (lint is run separately via `npm run lint`,
+  // not shipped in the production install) — Hostinger's production
+  // install omits devDependencies, so `next build` running ESLint by
+  // default fails there with "ESLint must be installed". Build-time
+  // linting isn't a build/runtime necessity; disabling it here doesn't
+  // remove linting from the workflow, just from this build step.
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
+  // Root tsconfig.json's broad "**/*.ts" include also covers tests/ — needed
+  // there so vite-tsconfig-paths (vitest.config.mts) can resolve the "@/*"
+  // alias in test files. But that means Next's own build-time type-check
+  // also type-checks tests/setup.ts, which imports vitest — a devDependency
+  // Hostinger's production install omits, so the build fails resolving it.
+  // tsconfig.build.json is identical except it excludes tests/, used only
+  // for this build-time check; tsconfig.json itself (and vitest) are
+  // untouched.
+  typescript: {
+    tsconfigPath: "./tsconfig.build.json",
+  },
 };
 
 export default withNextIntl(nextConfig);

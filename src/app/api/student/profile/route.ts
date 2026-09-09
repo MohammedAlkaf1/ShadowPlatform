@@ -28,6 +28,7 @@ export async function GET(request: Request) {
   const db = getTenantScopedPrisma(ctx.tenantId);
   const studentProfile = await db.studentProfile.findUnique({
     where: { userId: ctx.userId },
+    include: { user: { select: { fullName: true, fullNameEn: true } } },
   });
   if (!studentProfile) {
     return NextResponse.json({ error: "الملف الشخصي غير موجود" }, { status: 404 });
@@ -55,6 +56,8 @@ export async function GET(request: Request) {
     : defaultAdaptationDirectives();
 
   return NextResponse.json({
+    fullName: studentProfile.user.fullName,
+    fullNameEn: studentProfile.user.fullNameEn,
     studentNumber: studentProfile.studentNumber,
     major: studentProfile.major,
     academicStage: studentProfile.academicStage,

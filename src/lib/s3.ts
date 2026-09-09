@@ -28,6 +28,14 @@ function safeExtension(originalFilename: string): string {
  *
  * All document routes go through the Next.js API server — there are no
  * client-side presigned URLs — so every read/write can be audit-logged.
+ *
+ * requestHandler timeouts are explicit and deliberate: the AWS SDK v3
+ * applies NO default connection/request timeout, so a slow or unresponsive
+ * storage endpoint would otherwise hang a request indefinitely (observed in
+ * production as an upload that never completes) instead of failing fast
+ * with a diagnosable error. Values are generous enough for a real upload
+ * (up to the app's own ~20MB size limits) over a normal connection, while
+ * still bounding the worst case to seconds, not minutes.
  */
 export const s3Client = new S3Client({
   region: process.env.S3_REGION ?? "us-east-1",
@@ -37,7 +45,26 @@ export const s3Client = new S3Client({
     accessKeyId: process.env.S3_ACCESS_KEY_ID ?? "",
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? "",
   },
+  requestHandler: {
+    connectionTimeout: 5_000,
+    requestTimeout: 30_000,
+  },
 });
+
+/**
+ * Thrown by every function below when the underlying S3-compatible call
+ * fails for any reason (timeout, connection refused, credentials, etc.) —
+ * callers catch this specific type to return a clear, user-facing error
+ * instead of letting an unhandled storage exception surface as a generic
+ * 500/hang.
+ */
+export class StorageError extends Error {
+  constructor(cause: unknown) {
+    super("Storage operation failed");
+    this.name = "StorageError";
+    this.cause = cause;
+  }
+}
 
 const BUCKET = process.env.S3_BUCKET ?? "shadow-documents";
 
@@ -84,14 +111,18 @@ export function buildExamAnswerAudioObjectKey(
 }
 
 export async function putEncryptedObject(objectKey: string, body: Buffer): Promise<void> {
-  await s3Client.send(
-    new PutObjectCommand({
-      Bucket: BUCKET,
-      Key: objectKey,
-      Body: body,
-      ContentType: "application/octet-stream",
-    })
-  );
+  try {
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: objectKey,
+        Body: body,
+        ContentType: "application/octet-stream",
+      })
+    );
+  } catch (err) {
+    throw new StorageError(err);
+  }
 }
 
 export async function getEncryptedObject(objectKey: string): Promise<Buffer> {
@@ -115,14 +146,18 @@ export async function getEncryptedObject(objectKey: string): Promise<Buffer> {
  * src/lib/s3.ts's encrypted pair above.
  */
 export async function putPlainObject(objectKey: string, body: Buffer, contentType: string): Promise<void> {
-  await s3Client.send(
-    new PutObjectCommand({
-      Bucket: BUCKET,
-      Key: objectKey,
-      Body: body,
-      ContentType: contentType,
-    })
-  );
+  try {
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: objectKey,
+        Body: body,
+        ContentType: contentType,
+      })
+    );
+  } catch (err) {
+    throw new StorageError(err);
+  }
 }
 
 export async function getPlainObject(objectKey: string): Promise<Buffer> {

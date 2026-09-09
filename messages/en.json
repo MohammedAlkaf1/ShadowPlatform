@@ -175,6 +175,7 @@
       "selectFile": "Please select a file",
       "pdfOrWordOnly": "Only PDF or Word files are allowed",
       "fileTooLarge": "The file exceeds the allowed size",
+      "storageUnavailable": "The file couldn't be uploaded because storage is temporarily unavailable. Please try again in a moment.",
       "studentProfileNotFound": "Student profile not found",
       "selfSignupDisabled": "Self-signup isn't currently available for your university. Please contact the relevant office.",
       "alertNotFound": "Alert not found",

@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { requireMobileRole } from "@/lib/api-auth";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { encryptBuffer, DOCUMENT_ENCRYPTION_KEY_REF } from "@/lib/encryption";
-import { putEncryptedObject, buildDocumentObjectKey } from "@/lib/s3";
+import { putEncryptedObject, buildDocumentObjectKey, StorageError } from "@/lib/s3";
 import { verifyFileContent } from "@/lib/file-validation";
 import { logAudit } from "@/lib/audit";
 
@@ -49,7 +49,14 @@ export async function POST(request: Request) {
 
   const documentId = randomUUID();
   const objectKey = buildDocumentObjectKey(ctx.tenantId, studentProfile.id, documentId);
-  await putEncryptedObject(objectKey, ciphertext);
+  try {
+    await putEncryptedObject(objectKey, ciphertext);
+  } catch (err) {
+    if (err instanceof StorageError) {
+      return NextResponse.json({ error: "تعذّر رفع الملف بسبب تعذّر الوصول إلى التخزين مؤقتاً. الرجاء المحاولة مرة أخرى بعد قليل." }, { status: 503 });
+    }
+    throw err;
+  }
 
   await db.document.create({
     data: {

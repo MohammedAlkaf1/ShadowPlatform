@@ -5,7 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { encryptBuffer, DOCUMENT_ENCRYPTION_KEY_REF } from "@/lib/encryption";
-import { putEncryptedObject, buildDocumentObjectKey } from "@/lib/s3";
+import { putEncryptedObject, buildDocumentObjectKey, StorageError } from "@/lib/s3";
 import { verifyFileContent } from "@/lib/file-validation";
 import { logAudit } from "@/lib/audit";
 import { randomUUID } from "crypto";
@@ -67,7 +67,14 @@ export async function uploadDocument(formData: FormData): Promise<UploadResult> 
   const documentId = randomUUID();
   const objectKey = buildDocumentObjectKey(ctx.tenantId, studentProfile.id, documentId);
 
-  await putEncryptedObject(objectKey, ciphertext);
+  try {
+    await putEncryptedObject(objectKey, ciphertext);
+  } catch (err) {
+    if (err instanceof StorageError) {
+      return { ok: false, error: tErrors("storageUnavailable") };
+    }
+    throw err;
+  }
 
   await db.document.create({
     data: {

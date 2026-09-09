@@ -37,14 +37,13 @@ In hPanel, when creating the Node.js app:
   doesn't support `ci`). This also runs `postinstall` → `prisma generate`
   automatically (added to `package.json`).
 - **Build command**: `npm run build`
-- **Startup file / start command**: hPanel's Node.js selector asks for
-  either a startup **command** or a startup **file**:
-  - If it accepts a command: use `npm start` (runs `next start`, which
-    already reads the `PORT` env var Hostinger injects).
-  - If it requires a literal `.js` file: use `server.js` (added to the repo
-    root) — a minimal custom Next.js server that does the same thing
-    explicitly, for panels that execute the startup file directly instead
-    of an npm script.
+- **Startup file / start command**: use **`server.js`** — either as the
+  literal startup file, or as the start command (`node server.js`) if
+  hPanel's Node.js selector asks for a command instead. Required, not just
+  an alternative to `npm start`: `server.js` owns graceful shutdown itself
+  (guards against a double-signal restart-crash-loop — see its own comment
+  for the exact bug this fixes), which plain `next start` has no hook to do.
+  Do not configure `npm start`/`next start` as the actual running process.
 - **Port**: leave to Hostinger's assigned `PORT` env var — do not hardcode a
   port anywhere in the app; both `next start` and `server.js` read
   `process.env.PORT`.

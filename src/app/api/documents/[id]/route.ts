@@ -5,6 +5,8 @@ import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { getEncryptedObject } from "@/lib/s3";
 import { decryptBuffer } from "@/lib/encryption";
 import { logAudit, getRequestIp } from "@/lib/audit";
+import { localize } from "@/lib/localize";
+import { DEFAULT_LOCALE, isSupportedLocale } from "@/lib/locale";
 
 /**
  * GET /api/documents/:id — specialist/admin download, or a student opening
@@ -127,11 +129,22 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     await db.document.update({ where: { id: document.id }, data: { status: "reviewed" } });
   }
 
+  // Reads the authenticated user's saved locale directly rather than going
+  // through resolveLocale() (src/i18n/request.ts) — that helper also checks
+  // the NEXT_LOCALE cookie/Accept-Language for the pre-login case, neither
+  // of which apply here (this route requires auth), and pulling it in drags
+  // along a next-intl plugin-only module that next/headers's cookies()
+  // needs a real Next.js request scope for — this stays a plain query
+  // through the same tenant-scoped `db` client already used above.
+  const requestingUser = await db.user.findUnique({ where: { id: ctx.userId }, select: { locale: true } });
+  const locale = isSupportedLocale(requestingUser?.locale) ? requestingUser.locale : DEFAULT_LOCALE;
+  const downloadFilename = localize(document.originalFilename, document.originalFilenameEn, locale);
+
   return new NextResponse(new Uint8Array(plaintext), {
     status: 200,
     headers: {
       "Content-Type": document.mimeType,
-      "Content-Disposition": `inline; filename="${encodeURIComponent(document.originalFilename)}"`,
+      "Content-Disposition": `inline; filename="${encodeURIComponent(downloadFilename)}"`,
       "Cache-Control": "no-store",
     },
   });

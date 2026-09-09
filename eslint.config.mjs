@@ -16,6 +16,10 @@ const eslintConfig = defineConfig([
     // separate from .next so `next build` can never collide with a live
     // `next dev` server's chunk manifest.
     ".next-prod/**",
+    // Plain CommonJS Node entry point for hosts that require a literal
+    // startup file (see docs/DEPLOYMENT.md) — intentionally require(), not
+    // app source subject to the TS/ESM rules below.
+    "server.js",
   ]),
 ]);
 

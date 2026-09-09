@@ -31,6 +31,12 @@ function parseLocaleCookie(cookieHeader: string | null | undefined): Locale | nu
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
+  // Required in production: the app sits behind Hostinger's own reverse
+  // proxy/TLS termination, so Next.js sees plain-HTTP requests internally.
+  // Without this, NextAuth rejects the proxied Host header and secure-cookie
+  // detection breaks. Safe because NEXTAUTH_URL is still fixed to the real
+  // production origin — this doesn't let a client override it.
+  trustHost: true,
   pages: {
     signIn: "/login",
   },

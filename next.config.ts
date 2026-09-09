@@ -13,6 +13,15 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 // a same-origin-only CSP is a real fit here, not a generic template.
 const isDev = process.env.NODE_ENV !== "production";
 
+// Next.js's own default body-size limit for Server Actions is 1MB,
+// unrelated to and much smaller than this app's own upload limits
+// (MAX_UPLOAD_SIZE_BYTES, default 15MB — see .env.example). The student
+// web upload (src/app/student/upload/actions.ts, a Server Action) was
+// silently rejecting any file over 1MB with "Body exceeded 1 MB limit"
+// before this app's own size validation ever ran. 20mb gives headroom
+// above the largest configured upload limit in the app.
+const SERVER_ACTION_BODY_SIZE_LIMIT = "20mb";
+
 // API-only CSP: JSON responses never execute a script, so a static
 // same-origin policy (no nonce machinery needed) is sufficient here.
 // Page routes get a stronger, per-request NONCE-based CSP instead — see
@@ -102,6 +111,12 @@ const nextConfig: NextConfig = {
   // untouched.
   typescript: {
     tsconfigPath: "./tsconfig.build.json",
+  },
+
+  experimental: {
+    serverActions: {
+      bodySizeLimit: SERVER_ACTION_BODY_SIZE_LIMIT,
+    },
   },
 };
 

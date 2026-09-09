@@ -6,7 +6,7 @@
  */
 export const SUPPORTED_LOCALES = ["ar", "en"] as const;
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number];
-export const DEFAULT_LOCALE: AppLocale = "ar";
+export const DEFAULT_LOCALE: AppLocale = "en";
 export const LOCALE_COOKIE_NAME = "NEXT_LOCALE";
 
 export function isSupportedLocale(value: string | undefined | null): value is AppLocale {

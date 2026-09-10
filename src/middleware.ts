@@ -31,7 +31,7 @@ const ROLE_PREFIXES: Record<string, UserRole> = {
   "/admin": "admin",
 };
 
-const PUBLIC_PATHS = ["/login", "/register"];
+const PUBLIC_PATHS = ["/login", "/register", "/privacy"];
 
 const isDev = process.env.NODE_ENV !== "production";
 

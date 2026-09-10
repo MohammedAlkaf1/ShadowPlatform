@@ -38,8 +38,14 @@ export const createUserSchema = z.object({
   studentNumber: z.string().optional(),
 });
 
-export const updateUserSchema = z.object({
+// Admin "Edit user" form — same ar/en pairing + optional-studentNumber
+// convention as createUserSchema above (studentNumber only meaningful when
+// role === "student").
+export const updateUserProfileSchema = z.object({
   userId: z.string().uuid(),
-  role: z.enum(["student", "faculty", "specialist", "admin"]).optional(),
-  active: z.boolean().optional(),
+  email: z.string().email(),
+  fullName: z.string().min(2),
+  fullNameEn: z.string().trim().optional(),
+  role: z.enum(["student", "faculty", "specialist", "admin"]),
+  studentNumber: z.string().optional(),
 });

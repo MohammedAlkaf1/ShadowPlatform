@@ -80,9 +80,12 @@ export default async function AdminManageUsersPage({
       ) : (
         <div className="mt-4 rounded-[18px] border border-border bg-card p-6 shadow-[0_8px_18px_rgba(30,42,58,0.1),0_2px_4px_rgba(30,42,58,0.06)] dark:shadow-[0_10px_24px_rgba(0,0,0,0.36)]">
           <ManageUsersPanel
+            currentUserId={ctx.userId}
             users={users.map((u) => ({
               id: u.id,
-              fullName: localize(u.fullName, u.fullNameEn, locale),
+              fullName: u.fullName,
+              fullNameEn: u.fullNameEn,
+              displayName: localize(u.fullName, u.fullNameEn, locale),
               email: u.email,
               role: u.role,
               roleLabel: tRoles(u.role),
@@ -91,6 +94,7 @@ export default async function AdminManageUsersPage({
               needsAssignment:
                 u.studentProfile != null &&
                 (u.studentProfile.requestStatus === "pending" || !assignedStudentProfileIds.has(u.studentProfile.id)),
+              studentNumber: u.studentProfile?.studentNumber ?? null,
             }))}
           />
         </div>

@@ -6,7 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { logAudit } from "@/lib/audit";
-import { createUserSchema } from "@/lib/validation";
+import { createUserSchema, updateUserProfileSchema } from "@/lib/validation";
 import { z } from "zod";
 import type { UserRole } from "@prisma/client";
 
@@ -101,6 +101,77 @@ export async function updateUserRole(input: unknown): Promise<ActionResult> {
     action: "update_user",
     resourceType: "User",
     resourceId: parsed.data.userId,
+  });
+
+  revalidatePath("/admin/user-management");
+  return { ok: true };
+}
+
+/**
+ * Admin "Edit user" action — updates the fields the edit dialog exposes
+ * (ar/en name, email, role, student number). Same ar/en pairing and
+ * email-uniqueness handling as createUser; role changes bump tokenVersion
+ * for the same defense-in-depth reason as updateUserRole above. Does not
+ * touch password, active/deletedAt, or any documents/assessments.
+ */
+export async function updateUserProfile(input: unknown): Promise<ActionResult> {
+  const ctx = await requireRole("admin");
+  const tErrors = await getTranslations("Common.errors");
+  const parsed = updateUserProfileSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: tErrors("invalidData") };
+  }
+  const { userId, email, fullName, fullNameEn, role, studentNumber } = parsed.data;
+  const emailLower = email.toLowerCase();
+
+  const db = getTenantScopedPrisma(ctx.tenantId);
+  const user = await db.user.findUnique({ where: { id: userId }, include: { studentProfile: true } });
+  if (!user) return { ok: false, error: tErrors("userNotFound") };
+
+  const emailConflict = await db.user.findFirst({ where: { email: emailLower, id: { not: userId } } });
+  if (emailConflict) return { ok: false, error: tErrors("emailAlreadyExists") };
+
+  await db.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        email: emailLower,
+        fullName: fullName.trim(),
+        fullNameEn: fullNameEn && fullNameEn.length > 0 ? fullNameEn : null,
+        role,
+        tokenVersion: { increment: 1 },
+      },
+    });
+
+    if (role === "student") {
+      if (user.studentProfile) {
+        await tx.studentProfile.update({
+          where: { id: user.studentProfile.id },
+          data: { studentNumber: studentNumber?.trim() ?? user.studentProfile.studentNumber },
+        });
+      } else {
+        await tx.studentProfile.create({
+          data: {
+            tenantId: ctx.tenantId,
+            userId,
+            studentNumber: studentNumber?.trim() ?? "",
+            major: "",
+            academicStage: "",
+            phone: "",
+            requestStatus: "pending",
+            verified: true,
+          },
+        });
+      }
+    }
+  });
+
+  await logAudit({
+    tenantId: ctx.tenantId,
+    actorUserId: ctx.userId,
+    action: "update_user",
+    resourceType: "User",
+    resourceId: userId,
   });
 
   revalidatePath("/admin/user-management");

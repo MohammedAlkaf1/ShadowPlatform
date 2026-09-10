@@ -25,6 +25,7 @@ export function CreateUserForm() {
   const tRoles = useTranslations("Common.roles");
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
+  const [fullNameEn, setFullNameEn] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("student");
   const [studentNumber, setStudentNumber] = useState("");
@@ -33,7 +34,7 @@ export function CreateUserForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const result = await createUser({ email, fullName, password, role, studentNumber });
+    const result = await createUser({ email, fullName, fullNameEn, password, role, studentNumber });
     setLoading(false);
     if (!result.ok) {
       toast.error(result.error ?? t("errorUserCreateFailed"));
@@ -42,6 +43,7 @@ export function CreateUserForm() {
     toast.success(t("successUserCreated"));
     setEmail("");
     setFullName("");
+    setFullNameEn("");
     setPassword("");
     setStudentNumber("");
     router.refresh();
@@ -66,6 +68,17 @@ export function CreateUserForm() {
             placeholder={t("fullNamePlaceholder")}
             minLength={2}
             required
+            className="h-11 rounded-xl bg-background"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="new-full-name-en">{t("fullNameEnLabel")}</Label>
+          <Input
+            id="new-full-name-en"
+            dir="ltr"
+            value={fullNameEn}
+            onChange={(e) => setFullNameEn(e.target.value)}
+            placeholder={t("fullNameEnPlaceholder")}
             className="h-11 rounded-xl bg-background"
           />
         </div>

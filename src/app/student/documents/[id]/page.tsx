@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import type { DocumentStatus } from "@prisma/client";
 import { requireRole } from "@/lib/session";
 import { getTenantScopedPrisma } from "@/lib/tenant-db";
 import { formatDate } from "@/lib/format-date";
@@ -9,12 +10,19 @@ import { AppShell } from "@/components/layout/app-shell";
 import { getStudentNavItems } from "@/components/layout/nav-items";
 import { Eye, FileText } from "lucide-react";
 
+// Same tone convention as the specialist document list (documents-tab.tsx).
+const STATUS_TONE: Record<DocumentStatus, string> = {
+  reviewed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400",
+  pending: "bg-muted text-muted-foreground",
+  needs_update: "bg-accent/15 text-accent",
+};
+
 /**
- * Read-only document preview for the student who owns the file — mirrors
- * the specialist's two-field-grid + preview-box layout, but with no
+ * Read-only document preview for the student who owns the file — no
  * classification form (students never see category/condition/support
- * level, per this app's core visibility rule) and a "عرض فقط" banner
- * making that read-only nature explicit.
+ * level, per this app's core visibility rule), a "عرض فقط" pill making that
+ * read-only nature explicit, and a status pill that reflects the document's
+ * actual review state (matches the Cloud Design reference).
  */
 export default async function StudentDocumentViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: documentId } = await params;
@@ -45,58 +53,71 @@ export default async function StudentDocumentViewPage({ params }: { params: Prom
       title={t("title", { name: studentName })}
       subtitle=""
     >
-      <div className="mx-auto max-w-2xl space-y-4">
-        <div className="flex items-center justify-between rounded-xl bg-muted/60 px-4 py-2.5">
-          <Eye className="size-4 text-muted-foreground" />
-          <span className="text-xs font-bold text-muted-foreground">{t("viewOnly")}</span>
+      <div className="mx-auto max-w-3xl space-y-4">
+        <div className="flex justify-end">
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-bold text-muted-foreground">
+            <Eye className="size-3.5" />
+            {t("viewOnly")}
+          </span>
         </div>
 
-        <span className="inline-flex w-fit rounded-lg bg-muted px-2.5 py-1 text-xs font-bold text-muted-foreground">
-          {t("badgePendingClassification")}
-        </span>
-
-        <div className="overflow-hidden rounded-[18px] border border-border bg-card">
-          <table className="w-full text-sm">
-            <tbody>
-              <tr className="border-b border-border">
-                <td className="px-4 py-3 font-semibold text-muted-foreground">{t("fieldStudent")}</td>
-                <td className="px-4 py-3 font-bold text-end">{studentName}</td>
-              </tr>
-              <tr className="border-b border-border">
-                <td className="px-4 py-3 font-semibold text-muted-foreground">{t("fieldDocType")}</td>
-                <td className="px-4 py-3 font-bold text-end">
-                  {document.documentType ? localize(document.documentType, document.documentTypeEn, locale) : "—"}
-                </td>
-              </tr>
-              <tr className="border-b border-border">
-                <td className="px-4 py-3 font-semibold text-muted-foreground">{t("fieldIssuingEntity")}</td>
-                <td className="px-4 py-3 font-bold text-end">
-                  {document.issuingEntity ? localize(document.issuingEntity, document.issuingEntityEn, locale) : "—"}
-                </td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 font-semibold text-muted-foreground">{t("fieldUploadDate")}</td>
-                <td className="px-4 py-3 font-bold text-end">
-                  <span dir="ltr">{formatDate(document.createdAt, locale)}</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div className="flex min-h-52 flex-col items-center justify-center gap-3 rounded-[18px] border border-dashed border-border bg-muted/30 p-6 text-center">
-          <FileText className="size-8 text-muted-foreground" />
-          <p className="text-xs text-muted-foreground">{t("previewCaption")}</p>
-          <a
-            href={`/api/documents/${document.id}`}
-            target="_blank"
-            rel="noreferrer"
+        <div className="overflow-hidden rounded-[18px] border border-border bg-card p-4">
+          <span
             className={cn(
-              "inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-3 text-sm font-medium hover:bg-muted"
+              "inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold",
+              STATUS_TONE[document.status]
             )}
           >
-            {t("openDocumentButton")}
-          </a>
+            {document.status === "reviewed"
+              ? t("badgeReviewed")
+              : document.status === "needs_update"
+                ? t("badgeNeedsUpdate")
+                : t("badgePendingClassification")}
+          </span>
+
+          <div className="my-3.5 border-t border-border" />
+
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="flex min-h-52 flex-1 flex-col items-center justify-center gap-3 rounded-[14px] bg-muted/40 p-6 text-center sm:max-w-[45%]">
+              <FileText className="size-8 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">{t("previewCaption")}</p>
+              <a
+                href={`/api/documents/${document.id}`}
+                target="_blank"
+                rel="noreferrer"
+                className={cn(
+                  "inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-3 text-sm font-medium hover:bg-muted"
+                )}
+              >
+                {t("openDocumentButton")}
+              </a>
+            </div>
+
+            <div className="flex flex-1 flex-col gap-3 text-sm">
+              <div className="flex items-center justify-between border-b border-border pb-2.5">
+                <span className="font-semibold text-muted-foreground">{t("fieldStudent")}</span>
+                <span className="font-bold">{studentName}</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-border pb-2.5">
+                <span className="font-semibold text-muted-foreground">{t("fieldDocType")}</span>
+                <span className="font-bold">
+                  {document.documentType ? localize(document.documentType, document.documentTypeEn, locale) : "—"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between border-b border-border pb-2.5">
+                <span className="font-semibold text-muted-foreground">{t("fieldIssuingEntity")}</span>
+                <span className="font-bold">
+                  {document.issuingEntity ? localize(document.issuingEntity, document.issuingEntityEn, locale) : "—"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-muted-foreground">{t("fieldUploadDate")}</span>
+                <span className="font-bold" dir="ltr">
+                  {formatDate(document.createdAt, locale)}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </AppShell>

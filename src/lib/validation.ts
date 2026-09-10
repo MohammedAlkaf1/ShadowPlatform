@@ -27,6 +27,10 @@ export const assessmentSchema = z.object({
 export const createUserSchema = z.object({
   email: z.string().email(),
   fullName: z.string().min(2),
+  // Optional English rendering of fullName — same ar/en pairing convention
+  // as every other localized field in the schema (User.fullNameEn etc.).
+  // Never auto-translated; left null when not explicitly provided.
+  fullNameEn: z.string().trim().optional(),
   password: z.string().min(8),
   role: z.enum(["student", "faculty", "specialist", "admin"]),
   // Only meaningful when role === "student" - optional here since the field

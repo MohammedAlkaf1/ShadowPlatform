@@ -51,4 +51,30 @@ describe("verifyFileContent — magic-byte content verification", () => {
     const realPdf = Buffer.from("%PDF-1.4\n%test content\n%%EOF");
     expect(await verifyFileContent(realPdf, "application/msword")).toBe(false);
   });
+
+  it("accepts a real WAV signature declared as audio/wav (Voice Exam transcription upload)", async () => {
+    // Minimal valid 44-byte RIFF/WAVE header (PCM16 mono 16kHz) + a few
+    // silent PCM bytes — same shape the Flutter app's _pcmToWav produces.
+    const pcmLen = 32;
+    const wav = Buffer.alloc(44 + pcmLen);
+    wav.write("RIFF", 0);
+    wav.writeUInt32LE(36 + pcmLen, 4);
+    wav.write("WAVE", 8);
+    wav.write("fmt ", 12);
+    wav.writeUInt32LE(16, 16);
+    wav.writeUInt16LE(1, 20);
+    wav.writeUInt16LE(1, 22);
+    wav.writeUInt32LE(16000, 24);
+    wav.writeUInt32LE(32000, 28);
+    wav.writeUInt16LE(2, 32);
+    wav.writeUInt16LE(16, 34);
+    wav.write("data", 36);
+    wav.writeUInt32LE(pcmLen, 40);
+    expect(await verifyFileContent(wav, "audio/wav")).toBe(true);
+  });
+
+  it("rejects plain text content declared as audio/wav (fake MIME)", async () => {
+    const fakeWav = Buffer.from("this is not actually a WAV file");
+    expect(await verifyFileContent(fakeWav, "audio/wav")).toBe(false);
+  });
 });

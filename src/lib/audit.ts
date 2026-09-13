@@ -45,7 +45,17 @@ export type AuditAction =
   | "approve_lecture_keyterms"
   | "delete_lecture_keyterm"
   // "Sign out everywhere" — see mobile-jwt.ts's tokenVersion doc comment.
-  | "logout_all_devices";
+  | "logout_all_devices"
+  // Student-facing AI features migrated off direct client-side Gemini
+  // calls (API-key-exposure remediation) — see src/lib/ai.ts's top-of-file
+  // exception comment and src/app/api/student/ai/*.
+  | "use_visual_assistance_ai"
+  | "use_learning_support_ai"
+  | "use_deaf_mode_assist_ai"
+  // Voice Exam spoken-answer transcription, migrated off direct client-side
+  // Deepgram calls (same API-key-exposure remediation) — see
+  // src/lib/deepgram.ts and src/app/api/student/ai/transcribe-answer.
+  | "use_voice_exam_transcription_ai";
 
 export interface AuditLogInput {
   tenantId: string;

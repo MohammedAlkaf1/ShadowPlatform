@@ -16,6 +16,12 @@ const DETECTABLE_TYPE_ALLOWLIST: Record<string, string[]> = {
   "application/pdf": ["application/pdf"],
   "image/png": ["image/png"],
   "image/jpeg": ["image/jpeg"],
+  // Voice Exam's short spoken-answer clips (PCM16 mono 16kHz, wrapped in a
+  // WAV/RIFF container client-side) — see POST /api/student/ai/transcribe-answer.
+  // `file-type`@22 reports a real WAV buffer's signature as exactly
+  // "audio/wav" (verified directly against this project's pinned version,
+  // not assumed from docs).
+  "audio/wav": ["audio/wav"],
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ],

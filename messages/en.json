@@ -211,7 +211,10 @@
       "questionNotFound": "Question not found",
       "optionNotFound": "Option not found",
       "courseNotFound": "Course not found",
-      "unauthorized": "Unauthorized"
+      "unauthorized": "Unauthorized",
+      "imageOnly": "Only JPEG or PNG images are allowed",
+      "notAuthorizedForAiFeature": "This feature isn't enabled on your support plan",
+      "studentAiFeatureFailed": "Could not complete this request, please try again"
     },
     "csvExports": {
       "headerStudentName": "Student Name",

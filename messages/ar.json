@@ -211,7 +211,10 @@
       "questionNotFound": "لم يتم العثور على السؤال",
       "optionNotFound": "لم يتم العثور على الخيار",
       "courseNotFound": "لم يتم العثور على المقرر",
-      "unauthorized": "غير مصرح"
+      "unauthorized": "غير مصرح",
+      "imageOnly": "يُسمح فقط بصور JPEG أو PNG",
+      "notAuthorizedForAiFeature": "هذه الميزة غير مفعّلة في خطة الدعم الخاصة بك",
+      "studentAiFeatureFailed": "تعذر إتمام هذا الطلب، حاول مرة أخرى"
     },
     "csvExports": {
       "headerStudentName": "اسم الطالب",

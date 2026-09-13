@@ -20,6 +20,10 @@ const eslintConfig = defineConfig([
     // startup file (see docs/DEPLOYMENT.md) — intentionally require(), not
     // app source subject to the TS/ESM rules below.
     "server.js",
+    // Plain CommonJS module required directly by server.js, for the same
+    // reason (see server/ws-transcribe.js's own top-of-file comment for
+    // why it can't be TypeScript/ESM).
+    "server/**",
   ]),
 ]);
 

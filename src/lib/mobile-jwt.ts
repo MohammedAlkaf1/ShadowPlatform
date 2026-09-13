@@ -55,7 +55,14 @@ export interface VerifiedMobileToken extends MobileJwtClaims {
 }
 
 export async function verifyMobileToken(token: string): Promise<VerifiedMobileToken> {
-  const { payload } = await jwtVerify(token, getSecretKey());
+  // Explicit algorithm allowlist: without this, jose's key-type inference
+  // already blocks "none" and asymmetric algorithms for a raw symmetric
+  // secret, but would still accept a forged HS384/HS512 token signed with
+  // this same secret (all three share the same "symmetric key" class in
+  // jose's algorithm table). Pinning to HS256 removes that ambiguity —
+  // every token this app issues (signAccessToken/signRefreshToken above) is
+  // HS256, so nothing legitimate is affected.
+  const { payload } = await jwtVerify(token, getSecretKey(), { algorithms: ["HS256"] });
   return {
     userId: payload.userId as string,
     tenantId: payload.tenantId as string,

@@ -21,6 +21,7 @@ process.env.NEXT_MANUAL_SIG_HANDLE = "true";
 
 const { createServer } = require("http");
 const next = require("next");
+const { attachTranscribeProxy } = require("./server/ws-transcribe");
 
 const port = parseInt(process.env.PORT || "3000", 10);
 const app = next({ dev: process.env.NODE_ENV !== "production" });
@@ -30,6 +31,14 @@ app.prepare().then(() => {
   const httpServer = createServer((req, res) => handle(req, res)).listen(port, () => {
     console.log(`> Ready on port ${port}`);
   });
+
+  // Deepgram live-transcription WebSocket relay (wss://.../api/ws/transcribe)
+  // — attaches its own "upgrade" listener to this same HTTP server; see
+  // server/ws-transcribe.js for the full design and why it's plain
+  // CommonJS. Any upgrade request for a different path is handed to
+  // app.getUpgradeHandler() (Next's own hook), so this doesn't change
+  // Next's existing upgrade behavior (e.g. dev-mode HMR).
+  attachTranscribeProxy(httpServer, app);
 
   let shuttingDown = false;
   function shutdown(signal) {

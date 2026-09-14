@@ -48,7 +48,12 @@ function mismatchedMimeFormData(): FormData {
  * being inferable from a live 400/502.
  */
 let capturedArgs: unknown = null;
-let generateContentImpl: (args: unknown) => Promise<{ text: string }> = async () => ({ text: "وصف الصورة" });
+interface MockGeminiResponse {
+  text?: string;
+  promptFeedback?: { blockReason?: string };
+  candidates?: { finishReason?: string }[];
+}
+let generateContentImpl: (args: unknown) => Promise<MockGeminiResponse> = async () => ({ text: "وصف الصورة" });
 
 vi.mock("@google/genai", async () => {
   const actual = await vi.importActual<typeof import("@google/genai")>("@google/genai");
@@ -76,6 +81,7 @@ interface CapturedGenerateContentArgs {
     systemInstruction?: { parts: { text: string }[] };
     maxOutputTokens?: number;
     thinkingConfig?: { thinkingBudget: number };
+    safetySettings?: { category: string; threshold: string }[];
   };
 }
 
@@ -138,6 +144,37 @@ describe("POST /api/student/ai/visual-assistance — Gemini request structure (n
 
     // Model is always the fixed server constant — never client-selectable.
     expect(args.model).toBe("gemini-2.5-flash");
+
+    // Relaxed (not disabled) safety thresholds — a real camera photo +
+    // "describe the people you see" is exactly the input shape Gemini's
+    // default thresholds over-block for a legitimate accessibility use
+    // case; BLOCK_ONLY_HIGH is Google's own documented "less aggressive"
+    // tier, not BLOCK_NONE.
+    const categories = args.config?.safetySettings?.map((s) => s.category) ?? [];
+    expect(categories).toContain("HARM_CATEGORY_HARASSMENT");
+    expect(categories).toContain("HARM_CATEGORY_DANGEROUS_CONTENT");
+    for (const setting of args.config?.safetySettings ?? []) {
+      expect(setting.threshold).toBe("BLOCK_ONLY_HIGH");
+    }
+  });
+
+  it("REGRESSION: when Gemini returns an empty response (e.g. safety-blocked), surfaces the block/finish reason server-side, not just a generic 'no content'", async () => {
+    generateContentImpl = async () => ({
+      text: undefined,
+      promptFeedback: { blockReason: "SAFETY" },
+      candidates: [{ finishReason: "SAFETY" }],
+    });
+    const { token } = await tokenFor(visualModeStudent.email);
+    const req = authedRequest(BASE, token, { method: "POST", body: pngFormData() });
+    const { POST } = await import("@/app/api/student/ai/visual-assistance/route");
+    const res = await POST(req);
+
+    // Client still only ever sees the existing generic localized error
+    // (same message as every other Gemini-failure path in this route —
+    // locale here follows the test's default request locale, Arabic).
+    expect(res.status).toBe(502);
+    const body = await res.json();
+    expect(body).toEqual({ error: "تعذر إتمام هذا الطلب، حاول مرة أخرى" });
   });
 
   it("propagates the mode-specific instruction correctly for read_text vs describe", async () => {

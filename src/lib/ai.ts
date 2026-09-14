@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { categoryLabel, levelLabel } from "./student-ai-labels";
 import type { AdaptationDirectives, CategoryCode } from "./adaptation";
 
@@ -355,7 +355,7 @@ function toGeminiContents(messages: ChatMessage[]): {
           // identical (base64 data has no newlines anyway).
           const match = /^data:(.+?);base64,([\s\S]*)$/.exec(part.image_url.url);
           if (match) {
-            parts.push({ inline_data: { mime_type: match[1], data: match[2] } });
+            parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
           }
         }
       }
@@ -368,6 +368,29 @@ function toGeminiContents(messages: ChatMessage[]): {
 
   return { systemParts, contents };
 }
+
+// Visual Assistance's own prompt explicitly asks Gemini to describe people
+// and surroundings in a real camera photo ("ركز على الأشياء والأشخاص
+// والبيئة المحيطة") — unlike this file's other chatCompletion callers
+// (Learning Support, Term Definition: plain text, never an image; and the
+// PDF functions above: lecture-slide text/charts), a real photo of a person
+// is exactly the kind of input Gemini's DEFAULT safety thresholds (tuned
+// for open-ended/adversarial use, not a legitimate accessibility tool)
+// are prone to over-block, most often surfacing as an empty response
+// (finishReason "SAFETY", or promptFeedback.blockReason) rather than a
+// thrown API error — the previous code treated that indistinguishably from
+// "Gemini returned nothing for some other reason" and never even logged
+// which. BLOCK_ONLY_HIGH (Google's own documented, standard "less
+// aggressive" tier — not "no filtering") is used for exactly this class of
+// legitimate-use-case over-blocking; it can only make blocking LESS
+// aggressive, so it cannot regress the already-working text-only callers of
+// this same function.
+const SAFETY_SETTINGS = [
+  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+];
 
 /**
  * Generic Gemini chat completion for the two migrated student-facing
@@ -392,6 +415,7 @@ export async function chatCompletion(
         // "thinking" so flash returns direct output instead of spending the
         // token budget on reasoning (which can yield an empty reply).
         thinkingConfig: { thinkingBudget: 0 },
+        safetySettings: SAFETY_SETTINGS,
         ...(systemParts.length > 0
           ? { systemInstruction: { parts: systemParts } }
           : {}),
@@ -400,7 +424,18 @@ export async function chatCompletion(
 
     const text = response.text;
     if (!text || text.trim().length === 0) {
-      return { content: null, error: "Gemini returned no content" };
+      // Surface WHY the response was empty (blocked prompt, a candidate
+      // that finished for a non-STOP reason, or genuinely nothing) rather
+      // than a single undifferentiated "no content" — this flows only into
+      // the caller's sanitized server-side log, never to the client.
+      const blockReason = response.promptFeedback?.blockReason;
+      const finishReason = response.candidates?.[0]?.finishReason;
+      const reason = blockReason
+        ? `prompt blocked: ${blockReason}`
+        : finishReason && finishReason !== "STOP"
+          ? `finishReason=${finishReason}`
+          : "empty response, no block/finish reason reported";
+      return { content: null, error: `Gemini returned no content (${reason})` };
     }
     return { content: text, error: null };
   } catch (err) {

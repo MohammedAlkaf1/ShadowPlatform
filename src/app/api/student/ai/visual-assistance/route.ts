@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getTranslations } from "next-intl/server";
 import { requireMobileRole } from "@/lib/api-auth";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { verifyFileContent } from "@/lib/file-validation";
+import { detectImageType } from "@/lib/file-validation";
 import { authorizeStudentAiFeature } from "@/lib/student-ai-context";
 import { describeOrReadImage, type VisualAssistanceMode, type StudentAiLanguage } from "@/lib/ai";
 import { logAudit } from "@/lib/audit";
@@ -120,24 +120,31 @@ export async function POST(request: Request) {
   const language: StudentAiLanguage = languageRaw;
   debugLog("image_received", { mime: image.type, bytes: image.size, mode, language });
 
-  if (image.type !== "image/jpeg" && image.type !== "image/png") {
-    debugLog("FAILED", { stage: "mime_rejected", mime: image.type });
-    return NextResponse.json({ error: tErrors("imageOnly") }, { status: 400 });
-  }
   if (image.size > MAX_IMAGE_BYTES) {
     debugLog("FAILED", { stage: "size_rejected", bytes: image.size, maxBytes: MAX_IMAGE_BYTES });
     return NextResponse.json({ error: tErrors("fileTooLarge") }, { status: 400 });
   }
 
   const imageBytes = Buffer.from(await image.arrayBuffer());
-  debugLog("bytes_read", { bytes: imageBytes.length });
+  debugLog("bytes_read", { bytes: imageBytes.length, declaredMime: image.type });
 
-  const contentValid = await verifyFileContent(imageBytes, image.type);
-  if (!contentValid) {
+  // Uses the REAL image type detected from the actual bytes' magic
+  // signature — NOT the client-declared `image.type` — as authoritative.
+  // See detectImageType's doc comment: the Flutter multipart client
+  // (platform_client.dart's analyzeImage) builds its upload via
+  // `MultipartFile.fromBytes(..., filename: 'photo.jpg')` with no explicit
+  // contentType, so `image.type` here is only ever the `http` package's
+  // filename-based guess ("image/jpeg", always, regardless of the real
+  // captured/compressed bytes) — not a trustworthy signal. This is exactly
+  // as strict as before (only genuine JPEG or PNG bytes are ever accepted,
+  // verified from the real signature), it just stops gatekeeping on a label
+  // that was never reliable for this specific client.
+  const detectedMime = await detectImageType(imageBytes);
+  if (!detectedMime) {
     debugLog("FAILED", { stage: "magic_byte_validation", declaredMime: image.type });
     return NextResponse.json({ error: tErrors("imageOnly") }, { status: 400 });
   }
-  debugLog("magic_byte_validation_ok");
+  debugLog("magic_byte_validation_ok", { detectedMime, declaredMime: image.type });
 
   const aiContext = await authorizeStudentAiFeature(ctx.tenantId, ctx.userId, "VISUAL_MODE");
   if (!aiContext) {
@@ -148,10 +155,10 @@ export async function POST(request: Request) {
 
   let result: string;
   try {
-    debugLog("gemini_request_start", { mime: image.type, bytes: imageBytes.length, mode, language });
+    debugLog("gemini_request_start", { mime: detectedMime, bytes: imageBytes.length, mode, language });
     result = await describeOrReadImage(
       imageBytes,
-      image.type as "image/jpeg" | "image/png",
+      detectedMime,
       mode,
       aiContext.directives,
       aiContext.categoryCode,

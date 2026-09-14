@@ -20,6 +20,24 @@ function pngFormData(overrides: { mode?: string; language?: string } = {}): Form
 }
 
 /**
+ * Reproduces the actual production bug byte-for-byte: real PNG image bytes,
+ * but declared as `image/jpeg` — exactly what platform_client.dart's
+ * analyzeImage() sends today (`MultipartFile.fromBytes('image', imageBytes,
+ * filename: 'photo.jpg')` with no explicit contentType; the `http` package
+ * infers Content-Type purely from the hardcoded ".jpg" filename, regardless
+ * of the real bytes). Before the fix, this was rejected with "Only JPEG or
+ * PNG images are allowed" — a real photo never reaching Gemini at all.
+ */
+function mismatchedMimeFormData(): FormData {
+  const form = new FormData();
+  const bytes = Buffer.from(TINY_PNG_BASE64, "base64");
+  form.set("image", new Blob([new Uint8Array(bytes)], { type: "image/jpeg" }), "photo.jpg");
+  form.set("mode", "describe");
+  form.set("language", "ar");
+  return form;
+}
+
+/**
  * Captures the exact argument passed to the real (mocked-at-the-network-
  * boundary-only) @google/genai client's generateContent — everything above
  * that call (route validation, toGeminiContents, chatCompletion,
@@ -133,6 +151,42 @@ describe("POST /api/student/ai/visual-assistance — Gemini request structure (n
     const args = capturedArgs as CapturedGenerateContentArgs;
     const textPart = args.contents[0].parts[1] as { text?: string };
     expect(textPart.text).toContain("اقرأ");
+  });
+
+  it("REGRESSION: accepts a real PNG declared as image/jpeg (the actual Flutter client bug) and sends Gemini the correct DETECTED mimeType, not the wrong declared one", async () => {
+    capturedArgs = null;
+    generateContentImpl = async () => ({ text: "وصف الصورة" });
+
+    const { token } = await tokenFor(visualModeStudent.email);
+    const req = authedRequest(BASE, token, { method: "POST", body: mismatchedMimeFormData() });
+    const { POST } = await import("@/app/api/student/ai/visual-assistance/route");
+    const res = await POST(req);
+
+    // Before the fix: 400 "Only JPEG or PNG images are allowed" — the real
+    // production bug, reproduced here exactly.
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual({ result: "وصف الصورة" });
+
+    const args = capturedArgs as CapturedGenerateContentArgs;
+    const imagePart = args.contents[0].parts[0] as { inlineData?: { mimeType?: string } };
+    // The real, byte-detected type (image/png) — never the client's wrong
+    // declared image/jpeg label.
+    expect(imagePart.inlineData?.mimeType).toBe("image/png");
+  });
+
+  it("still rejects a genuinely invalid file (real magic-byte check, not weakened)", async () => {
+    const form = new FormData();
+    const notAnImage = Buffer.from("this is not an image, just text pretending to be one");
+    form.set("image", new Blob([new Uint8Array(notAnImage)], { type: "image/jpeg" }), "photo.jpg");
+    form.set("mode", "describe");
+    form.set("language", "ar");
+
+    const { token } = await tokenFor(visualModeStudent.email);
+    const req = authedRequest(BASE, token, { method: "POST", body: form });
+    const { POST } = await import("@/app/api/student/ai/visual-assistance/route");
+    const res = await POST(req);
+    expect(res.status).toBe(400);
   });
 
   it("returns a controlled 502 (not a raw provider error) when Gemini rejects the request", async () => {

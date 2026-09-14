@@ -64,3 +64,40 @@ export async function verifyFileContent(buffer: Buffer, declaredMime: string): P
   // closed rather than let an unverified type through silently.
   return false;
 }
+
+/**
+ * Detects the REAL image type from `buffer`'s actual magic-byte signature,
+ * ignoring any client-declared Content-Type entirely. Returns "image/jpeg"
+ * or "image/png" only if the real bytes genuinely match one of those two
+ * signatures — null for anything else (still fail-closed; no format outside
+ * this allowlist is ever accepted).
+ *
+ * WHY THIS EXISTS SEPARATELY FROM verifyFileContent: that function checks
+ * "do the real bytes match the CLIENT'S DECLARED type" — correct for a
+ * browser `<input type=file>`, where the declared type is the browser's own
+ * best read of the file. It is the wrong check for a client whose declared
+ * Content-Type is not actually derived from the file's real bytes. This was
+ * exactly the Visual Assistance production bug: the Flutter app's multipart
+ * client (platform_client.dart's analyzeImage) builds the upload via
+ * `http.MultipartFile.fromBytes('image', imageBytes, filename: 'photo.jpg')`
+ * with no explicit `contentType` — the `http` package infers
+ * `Content-Type: image/jpeg` purely from the hardcoded ".jpg" filename,
+ * regardless of what format the real captured/compressed image bytes
+ * actually are (image_picker's Android compression path does not guarantee
+ * JPEG output for every source/quality combination). Any real photo whose
+ * actual bytes weren't genuinely JPEG was being rejected with "Only JPEG or
+ * PNG images are allowed" before ever reaching Gemini, because the
+ * declared-type-based check compared real bytes against a label that was
+ * never trustworthy for this specific client in the first place.
+ *
+ * Using the DETECTED type as authoritative (still restricted to this exact
+ * two-value allowlist) fixes that while staying exactly as strict as
+ * before: only a genuine JPEG or PNG is ever accepted, verified from the
+ * real bytes, same as every other upload in this app.
+ */
+export async function detectImageType(buffer: Buffer): Promise<"image/jpeg" | "image/png" | null> {
+  const detected = await fileTypeFromBuffer(buffer);
+  if (detected?.mime === "image/jpeg") return "image/jpeg";
+  if (detected?.mime === "image/png") return "image/png";
+  return null;
+}

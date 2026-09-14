@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     // Diagnostic-only: sanitized error name/message, never the PDF bytes,
     // prompt, or key. Message is truncated defensively in case a future
     // provider error ever embeds unexpectedly large content.
-    console.error(
+    console.log(
       `[faculty/keyterms/extract] Gemini request failed (stage=extractLectureKeytermsFromPdf): ` +
         `${err instanceof Error ? err.constructor.name : typeof err}: ` +
         `${(err instanceof Error ? err.message : String(err)).slice(0, 500)}`

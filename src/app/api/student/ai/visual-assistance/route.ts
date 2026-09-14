@@ -105,8 +105,11 @@ export async function POST(request: Request) {
   } catch (err) {
     // Diagnostic-only: sanitized error name/message, never the image bytes,
     // prompt, or key. Message is truncated defensively in case a future
-    // provider error ever embeds unexpectedly large content.
-    console.error(
+    // provider error ever embeds unexpectedly large content. console.log
+    // (not console.error/stderr) — matches the pre-existing, already-proven-
+    // visible timing log in faculty/exams/generate/route.ts; some hosting
+    // panels' default "runtime logs" view only surfaces stdout.
+    console.log(
       `[student/ai/visual-assistance] Gemini request failed: ` +
         `${err instanceof Error ? err.constructor.name : typeof err}: ` +
         `${(err instanceof Error ? err.message : String(err)).slice(0, 500)}`

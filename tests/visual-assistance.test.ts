@@ -148,4 +148,42 @@ describe("POST /api/student/ai/visual-assistance — Gemini request structure (n
     expect(JSON.stringify(body)).not.toContain("GEMINI_API_KEY");
     expect(JSON.stringify(body)).not.toContain("INVALID_ARGUMENT");
   });
+
+  it("logs stage-by-stage [visual-debug] diagnostics via console.log, and never leaks them (or the Authorization header/image bytes) into the client response", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      generateContentImpl = async () => {
+        throw new Error('{"error":{"code":400,"message":"simulated Gemini rejection","status":"INVALID_ARGUMENT"}}');
+      };
+      const { token } = await tokenFor(visualModeStudent.email);
+      const req = authedRequest(BASE, token, { method: "POST", body: pngFormData() });
+      const { POST } = await import("@/app/api/student/ai/visual-assistance/route");
+      const res = await POST(req);
+      expect(res.status).toBe(502);
+
+      const logLines = logSpy.mock.calls.map((call) => call.join(" "));
+      const debugLines = logLines.filter((line) => line.startsWith("[visual-debug]"));
+
+      // The stage-by-stage trail reached Gemini and recorded the failure —
+      // this is the actual evidence this diagnostic pass exists to produce.
+      expect(debugLines.some((l) => l === "[visual-debug] route_entered")).toBe(true);
+      expect(debugLines.some((l) => l === "[visual-debug] auth_ok")).toBe(true);
+      expect(debugLines.some((l) => l.startsWith("[visual-debug] gemini_request_start"))).toBe(true);
+      expect(debugLines.some((l) => l.startsWith("[visual-debug] FAILED stage=gemini"))).toBe(true);
+
+      // Never the token, never the image's base64 content, in ANY log line.
+      const allLogText = logLines.join("\n");
+      expect(allLogText).not.toContain(token);
+      expect(allLogText).not.toContain(TINY_PNG_BASE64);
+      expect(allLogText).not.toMatch(/Bearer /);
+
+      // And none of this debug detail ever reaches the client response body.
+      const body = await res.json();
+      expect(JSON.stringify(body)).not.toContain("stage=");
+      expect(JSON.stringify(body)).not.toContain("errorType=");
+      expect(JSON.stringify(body)).not.toContain("visual-debug");
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
 });

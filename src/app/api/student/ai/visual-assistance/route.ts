@@ -102,7 +102,15 @@ export async function POST(request: Request) {
       aiContext.categoryCode,
       language
     );
-  } catch {
+  } catch (err) {
+    // Diagnostic-only: sanitized error name/message, never the image bytes,
+    // prompt, or key. Message is truncated defensively in case a future
+    // provider error ever embeds unexpectedly large content.
+    console.error(
+      `[student/ai/visual-assistance] Gemini request failed: ` +
+        `${err instanceof Error ? err.constructor.name : typeof err}: ` +
+        `${(err instanceof Error ? err.message : String(err)).slice(0, 500)}`
+    );
     return NextResponse.json({ error: tErrors("studentAiFeatureFailed") }, { status: 502 });
   }
 

@@ -90,7 +90,15 @@ export async function POST(request: Request) {
   let questions;
   try {
     questions = await generateExamQuestionsFromPdf(pdfBytes, approxQuestionCount, language);
-  } catch {
+  } catch (err) {
+    // Diagnostic-only: sanitized error name/message, never the PDF bytes,
+    // prompt, or key. Message is truncated defensively in case a future
+    // provider error ever embeds unexpectedly large content.
+    console.error(
+      `[faculty/exams/generate] Gemini request failed (stage=generateExamQuestionsFromPdf): ` +
+        `${err instanceof Error ? err.constructor.name : typeof err}: ` +
+        `${(err instanceof Error ? err.message : String(err)).slice(0, 500)}`
+    );
     return NextResponse.json({ error: tErrors("examGenerationFailed") }, { status: 502 });
   }
   const tGemini = Date.now();

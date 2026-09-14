@@ -78,7 +78,15 @@ export async function POST(request: Request) {
   let terms;
   try {
     terms = await extractLectureKeytermsFromPdf(pdfBytes);
-  } catch {
+  } catch (err) {
+    // Diagnostic-only: sanitized error name/message, never the PDF bytes,
+    // prompt, or key. Message is truncated defensively in case a future
+    // provider error ever embeds unexpectedly large content.
+    console.error(
+      `[faculty/keyterms/extract] Gemini request failed (stage=extractLectureKeytermsFromPdf): ` +
+        `${err instanceof Error ? err.constructor.name : typeof err}: ` +
+        `${(err instanceof Error ? err.message : String(err)).slice(0, 500)}`
+    );
     return NextResponse.json({ error: tErrors("keytermExtractionFailed") }, { status: 502 });
   }
 

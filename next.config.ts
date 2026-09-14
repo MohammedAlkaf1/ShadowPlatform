@@ -113,6 +113,29 @@ const nextConfig: NextConfig = {
     tsconfigPath: "./tsconfig.build.json",
   },
 
+  // `ws` (used by src/lib/deaf-mode-session.ts's server-side Deepgram
+  // WebSocket connection) must NOT be bundled by webpack. `ws` internally
+  // does `try { require('bufferutil') } catch { /* pure-JS fallback */ }`
+  // for its frame-masking implementation — neither `bufferutil` nor
+  // `utf-8-validate` are installed in this project (confirmed: absent from
+  // package-lock.json; they're optional PEER deps of `ws`, only installed
+  // if something else in the tree also depends on them, which nothing
+  // does here). When webpack bundles `ws` anyway, it statically resolves
+  // that conditional `require('bufferutil')` at build time, can't find the
+  // module, and substitutes an empty stub instead of letting the `require`
+  // throw at runtime — so `ws`'s own try/catch never fires and it calls
+  // `.mask()` on the stub, producing "TypeError: b.mask is not a function"
+  // in production (observed exactly on POST /api/student/ai/deaf-mode/audio,
+  // which is the one place this app calls `ws.send()` server-side).
+  // `serverExternalPackages` tells Next's bundler to leave `ws` as a plain
+  // runtime `require()` instead — the same treatment server/ws-transcribe.js
+  // (a plain CommonJS file next.js never bundles at all) already gets for
+  // free, which is why that code path was never affected by this bug.
+  // Real masking/validation is unaffected either way — this only changes
+  // *how the module loads*, not what it does; ws's actual protocol
+  // implementation (native-or-fallback) is untouched.
+  serverExternalPackages: ["ws"],
+
   experimental: {
     serverActions: {
       bodySizeLimit: SERVER_ACTION_BODY_SIZE_LIMIT,
